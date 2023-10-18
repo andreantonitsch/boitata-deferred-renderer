@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <stdexcept>
+
 #include "Renderer.hpp"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
@@ -13,7 +14,6 @@ namespace boitatah
     {
         windowWidth = options.windowDimensions.x;
         windowHeight = options.windowDimensions.y;
-
     }
     /// END CONSTRUCTORS
 
@@ -22,15 +22,28 @@ namespace boitatah
         windowEvents();
     }
 
-
-
     void Renderer::initVulkan()
     {
-        initWindow();
+        createVkInstance();
     }
 
+    // VULKAN INSTANCE
+    void Renderer::createVkInstance()
+    {
+        uint32_t extensionCount = 0;
+        vk = new Vulkan({
+            .appName = "Application",
+            .extensions = requiredWindowExtensions(extensionCount),
+            .extensionsCount = extensionCount
+        });
+    }
+
+    // END OF VULKAN INSTANCE
+
+    // Clean Up // Destructors
     void Renderer::cleanup()
     {
+        delete vk;
         cleanupWindow();
     }
 
@@ -63,7 +76,12 @@ namespace boitatah
         return glfwWindowShouldClose(window);
     }
 
-        void Renderer::windowEvents()
+    const char **Renderer::requiredWindowExtensions(uint32_t &extensionCount)
+    {
+        return glfwGetRequiredInstanceExtensions(&extensionCount);
+    }
+
+    void Renderer::windowEvents()
     {
         glfwPollEvents();
     }

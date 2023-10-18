@@ -7,9 +7,12 @@
 #include <vulkan/vulkan.h>
 
 #include "../types/Dimension.hpp"
+#include "../vulkan/Vulkan.hpp"
 
 namespace boitatah
 {
+    using namespace vulkan;
+
     struct RendererOptions{
         Dimension2<uint32_t> windowDimensions = {800, 600};
     };
@@ -17,25 +20,33 @@ namespace boitatah
 
     class Renderer{
         public:
+            //Constructors / Destructors
             Renderer(RendererOptions options);
             ~Renderer(void);
+
+            //Methods
             void render();
             void initVulkan();
+            void initWindow();
             bool isWindowClosed();
-            bool funcao();
+
         private:
             // Base objects
-                GLFWwindow* window;
+            Vulkan* vk; //Is this right?
+            GLFWwindow* window;
 
-            // Options
+            // Options Members
             int windowWidth;
             int windowHeight;
 
-
+            // Window Functions
+            const char** requiredWindowExtensions(uint32_t& extensionCount);
             void windowEvents();
-
-            void initWindow();
             void cleanupWindow();
+
+            // Vulkan Instance
+            void createVkInstance();
+
             void cleanup();
     };
 }
