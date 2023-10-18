@@ -2,12 +2,16 @@
 //#pragma once
 #include <iostream>
 
+namespace btt = boitatah;
+
 int main(){
 
-    velly::dr::Renderer r;
+    btt::Renderer r({
+        .windowDimensions = {1024, 768}
+        });
     r.initVulkan();
 
-    while(!r.closed()){
+    while(!r.isWindowClosed()){
         r.render();
     }
 

@@ -6,20 +6,36 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
-namespace velly::dr
+#include "../types/Dimension.hpp"
+
+namespace boitatah
 {
+    struct RendererOptions{
+        Dimension2<uint32_t> windowDimensions = {800, 600};
+    };
+
+
     class Renderer{
         public:
-            //Renderer();
+            Renderer(RendererOptions options);
             ~Renderer(void);
             void render();
             void initVulkan();
-            bool closed();
+            bool isWindowClosed();
+            bool funcao();
         private:
             // Base objects
                 GLFWwindow* window;
 
+            // Options
+            int windowWidth;
+            int windowHeight;
+
+
+            void windowEvents();
+
             void initWindow();
+            void cleanupWindow();
             void cleanup();
     };
 }
