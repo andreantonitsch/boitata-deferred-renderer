@@ -80,7 +80,7 @@ namespace boitatah
     {
         std::vector<const char *> requiredExtensions;
         uint32_t extensionCount = 0;
-        const char ** glfwExtensions = glfwGetRequiredInstanceExtensions(&extensionCount);
+        const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&extensionCount);
 
         for (uint32_t i = 0; i < extensionCount; i++)
         {

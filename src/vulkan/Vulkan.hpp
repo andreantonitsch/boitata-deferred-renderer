@@ -1,7 +1,6 @@
 #ifndef BOITATAH_VK_VULKAN_HPP
 #define BOITATAH_VK_VULKAN_HPP
 
-
 #include <vulkan/vulkan.h>
 #include <vector>
 
@@ -11,36 +10,43 @@ namespace boitatah::vk
     struct VulkanOptions
     {
         char *appName = nullptr;
-        std::vector<const char*> extensions;
+        std::vector<const char *> extensions;
         bool useValidationLayers = false;
     };
 
     class Vulkan
     {
     public:
-        //Vulkan();
+        // Vulkan();
         Vulkan(VulkanOptions opts);
         ~Vulkan(void);
 
         // Copy assignment?
         // Vulkan& operator= (const Vulkan &v);//copy assignment
     private:
-        VkInstance instance;
         VulkanOptions options;
+        
+        VkInstance instance;
+        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
         VkDebugUtilsMessengerEXT debugMessenger;
+
+        void initVkInstance();
+
+#pragma region Bookkeeping-startup
 
         // Extensions
         bool checkRequiredExtensions(const std::vector<VkExtensionProperties> &available,
-                                     const std::vector<const char*> &required);
+                                     const std::vector<const char *> &required);
         std::vector<VkExtensionProperties> retrieveAvailableExtensions();
         // bool validateExtensions(const char* extensions);
 
         // Validation Layers
         void initializeDebugMessenger();
         bool checkValidationLayerSupport(const std::vector<const char *> &layers);
-        void populateMessenger(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+        void populateMessenger(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
+#pragma endregion Bookkeeping - startup
     };
 
 }
 
-#endif //BOITATAH_VK_VULKAN_HPP
+#endif // BOITATAH_VK_VULKAN_HPP

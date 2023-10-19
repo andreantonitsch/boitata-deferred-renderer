@@ -25,8 +25,9 @@ VkResult createDebugUtilsMessengerEXT(VkInstance instance,
 };
 
 void destroyDebugUtilsMessengerEXT(VkInstance instance,
- VkDebugUtilsMessengerEXT debugMessenger,
- const VkAllocationCallbacks* pAllocator){
+                                   VkDebugUtilsMessengerEXT debugMessenger,
+                                   const VkAllocationCallbacks *pAllocator)
+{
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)
         vkGetInstanceProcAddr(instance,
                               "vkDestroyDebugUtilsMessengerEXT");
@@ -34,7 +35,7 @@ void destroyDebugUtilsMessengerEXT(VkInstance instance,
     {
         return func(instance, debugMessenger, pAllocator);
     }
- }
+}
 
 /// DEBUG STUFF
 // Vulkan callback function.
@@ -45,10 +46,10 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
     void *pUserData)
 {
-    // if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT 
+    // if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
     //     && messageType == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
     // {
-        std::cerr << "Validation Layer : " << pCallbackData->pMessage << std::endl;
+    std::cerr << "Validation Layer : " << pCallbackData->pMessage << std::endl;
     //}
 
     return VK_FALSE;
@@ -59,6 +60,37 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 bvk::Vulkan::Vulkan(VulkanOptions opts)
 {
     options = opts;
+    initVkInstance();
+}
+
+bvk::Vulkan::~Vulkan(void)
+{
+    if (options.useValidationLayers)
+        destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+
+    vkDestroyInstance(instance, nullptr);
+}
+
+/// EXTENSIONS BLOCK
+#pragma region EXTENSIONS
+// TODO this can be better
+//  Compares required extensions and available extensions
+std::vector<VkExtensionProperties> bvk::Vulkan::retrieveAvailableExtensions()
+{
+
+    uint32_t extensionCount = 0;
+    // call once to determine extension count
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+    // create a vector and populate it with the extension properties.
+    std::vector<VkExtensionProperties> extensions(extensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+
+    return extensions;
+}
+
+void boitatah::vk::Vulkan::initVkInstance()
+{
     // App Info
     VkApplicationInfo appInfo{
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -98,39 +130,13 @@ bvk::Vulkan::Vulkan(VulkanOptions opts)
             populateMessenger(debugCreateInfo);
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
-            createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
+            createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
         }
     }
 
     VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
     if (result != VK_SUCCESS)
         throw std::runtime_error("Failed to create Vulkan Instance.");
-}
-
-bvk::Vulkan::~Vulkan(void)
-{
-    if (options.useValidationLayers)
-        destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
-
-    vkDestroyInstance(instance, nullptr);
-}
-
-/// EXTENSIONS BLOCK
-#pragma region EXTENSIONS
-// TODO this can be better
-//  Compares required extensions and available extensions
-std::vector<VkExtensionProperties> bvk::Vulkan::retrieveAvailableExtensions()
-{
-
-    uint32_t extensionCount = 0;
-    // call once to determine extension count
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-
-    // create a vector and populate it with the extension properties.
-    std::vector<VkExtensionProperties> extensions(extensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-
-    return extensions;
 }
 
 bool bvk::Vulkan::checkRequiredExtensions(const std::vector<VkExtensionProperties> &available,
@@ -205,15 +211,15 @@ bool boitatah::vk::Vulkan::checkValidationLayerSupport(const std::vector<const c
 
 void boitatah::vk::Vulkan::populateMessenger(VkDebugUtilsMessengerCreateInfoEXT &createInfo)
 {
-        createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                           VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                           VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                       VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                       VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        createInfo.pfnUserCallback = debugCallback;
-        createInfo.pUserData = nullptr; // optional
+    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    createInfo.pfnUserCallback = debugCallback;
+    createInfo.pUserData = nullptr; // optional
 }
 
 #pragma endregion VALIDATION
