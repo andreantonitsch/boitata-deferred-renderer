@@ -34,8 +34,8 @@ namespace boitatah
     {
         uint32_t extensionCount = 0;
         vk = new Vulkan({.appName = (char *)options.appName,
-                         .extensions = requiredWindowExtensions(extensionCount),
-                         .extensionsCount = extensionCount});
+                         .extensions = requiredWindowExtensions(),
+                         .useValidationLayers = options.debug});
     }
 
     // END OF VULKAN INSTANCE
@@ -76,9 +76,17 @@ namespace boitatah
         return glfwWindowShouldClose(window);
     }
 
-    const char **Renderer::requiredWindowExtensions(uint32_t &extensionCount)
+    const std::vector<const char *> Renderer::requiredWindowExtensions()
     {
-        return glfwGetRequiredInstanceExtensions(&extensionCount);
+        std::vector<const char *> requiredExtensions;
+        uint32_t extensionCount = 0;
+        const char ** glfwExtensions = glfwGetRequiredInstanceExtensions(&extensionCount);
+
+        for (uint32_t i = 0; i < extensionCount; i++)
+        {
+            requiredExtensions.emplace_back(glfwExtensions[i]);
+        }
+        return requiredExtensions;
     }
 
     void Renderer::windowEvents()

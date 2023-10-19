@@ -5,6 +5,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
+#include <vector>
 
 #include "../types/Dimension.hpp"
 #include "../vulkan/Vulkan.hpp"
@@ -17,6 +18,7 @@ namespace boitatah
     {
         Dimension2<uint32_t> windowDimensions = {800, 600};
         const char *appName = "Window";
+        bool debug = false;
     };
 
     class Renderer
@@ -41,7 +43,7 @@ namespace boitatah
         RendererOptions options;
 
         // Window Functions
-        const char **requiredWindowExtensions(uint32_t &extensionCount);
+        const std::vector<const char*>requiredWindowExtensions();
         void windowEvents();
         void cleanupWindow();
 

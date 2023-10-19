@@ -1,3 +1,6 @@
+#ifndef BOITATAH_DIMENSION_HPP
+#define BOITATAH_DIMENSION_HPP
+
 namespace boitatah
 {
 
@@ -19,3 +22,5 @@ namespace boitatah
     };
 
 }
+
+#endif // BOITATAH_DIMENSION_HPP
