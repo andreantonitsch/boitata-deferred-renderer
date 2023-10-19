@@ -7,13 +7,14 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
+#include <stdexcept>
+
 namespace boitatah
 {
     /// CONSTRUCTORS
-    Renderer::Renderer(RendererOptions options)
+    Renderer::Renderer(RendererOptions opts)
     {
-        windowWidth = options.windowDimensions.x;
-        windowHeight = options.windowDimensions.y;
+        options = opts;
     }
     /// END CONSTRUCTORS
 
@@ -22,8 +23,9 @@ namespace boitatah
         windowEvents();
     }
 
-    void Renderer::initVulkan()
+    void Renderer::init()
     {
+        initWindow();
         createVkInstance();
     }
 
@@ -31,11 +33,9 @@ namespace boitatah
     void Renderer::createVkInstance()
     {
         uint32_t extensionCount = 0;
-        vk = new Vulkan({
-            .appName = "Application",
-            .extensions = requiredWindowExtensions(extensionCount),
-            .extensionsCount = extensionCount
-        });
+        vk = new Vulkan({.appName = (char *)options.appName,
+                         .extensions = requiredWindowExtensions(extensionCount),
+                         .extensionsCount = extensionCount});
     }
 
     // END OF VULKAN INSTANCE
@@ -58,15 +58,15 @@ namespace boitatah
     {
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); //TODO temp
-        window = glfwCreateWindow(windowWidth,
-                    windowHeight,
-                    "Vulkan",
-                    nullptr,
-                    nullptr);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // TODO temp
+        window = glfwCreateWindow(options.windowDimensions.x,
+                                  options.windowDimensions.y,
+                                  options.appName,
+                                  nullptr,
+                                  nullptr);
     }
     void Renderer::cleanupWindow()
-    {        
+    {
         glfwDestroyWindow(window);
         glfwTerminate();
     }

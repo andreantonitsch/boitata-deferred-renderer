@@ -1,30 +1,38 @@
 #include <vulkan/vulkan.h>
+#include <vector>
 
-namespace boitatah::vulkan{
+namespace boitatah::vk
+{
 
-
-    struct VulkanOptions{
-        char* appName = nullptr;
-        const char** extensions;
+    struct VulkanOptions
+    {
+        char *appName = nullptr;
+        const char **extensions;
         uint32_t extensionsCount = 0;
     };
 
-    class Vulkan{
-        public:
-            Vulkan();
-            Vulkan(VulkanOptions options);
-            ~Vulkan(void);
+    class Vulkan
+    {
+    public:
+        Vulkan();
+        Vulkan(VulkanOptions opts);
+        ~Vulkan(void);
 
-            // Copy assignment?
-            //Vulkan& operator= (const Vulkan &v);//copy assignment
-        private:
-            VkInstance instance;
+        // Copy assignment?
+        // Vulkan& operator= (const Vulkan &v);//copy assignment
+    private:
+        VkInstance instance;
+        VulkanOptions options;
 
-            //Clean up
-            void cleanup();
+        // Clean up
+        void cleanup();
 
-            //Checks
-            //bool validateExtensions(const char* extensions);
+        // Extensions
+        bool checkRequiredExtensions(std::vector<VkExtensionProperties> available,
+                                     const char **required,
+                                     uint32_t requiredCount);
+        std::vector<VkExtensionProperties> retrieveAvailableExtensions();
+        // bool validateExtensions(const char* extensions);
     };
 
 }

@@ -1,19 +1,19 @@
 #include "../renderer/Renderer.hpp"
-//#pragma once
+// #pragma once
 #include <iostream>
-//#include <unistd.h>
+// #include <unistd.h>
 
 namespace btt = boitatah;
 
-int main(){
+int main()
+{
 
-    btt::Renderer r({
-        .windowDimensions = {1024, 768}
-        });
-    r.initWindow();
-    r.initVulkan();
+    btt::Renderer r({.windowDimensions = {1024, 768},
+                     .appName = "Test Frame Buffer"});
+    r.init();
 
-    while(!r.isWindowClosed()){
+    while (!r.isWindowClosed())
+    {
         r.render();
     }
 
