@@ -10,6 +10,11 @@
 #include "../types/Dimension.hpp"
 #include "../vulkan/Vulkan.hpp"
 
+// Objective here is to have expose no lone vulkan types.
+// so that we can manage them. Thats what the vulkan class is for.
+// Renderer manages and exposes them
+// from a higher-level point of view
+
 namespace boitatah
 {
     using namespace vk;
@@ -36,7 +41,11 @@ namespace boitatah
 
     private:
         // Base objects
-        Vulkan *vk; // Is this right?
+
+        // if this is a value member, then i have to deal with member initialization
+        //This being a reference makes the code simpler for now
+        // this however is not ideal
+        Vulkan *vk; 
         GLFWwindow *window;
 
         // Options Members
@@ -49,6 +58,9 @@ namespace boitatah
 
         // Vulkan Instance
         void createVkInstance();
+
+        // Logical and physical devices
+        void initializeDevices();
 
         void cleanup();
     };

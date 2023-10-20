@@ -71,7 +71,23 @@ bvk::Vulkan::~Vulkan(void)
     vkDestroyInstance(instance, nullptr);
 }
 
-/// EXTENSIONS BLOCK
+#pragma region DEVICE_SETUP
+void boitatah::vk::Vulkan::pickPhysicalDevice()
+{
+
+}
+
+void boitatah::vk::Vulkan::pickQueueFamilies()
+{
+
+}
+
+void boitatah::vk::Vulkan::pickLogicalDevice()
+{
+
+}
+#pragma endregion DEVICE_SETUP
+
 #pragma region EXTENSIONS
 // TODO this can be better
 //  Compares required extensions and available extensions
@@ -159,9 +175,7 @@ bool bvk::Vulkan::checkRequiredExtensions(const std::vector<VkExtensionPropertie
     return true;
 }
 #pragma endregion EXTENSIONS
-/// END EXTENSIONS BLOCK
 
-/// VALIDATION BLOCK
 #pragma region VALIDATION
 
 void boitatah::vk::Vulkan::initializeDebugMessenger()
@@ -223,7 +237,6 @@ void boitatah::vk::Vulkan::populateMessenger(VkDebugUtilsMessengerCreateInfoEXT 
 }
 
 #pragma endregion VALIDATION
-/// END VALIDATION BLOCK
 
 // bvk::Vulkan &bvk::Vulkan::operator=(const Vulkan &v)
 // {

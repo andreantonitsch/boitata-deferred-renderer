@@ -27,6 +27,7 @@ namespace boitatah
     {
         initWindow();
         createVkInstance();
+        initializeDevices();
     }
 
     // VULKAN INSTANCE
@@ -38,6 +39,12 @@ namespace boitatah
                          .useValidationLayers = options.debug});
     }
 
+    void Renderer::initializeDevices()
+    {
+        vk.pickPhysicalDevice();
+        vk.pickQueueFamilies();
+        vk.pickLogicalDevice();
+    }
     // END OF VULKAN INSTANCE
 
     // Clean Up // Destructors

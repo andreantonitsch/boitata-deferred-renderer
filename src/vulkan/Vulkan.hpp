@@ -21,18 +21,22 @@ namespace boitatah::vk
         Vulkan(VulkanOptions opts);
         ~Vulkan(void);
 
+        void pickPhysicalDevice();
+        void pickQueueFamilies();
+        void pickLogicalDevice();
+
         // Copy assignment?
         // Vulkan& operator= (const Vulkan &v);//copy assignment
     private:
         VulkanOptions options;
-        
+
         VkInstance instance;
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
         VkDebugUtilsMessengerEXT debugMessenger;
 
         void initVkInstance();
 
-#pragma region Bookkeeping-startup
+#pragma region Bookkeeping-Startup
 
         // Extensions
         bool checkRequiredExtensions(const std::vector<VkExtensionProperties> &available,
@@ -44,9 +48,10 @@ namespace boitatah::vk
         void initializeDebugMessenger();
         bool checkValidationLayerSupport(const std::vector<const char *> &layers);
         void populateMessenger(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
-#pragma endregion Bookkeeping - startup
+#pragma endregion Bookkeeping-Startup
+
     };
 
 }
 
-#endif // BOITATAH_VK_VULKAN_HPP
+#endif //BOITATAH_VK_VULKAN_HPP
