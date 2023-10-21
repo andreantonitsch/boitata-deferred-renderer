@@ -4,6 +4,9 @@
 // #include <string>
 #include <cstring>
 #include <algorithm>
+#include <map>
+#include <optional>
+#include <set>
 
 namespace bvk = boitatah::vk;
 
@@ -60,32 +63,146 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 bvk::Vulkan::Vulkan(VulkanOptions opts)
 {
     options = opts;
+
+    if (options.useValidationLayers)
+    {
+        validationLayers.emplace_back("VK_LAYER_KHRONOS_validation");
+    }
+
     initVkInstance();
+    createSurface(opts.window);
+    initPhysicalDevice();
+    initLogicalDeviceNQueues();
 }
 
 bvk::Vulkan::~Vulkan(void)
 {
+
+    vkDestroyDevice(device, nullptr);
+
     if (options.useValidationLayers)
         destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
-
+    
+    vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
 }
 
+#pragma region QUEUE_SETUP
+void boitatah::vk::Vulkan::createSurface(GLFWwindow *window)
+{
+    // TODO not ideal
+    if(glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
+        throw std::runtime_error("Failed to create Window Surface");
+}
+#pragma endregion QUEUE_SETUP
+
 #pragma region DEVICE_SETUP
-void boitatah::vk::Vulkan::pickPhysicalDevice()
+void boitatah::vk::Vulkan::initPhysicalDevice()
 {
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
+    if (deviceCount == 0)
+    {
+        std::runtime_error("No available GPUs with Vulkan Support");
+    }
+
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+    std::multimap<int, VkPhysicalDevice> candidates;
+
+    for (const auto &device : devices)
+    {
+        int value = evaluatePhysicalDevice(device);
+        candidates.insert(std::make_pair(value, device));
+    }
+
+    if (candidates.rbegin()->first > 0)
+    {
+        physicalDevice = candidates.rbegin()->second;
+
+        // DEBUG MESSAGE
+        if (options.debugMessages)
+        {
+            VkPhysicalDeviceProperties deviceProps;
+            vkGetPhysicalDeviceProperties(physicalDevice, &deviceProps);
+            std::cout << "###DEBUG### \n"
+                      << "Picked physcal device " << deviceProps.deviceName << "\n"
+                      << "Device type " << deviceProps.deviceType << "\n"
+                      << "Device ID " << deviceProps.deviceID << "\n"
+                      << "###DEBUG###" << std::endl;
+        }
+    }
+    else
+    {
+        std::runtime_error("No available GPUs with Vulkan Support");
+    }
 }
 
-void boitatah::vk::Vulkan::pickQueueFamilies()
+boitatah::vk::QueueFamilyIndices boitatah::vk::Vulkan::findQueueFamilies(VkPhysicalDevice device)
 {
+    QueueFamilyIndices queueFamilies;
 
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> families(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, families.data());
+
+    int i = 0;
+    for (const auto &family : families)
+    {
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+
+        if(presentSupport)
+            queueFamilies.presentFamily = i;
+
+        if (family.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        {
+            queueFamilies.graphicsFamily = i;
+        }
+        i++;
+    }
+    return queueFamilies;
 }
 
-void boitatah::vk::Vulkan::pickLogicalDevice()
+void boitatah::vk::Vulkan::initLogicalDeviceNQueues()
 {
+    QueueFamilyIndices familyIndices = findQueueFamilies(physicalDevice);
 
+    float queuePriority = 1.0;
+    VkDeviceQueueCreateInfo queueCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        .queueFamilyIndex = familyIndices.graphicsFamily.value(),
+        .queueCount = 1,
+        .pQueuePriorities = &queuePriority};
+
+    VkPhysicalDeviceFeatures deviceFeatures{};
+
+    VkDeviceCreateInfo createInfo{
+        .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .queueCreateInfoCount = 1,
+        .pQueueCreateInfos = &queueCreateInfo,
+        .enabledExtensionCount = 0,
+        .pEnabledFeatures = &deviceFeatures};
+
+    if (options.useValidationLayers)
+    {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+        createInfo.ppEnabledLayerNames = validationLayers.data();
+    }
+
+    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to initialize a Logical Device");
+    }
+
+    vkGetDeviceQueue(device, familyIndices.graphicsFamily.value(), 0, &graphicsQueue);
 }
+
 #pragma endregion DEVICE_SETUP
 
 #pragma region EXTENSIONS
@@ -134,8 +251,8 @@ void boitatah::vk::Vulkan::initVkInstance()
         .ppEnabledExtensionNames = options.extensions.data(),
     };
 
-    const std::vector<const char *> validationLayers = {
-        "VK_LAYER_KHRONOS_validation"};
+    // const std::vector<const char *> validationLayers = {
+    //     "VK_LAYER_KHRONOS_validation"};
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     // Not happy about this vector here.
     //  checks for availability and initializes.
@@ -234,6 +351,21 @@ void boitatah::vk::Vulkan::populateMessenger(VkDebugUtilsMessengerCreateInfoEXT 
                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = debugCallback;
     createInfo.pUserData = nullptr; // optional
+}
+
+int boitatah::vk::Vulkan::evaluatePhysicalDevice(VkPhysicalDevice device)
+{
+    VkPhysicalDeviceProperties deviceProps;
+    vkGetPhysicalDeviceProperties(device, &deviceProps);
+
+    VkPhysicalDeviceFeatures deviceFeats;
+    vkGetPhysicalDeviceFeatures(device, &deviceFeats);
+
+    return ((deviceProps.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) * 1000 +
+            deviceProps.limits.maxImageDimension2D) *
+           (deviceFeats.geometryShader != 0) *
+           (findQueueFamilies(device).graphicsFamily.has_value() != 0) // has graphics family queues
+        ;
 }
 
 #pragma endregion VALIDATION

@@ -11,7 +11,6 @@ int main()
     btt::Renderer r({.windowDimensions = {1024, 768},
                      .appName = "Test Frame Buffer",
                      .debug = true});
-    r.init();
 
     while (!r.isWindowClosed())
     {

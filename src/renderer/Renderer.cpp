@@ -15,6 +15,8 @@ namespace boitatah
     Renderer::Renderer(RendererOptions opts)
     {
         options = opts;
+        initWindow();
+        createVkInstance();
     }
     /// END CONSTRUCTORS
 
@@ -23,27 +25,18 @@ namespace boitatah
         windowEvents();
     }
 
-    void Renderer::init()
-    {
-        initWindow();
-        createVkInstance();
-        initializeDevices();
-    }
 
     // VULKAN INSTANCE
     void Renderer::createVkInstance()
     {
         uint32_t extensionCount = 0;
+        // TODO unhappy about this.
+
         vk = new Vulkan({.appName = (char *)options.appName,
                          .extensions = requiredWindowExtensions(),
-                         .useValidationLayers = options.debug});
-    }
-
-    void Renderer::initializeDevices()
-    {
-        vk.pickPhysicalDevice();
-        vk.pickQueueFamilies();
-        vk.pickLogicalDevice();
+                         .useValidationLayers = options.debug,
+                         .debugMessages = options.debug,
+                         .window = window});
     }
     // END OF VULKAN INSTANCE
 

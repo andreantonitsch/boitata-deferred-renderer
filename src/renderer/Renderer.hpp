@@ -4,7 +4,7 @@
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include <vulkan/vulkan.h>
+
 #include <vector>
 
 #include "../types/Dimension.hpp"
@@ -35,7 +35,6 @@ namespace boitatah
 
         // Methods
         void render();
-        void init();
         void initWindow();
         bool isWindowClosed();
 
@@ -60,7 +59,7 @@ namespace boitatah
         void createVkInstance();
 
         // Logical and physical devices
-        void initializeDevices();
+        //void initializeDevices();
 
         void cleanup();
     };
