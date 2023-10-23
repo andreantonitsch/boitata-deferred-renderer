@@ -16,7 +16,8 @@ namespace boitatah
     {
         options = opts;
         initWindow();
-        createVkInstance();
+        createVulkan();
+        vk->createSwapchain();
     }
     /// END CONSTRUCTORS
 
@@ -25,12 +26,9 @@ namespace boitatah
         windowEvents();
     }
 
-
-    // VULKAN INSTANCE
-    void Renderer::createVkInstance()
+    void Renderer::createVulkan()
     {
         uint32_t extensionCount = 0;
-        // TODO unhappy about this.
 
         vk = new Vulkan({.appName = (char *)options.appName,
                          .extensions = requiredWindowExtensions(),
@@ -38,7 +36,6 @@ namespace boitatah
                          .debugMessages = options.debug,
                          .window = window});
     }
-    // END OF VULKAN INSTANCE
 
     // Clean Up // Destructors
     void Renderer::cleanup()
@@ -74,6 +71,11 @@ namespace boitatah
     bool Renderer::isWindowClosed()
     {
         return glfwWindowShouldClose(window);
+    }
+
+    void Renderer::createSwapchain()
+    {
+        vk->createSwapchain();
     }
 
     const std::vector<const char *> Renderer::requiredWindowExtensions()

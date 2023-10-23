@@ -12,6 +12,7 @@ int main()
                      .appName = "Test Frame Buffer",
                      .debug = true});
 
+
     while (!r.isWindowClosed())
     {
         r.render();

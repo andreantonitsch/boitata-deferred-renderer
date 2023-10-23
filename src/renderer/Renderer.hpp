@@ -9,6 +9,7 @@
 
 #include "../types/Dimension.hpp"
 #include "../vulkan/Vulkan.hpp"
+#include "../types/FORMAT.hpp"
 
 // Objective here is to have expose no lone vulkan types.
 // so that we can manage them. Thats what the vulkan class is for.
@@ -18,12 +19,13 @@
 namespace boitatah
 {
     using namespace vk;
-
+    
     struct RendererOptions
     {
         Dimension2<uint32_t> windowDimensions = {800, 600};
         const char *appName = "Window";
         bool debug = false;
+        FORMAT swapchainFormat = FORMAT::BGRA_8_SRGB;
     };
 
     class Renderer
@@ -37,6 +39,8 @@ namespace boitatah
         void render();
         void initWindow();
         bool isWindowClosed();
+
+        void createSwapchain();
 
     private:
         // Base objects
@@ -56,7 +60,7 @@ namespace boitatah
         void cleanupWindow();
 
         // Vulkan Instance
-        void createVkInstance();
+        void createVulkan();
 
         // Logical and physical devices
         //void initializeDevices();
