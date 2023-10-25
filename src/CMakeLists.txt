@@ -4,10 +4,8 @@ set(LIBRARY_OUTPUT_PATH ${OUTPUT_FOLDER}/libs)
 
 set(LIB_DR_SOURCES
             renderer/Renderer.cpp
-            vulkan/Vulkan.cpp
-            
-            
+            vulkan/Vulkan.cpp       
 )
 
-add_library(velly STATIC ${LIB_DR_SOURCES})
+add_library(boitatah STATIC ${LIB_DR_SOURCES})
 

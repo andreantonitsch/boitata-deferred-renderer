@@ -6,10 +6,14 @@
 #include <GLFW/glfw3.h>
 
 #include <vector>
+#include <string>
 
 #include "../types/Dimension.hpp"
 #include "../vulkan/Vulkan.hpp"
 #include "../types/FORMAT.hpp"
+#include "../types/RenderTarget.hpp"
+#include "../types/Shader.hpp"
+#include "../structures/Pool.hpp"
 
 // Objective here is to have expose no lone vulkan types.
 // so that we can manage them. Thats what the vulkan class is for.
@@ -20,6 +24,8 @@ namespace boitatah
 {
     using namespace vk;
     
+    template class Pool<Shader>;
+
     struct RendererOptions
     {
         Dimension2<uint32_t> windowDimensions = {800, 600};
@@ -39,10 +45,20 @@ namespace boitatah
         void render();
         void initWindow();
         bool isWindowClosed();
+        void buildSwapchain();
 
-        void createSwapchain();
+        // Object Creation
+        RenderTarget createRenderTarget();
+        RenderTarget get(Handle<RenderTarget> target);
+        void clear(Handle<RenderTarget> target);
+
+        Shader createShader(const std::vector<char> code);
 
     private:
+        //Pools
+        // Pool<RenderTarget> renderTargetPool;
+        Pool<Shader> shaderPool = Pool<Shader>({});
+        
         // Base objects
 
         // if this is a value member, then i have to deal with member initialization

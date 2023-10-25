@@ -1,0 +1,9 @@
+#ifndef BOITATAH_GRAPHICSTATE_HPP
+#define BOITATAH_GRAPHICSTATE_HPP
+
+
+struct GraphicState {
+
+};
+
+#endif //BOITATAH_GRAPHICSTATE_HPP

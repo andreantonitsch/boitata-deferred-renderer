@@ -10,6 +10,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_FOLDER}/examples)
 
 add_subdirectory(src/)
 
+add_executable(test_swapchain src/examples/test_swapchain.cpp)
 add_executable(test_framebuffer src/examples/test_framebuffer.cpp)
 
 #-lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
@@ -20,6 +21,8 @@ find_package(glfw3 REQUIRED)
 
 set(LIBS vulkan
          glfw
-         velly)
+         boitatah)
 
+target_link_libraries(test_swapchain ${LIBS})
 target_link_libraries(test_framebuffer ${LIBS})
+

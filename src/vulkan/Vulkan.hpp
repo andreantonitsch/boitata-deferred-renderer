@@ -8,6 +8,8 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <optional>
+#include "../types/FORMAT.hpp"
+#include "../types/COLOR_SPACE.hpp"
 
 namespace boitatah::vk
 {
@@ -49,7 +51,12 @@ namespace boitatah::vk
         Vulkan(VulkanOptions opts);
         ~Vulkan(void);
 
-        void createSwapchain();
+        void buildSwapchain(FORMAT scFormat);
+
+        VkPipeline createPSO();
+
+        VkShaderModule createShaderModule(const std::vector<char> &bytecode);
+        void destroyShaderModule(VkShaderModule module);
 
         // Copy assignment?
         // Vulkan& operator= (const Vulkan &v);//copy assignment
@@ -77,18 +84,9 @@ namespace boitatah::vk
         std::vector<const char *> deviceExtensions;
         std::vector<const char *> instanceExtensions;
 
-        void initVkInstance();
+#pragma region Vulkan Setup
 
-#pragma region SwapChain
-        SwapchainSupport getSwapchainSupport(VkPhysicalDevice device);
-        VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
-        VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-        VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availableModes);
-        void buildSwapchain();
-        void createSwapchainViews();
-#pragma endregion SwapChain
-
-#pragma region Bookkeeping-Startup
+        void initInstance();
 
         // Extensions
         bool checkRequiredExtensions(const std::vector<VkExtensionProperties> &available,
@@ -112,7 +110,23 @@ namespace boitatah::vk
         // Window Surfaces
         void createSurface(GLFWwindow *window);
 
-#pragma endregion Bookkeeping - Startup
+#pragma endregion Vulkan Setup
+
+#pragma region SwapChain
+        SwapchainSupport getSwapchainSupport(VkPhysicalDevice device);
+        VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats, FORMAT scFormat, COLOR_SPACE scColorSpace);
+        VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
+        VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availableModes);
+        void createSwapchain(FORMAT scFormat);
+        void createSwapchainViews(FORMAT scFormat);
+        void clearSwapchainViews();
+#pragma endregion SwapChain
+
+#pragma region Enum Conversion
+        template <typename From, typename To>
+        static To castEnum(From from);
+
+#pragma endregion Enum Conversion
     };
 
 

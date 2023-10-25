@@ -17,7 +17,7 @@ namespace boitatah
         options = opts;
         initWindow();
         createVulkan();
-        vk->createSwapchain();
+        buildSwapchain();
     }
     /// END CONSTRUCTORS
 
@@ -73,9 +73,9 @@ namespace boitatah
         return glfwWindowShouldClose(window);
     }
 
-    void Renderer::createSwapchain()
+    void Renderer::buildSwapchain()
     {
-        vk->createSwapchain();
+        vk->buildSwapchain(options.swapchainFormat);
     }
 
     const std::vector<const char *> Renderer::requiredWindowExtensions()

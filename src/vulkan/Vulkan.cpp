@@ -85,7 +85,7 @@ bvk::Vulkan::Vulkan(VulkanOptions opts)
 
     deviceExtensions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
-    initVkInstance();
+    initInstance();
     createSurface(opts.window);
     initializeDebugMessenger();
 
@@ -96,10 +96,8 @@ bvk::Vulkan::Vulkan(VulkanOptions opts)
 
 bvk::Vulkan::~Vulkan(void)
 {
-    for (auto view : swapchainViews)
-    {
-        vkDestroyImageView(device, view, nullptr);
-    }
+
+    clearSwapchainViews();
 
     vkDestroySwapchainKHR(device, swapchain, nullptr);
 
@@ -112,16 +110,7 @@ bvk::Vulkan::~Vulkan(void)
     vkDestroyInstance(instance, nullptr);
 }
 
-// does 3 main things.
-// chooses, format (e.g. rgba8 srgb), present mode (e.g. vsync) and extent(i.e. resolution
-// buildSwapchain();
-void boitatah::vk::Vulkan::createSwapchain()
-{
-    buildSwapchain();
-    createSwapchainViews();
-}
-
-void boitatah::vk::Vulkan::initVkInstance()
+void boitatah::vk::Vulkan::initInstance()
 {
     // App Info
     VkApplicationInfo appInfo{
@@ -181,7 +170,50 @@ void boitatah::vk::Vulkan::initVkInstance()
         throw std::runtime_error("Failed to create Vulkan Instance.");
 }
 
-#pragma region SwapChain
+#pragma region SWAPCHAIN
+
+void boitatah::vk::Vulkan::clearSwapchainViews()
+{
+    for (auto view : swapchainViews)
+    {
+        vkDestroyImageView(device, view, nullptr);
+    }
+}
+
+// does 3 main things.
+// chooses, format (e.g. rgba8 srgb), present mode (e.g. vsync) and extent(i.e. resolution
+// buildSwapchain();
+void boitatah::vk::Vulkan::buildSwapchain(FORMAT scFormat)
+{
+    clearSwapchainViews();
+    createSwapchain(scFormat);
+    createSwapchainViews(scFormat);
+}
+
+VkPipeline boitatah::vk::Vulkan::createPSO()
+{
+    return VkPipeline();
+}
+
+VkShaderModule boitatah::vk::Vulkan::createShaderModule(const std::vector<char> &bytecode)
+{
+    VkShaderModuleCreateInfo shaderCreate{
+        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .codeSize = bytecode.size(),
+        .pCode = reinterpret_cast<const uint32_t*>(bytecode.data()),
+    };
+
+    VkShaderModule module;
+    if(vkCreateShaderModule(device, &shaderCreate, nullptr, &module) != VK_SUCCESS){
+        throw std::runtime_error("Failed to create Shader Module");
+    }
+    return module;
+}
+
+
+void boitatah::vk::Vulkan::destroyShaderModule(VkShaderModule module){
+    vkDestroyShaderModule(device, module, nullptr);
+}
 
 boitatah::vk::SwapchainSupport boitatah::vk::Vulkan::getSwapchainSupport(VkPhysicalDevice device)
 {
@@ -224,13 +256,15 @@ boitatah::vk::SwapchainSupport boitatah::vk::Vulkan::getSwapchainSupport(VkPhysi
 }
 
 VkSurfaceFormatKHR boitatah::vk::Vulkan::chooseSwapSurfaceFormat(
-    const std::vector<VkSurfaceFormatKHR> &availableFormats)
+    const std::vector<VkSurfaceFormatKHR> &availableFormats,
+    FORMAT scFormat,
+    COLOR_SPACE scColorSpace)
 {
     for (const auto &surfaceFormat : availableFormats)
     {
         // GPUs usually display in BGRA [citation needed]
-        if (surfaceFormat.format == (VkFormat)FORMAT::BGRA_8_SRGB &&
-            surfaceFormat.colorSpace == (VkColorSpaceKHR)COLOR_SPACE::SRGB_NON_LINEAR)
+        if (surfaceFormat.format == (VkFormat)scFormat &&
+            surfaceFormat.colorSpace == (VkColorSpaceKHR)scColorSpace)
         {
             return surfaceFormat;
         }
@@ -278,11 +312,13 @@ VkExtent2D boitatah::vk::Vulkan::chooseSwapExtent(const VkSurfaceCapabilitiesKHR
     }
 }
 
-void boitatah::vk::Vulkan::buildSwapchain()
+void boitatah::vk::Vulkan::createSwapchain(FORMAT scFormat)
 {
     SwapchainSupport support = getSwapchainSupport(physicalDevice);
 
-    VkSurfaceFormatKHR format = chooseSwapSurfaceFormat(support.formats);
+    VkSurfaceFormatKHR format = chooseSwapSurfaceFormat(support.formats,
+                                                        FORMAT::BGRA_8_SRGB,
+                                                        COLOR_SPACE::SRGB_NON_LINEAR);
     VkPresentModeKHR mode = chooseSwapPresentMode(support.presentModes);
     VkExtent2D extent = chooseSwapExtent(support.capabilities);
 
@@ -353,7 +389,7 @@ void boitatah::vk::Vulkan::buildSwapchain()
     vkGetSwapchainImagesKHR(device, swapchain, &imageCount, swapchainImages.data());
 }
 
-void boitatah::vk::Vulkan::createSwapchainViews()
+void boitatah::vk::Vulkan::createSwapchainViews(FORMAT scFormat)
 {
     swapchainViews.resize(swapchainImages.size());
 
@@ -363,7 +399,7 @@ void boitatah::vk::Vulkan::createSwapchainViews()
             .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .image = swapchainImages[i],
             .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = (VkFormat)FORMAT::BGRA_8_SRGB,
+            .format = (VkFormat)scFormat,
             .components = {
                 .r = VK_COMPONENT_SWIZZLE_IDENTITY,
                 .g = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -379,7 +415,7 @@ void boitatah::vk::Vulkan::createSwapchainViews()
     }
 }
 
-#pragma endregion SwapChain
+#pragma endregion SWAPCHAIN
 
 #pragma region QUEUE_SETUP
 
@@ -643,6 +679,29 @@ bool boitatah::vk::Vulkan::checkDeviceExtensionSupport(VkPhysicalDevice device)
 }
 
 #pragma endregion VALIDATION
+
+#pragma region Enum Specializations
+
+
+    template <>
+    inline VkFormat boitatah::vk::Vulkan::castEnum(FORMAT format)
+    {
+        switch (format)
+        {
+        case RGBA_8_SRGB:
+            return VK_FORMAT_R8G8B8A8_SRGB;
+        case BGRA_8_SRGB:
+            return VK_FORMAT_B8G8R8A8_SRGB;
+        case RGBA_8_UNORM:
+            return VK_FORMAT_R8G8B8A8_UNORM;
+        case BGRA_8_UNORM:
+            return VK_FORMAT_B8G8R8A8_UNORM;
+        default:
+            return VK_FORMAT_UNDEFINED;
+        }
+    }
+    template VkFormat boitatah::vk::Vulkan::castEnum<FORMAT, VkFormat>(FORMAT);
+#pragma endregion Enum Specializations
 
 // bvk::Vulkan &bvk::Vulkan::operator=(const Vulkan &v)
 // {

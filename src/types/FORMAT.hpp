@@ -9,9 +9,10 @@ namespace boitatah
     // TODO We can decouple this in the future with a map.
     enum FORMAT
     {
-        RGBA_8_SRGB = VK_FORMAT_R8G8B8A8_SRGB,
-        RGBA_8_UNORM = VK_FORMAT_B8G8R8A8_UNORM,
-        BGRA_8_SRGB = VK_FORMAT_B8G8R8A8_SRGB
+        RGBA_8_SRGB = 1,
+        BGRA_8_SRGB = 2,
+        RGBA_8_UNORM = 3,
+        BGRA_8_UNORM = 4,
     };
 
 }
