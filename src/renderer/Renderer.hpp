@@ -11,7 +11,6 @@
 #include "../types/Dimension.hpp"
 #include "../vulkan/Vulkan.hpp"
 #include "../types/FORMAT.hpp"
-#include "../types/RenderTarget.hpp"
 #include "../types/Shader.hpp"
 #include "../structures/Pool.hpp"
 
@@ -48,16 +47,17 @@ namespace boitatah
         void buildSwapchain();
 
         // Object Creation
-        RenderTarget createRenderTarget();
-        RenderTarget get(Handle<RenderTarget> target);
-        void clear(Handle<RenderTarget> target);
+        // RenderTarget createRenderTarget();
+        // RenderTarget get(Handle<RenderTarget> target);
+        // void clear(Handle<RenderTarget> target);
 
-        Shader createShader(CreateShader data);
+        Handle<Shader> createShader(CreateShader data);
+        void destroyShader(Handle<Shader> shader);
 
     private:
         //Pools
         // Pool<RenderTarget> renderTargetPool;
-        Pool<Shader> shaderPool = Pool<Shader>({});
+        Pool<Shader> shaderPool = Pool<Shader>({.size = 100});
         
         // Base objects
 

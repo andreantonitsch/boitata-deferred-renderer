@@ -78,9 +78,26 @@ namespace boitatah
         vk->buildSwapchain(options.swapchainFormat);
     }
 
-    Shader Renderer::createShader(CreateShader data)
+    Handle<Shader> Renderer::createShader(CreateShader data)
     {
-        return Shader();
+        Shader shader{
+            .name = data.name,
+            .vert = vk->createShaderModule(data.vert.byteCode),
+            .frag = vk->createShaderModule(data.frag.byteCode),
+            };
+        return shaderPool.set(shader);
+    }
+
+    void Renderer::destroyShader(Handle<Shader> handle)
+    {
+        Shader shader;
+        if(shaderPool.clear(handle, shader)){
+            vk->destroyShaderModule(shader.vert);
+            vk->destroyShaderModule(shader.frag);
+        }
+        else {
+            std::cout << "Shader Double Destruction" << std::endl;
+        }
     }
 
     const std::vector<const char *> Renderer::requiredWindowExtensions()

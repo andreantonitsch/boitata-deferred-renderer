@@ -7,11 +7,6 @@
 namespace boitatah
 {
 
-    struct ShaderModule
-    {
-
-    };
-
     struct ShaderStage{
         std::vector<char> byteCode;
         const std::string entryFunction = "main";
@@ -26,10 +21,10 @@ namespace boitatah
     struct Shader
     {
         std::string name;
-        
-
-        Handle<ShaderModule> vert;
-        Handle<ShaderModule> vert;
+        VkShaderModule vert;
+        VkShaderModule frag;
+        //ShaderStage vert;
+        //ShaderStage frag;
 
         // ShaderHot hot;
         // ShaderCold cold;

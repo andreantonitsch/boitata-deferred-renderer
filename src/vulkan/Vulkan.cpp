@@ -13,12 +13,51 @@
 #include "../types/FORMAT.hpp"
 #include "../types/COLOR_SPACE.hpp"
 #include "../types/FRAME_BUFFERING.hpp"
+#include "../types/Shader.hpp"
 
 namespace bvk = boitatah::vk;
 
 using boitatah::COLOR_SPACE;
 using boitatah::FORMAT;
 using boitatah::FRAME_BUFFERING;
+
+#pragma region Enum Specializations
+
+
+    template <>
+    inline VkFormat boitatah::vk::Vulkan::castEnum(FORMAT format)
+    {
+        switch (format)
+        {
+        case RGBA_8_SRGB:
+            return VK_FORMAT_R8G8B8A8_SRGB;
+        case BGRA_8_SRGB:
+            return VK_FORMAT_B8G8R8A8_SRGB;
+        case RGBA_8_UNORM:
+            return VK_FORMAT_R8G8B8A8_UNORM;
+        case BGRA_8_UNORM:
+            return VK_FORMAT_B8G8R8A8_UNORM;
+        default:
+            return VK_FORMAT_UNDEFINED;
+        }
+    }
+    template VkFormat boitatah::vk::Vulkan::castEnum<FORMAT, VkFormat>(FORMAT);
+    
+    template <>
+    inline VkColorSpaceKHR boitatah::vk::Vulkan::castEnum(COLOR_SPACE colorSpace)
+    {
+        switch (colorSpace)
+        {
+        case SRGB_NON_LINEAR:
+            return VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+        default:
+            return VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+        }
+    }
+    template VkColorSpaceKHR boitatah::vk::Vulkan::castEnum<COLOR_SPACE, VkColorSpaceKHR>(COLOR_SPACE);
+    
+
+#pragma endregion Enum Specializations
 
 #pragma region Validationsupportjank
 /// Validation Support Jank.
@@ -263,8 +302,8 @@ VkSurfaceFormatKHR boitatah::vk::Vulkan::chooseSwapSurfaceFormat(
     for (const auto &surfaceFormat : availableFormats)
     {
         // GPUs usually display in BGRA [citation needed]
-        if (surfaceFormat.format == (VkFormat)scFormat &&
-            surfaceFormat.colorSpace == (VkColorSpaceKHR)scColorSpace)
+        if (surfaceFormat.format ==  castEnum<FORMAT, VkFormat>(scFormat) &&
+            surfaceFormat.colorSpace == castEnum<COLOR_SPACE,VkColorSpaceKHR>(scColorSpace))
         {
             return surfaceFormat;
         }
@@ -399,7 +438,7 @@ void boitatah::vk::Vulkan::createSwapchainViews(FORMAT scFormat)
             .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .image = swapchainImages[i],
             .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = (VkFormat)scFormat,
+            .format = castEnum<FORMAT, VkFormat>(scFormat),
             .components = {
                 .r = VK_COMPONENT_SWIZZLE_IDENTITY,
                 .g = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -680,28 +719,7 @@ bool boitatah::vk::Vulkan::checkDeviceExtensionSupport(VkPhysicalDevice device)
 
 #pragma endregion VALIDATION
 
-#pragma region Enum Specializations
 
-
-    template <>
-    inline VkFormat boitatah::vk::Vulkan::castEnum(FORMAT format)
-    {
-        switch (format)
-        {
-        case RGBA_8_SRGB:
-            return VK_FORMAT_R8G8B8A8_SRGB;
-        case BGRA_8_SRGB:
-            return VK_FORMAT_B8G8R8A8_SRGB;
-        case RGBA_8_UNORM:
-            return VK_FORMAT_R8G8B8A8_UNORM;
-        case BGRA_8_UNORM:
-            return VK_FORMAT_B8G8R8A8_UNORM;
-        default:
-            return VK_FORMAT_UNDEFINED;
-        }
-    }
-    template VkFormat boitatah::vk::Vulkan::castEnum<FORMAT, VkFormat>(FORMAT);
-#pragma endregion Enum Specializations
 
 // bvk::Vulkan &bvk::Vulkan::operator=(const Vulkan &v)
 // {

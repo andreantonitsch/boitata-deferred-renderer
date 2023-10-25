@@ -29,12 +29,11 @@ namespace boitatah
         Pool(PoolOptions options);
         //~Pool(void);
 
-        T *get(Handle<T> handle);
+        bool get(Handle<T> handle, T& item);
         Handle<T> set(T elem);
-        T *clear(Handle<T> handle);
+        bool clear(Handle<T> handle, T& item);
 
     private:
-        std::vector<T> data;
         std::vector<uint32_t> generations;
         std::vector<T> pool;
 
@@ -65,45 +64,46 @@ boitatah::Pool<T>::Pool(PoolOptions options)
 
     pool.resize(options.size);
 
-    quantity = 0;
     stackTop = 0;
 }
 
 template <typename T>
-T *boitatah::Pool<T>::get(Handle<T> handle)
+bool boitatah::Pool<T>::get(Handle<T> handle, T& item)
 {
     if (generations[handle.i] != handle.gen)
     {
-        T *failed = nullptr;
-        return failed;
+        return false;
     }
-    return &data[handle.i];
+    item = pool[handle.i];
+    return true;
 }
+
 template <typename T>
 boitatah::Handle<T> boitatah::Pool<T>::set(T elem)
 {
-    if (stackTop == quantity)
+    if (stackTop == pool.size())
         return Handle<T>{.gen = 0};
+
     uint32_t i = popStack();
-    data[i] = elem;
+    pool[i] = elem;
     Handle<T> handle{.i = i, .gen = generations[i]};
     return handle;
 }
 
 // Returns an element T if it was successfully removed from the pool.
 template <typename T>
-T *boitatah::Pool<T>::clear(Handle<T> handle)
+bool boitatah::Pool<T>::clear(Handle<T> handle, T& item)
 {
     if (generations[handle.i] != handle.gen)
     {
-        T *succeed = nullptr;
-        return succeed;
+        return false;
     }
 
     // increament in case of removal
     generations[handle.i] = generations[handle.i] + 1;
     pushStack(handle.i);
-    return &data[handle.i];
+    item = pool[handle.i];
+    return true;
 }
 
 template <typename T>

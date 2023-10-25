@@ -3,27 +3,39 @@
 #include <iostream>
 // #include <unistd.h>
 #include "../types/FORMAT.hpp"
-#include "../types/RenderTarget.hpp"
+#include "../types/Shader.hpp"
+#include "../utils/utils.hpp"
+#include "../structures/Pool.hpp"
 
-namespace btt = boitatah;
+using namespace boitatah;
 
 int main()
 {
 
-    btt::Renderer r({.windowDimensions = {1024, 768},
+    Renderer r({.windowDimensions = {1024, 768},
                      .appName = "Test Frame Buffer",
                      .debug = true,
                      .swapchainFormat = boitatah::FORMAT::BGRA_8_SRGB});
 
-    //RenderTarget target = r.createFrameBuffer();
+    Handle<Shader> shader = r.createShader({
+        .name = "test",
+        .vert = {
+            .byteCode = utils::readFile("./src/vert.spv"),
+            .entryFunction = "main"},
+        .frag = {
+            .byteCode = utils::readFile("./src/frag.spv"),
+            .entryFunction = "main"},
+    });
+
+    r.destroyShader(shader);
 
 
     while (!r.isWindowClosed())
     {
-    //    r.render(target);
-    //    r.present(target);
+        r.render();
+        //    r.present(target);
     }
 
- 
+
     return EXIT_SUCCESS;
 }
