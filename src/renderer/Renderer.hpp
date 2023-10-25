@@ -52,7 +52,7 @@ namespace boitatah
         RenderTarget get(Handle<RenderTarget> target);
         void clear(Handle<RenderTarget> target);
 
-        Shader createShader(const std::vector<char> code);
+        Shader createShader(CreateShader data);
 
     private:
         //Pools

@@ -78,6 +78,11 @@ namespace boitatah
         vk->buildSwapchain(options.swapchainFormat);
     }
 
+    Shader Renderer::createShader(CreateShader data)
+    {
+        return Shader();
+    }
+
     const std::vector<const char *> Renderer::requiredWindowExtensions()
     {
         std::vector<const char *> requiredExtensions;

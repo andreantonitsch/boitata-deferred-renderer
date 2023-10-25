@@ -1,9 +1,0 @@
-#ifndef BOITATAH_RENDERTARGET_HPP
-#define BOITATAH_RENDERTARGET_HPP
-
-struct RenderTarget{
-
-};
-
-
-#endif //BOITATAH_RENDERTARGET_HPP
