@@ -8,8 +8,10 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <optional>
-#include "../types/FORMAT.hpp"
-#include "../types/COLOR_SPACE.hpp"
+#include "../types/BttEnums.hpp"
+#include "../types/Shader.hpp"
+using boitatah::Shader;
+using boitatah::ShaderDesc;
 
 namespace boitatah::vk
 {
@@ -53,10 +55,11 @@ namespace boitatah::vk
 
         void buildSwapchain(FORMAT scFormat);
 
-        VkPipeline createPSO();
-
         VkShaderModule createShaderModule(const std::vector<char> &bytecode);
         void destroyShaderModule(VkShaderModule module);
+
+        void buildShader(const ShaderDesc &desc, Shader& shader);
+
 
         // Copy assignment?
         // Vulkan& operator= (const Vulkan &v);//copy assignment
@@ -83,6 +86,14 @@ namespace boitatah::vk
         std::vector<const char *> validationLayers;
         std::vector<const char *> deviceExtensions;
         std::vector<const char *> instanceExtensions;
+
+        void injectRenderPass(const ShaderDesc &desc, Shader& shader);
+        void injectPipelineLayout(const ShaderDesc &desc, Shader& shader);
+        void injectPSO(const ShaderDesc &desc, Shader& shader);
+        
+        void destroyPSO(VkPipeline pipeline);
+        void destroyPipelineLayout(VkPipelineLayout layout);
+        void destroyRenderPass(VkRenderPass pass);
 
 #pragma region Vulkan Setup
 

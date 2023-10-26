@@ -10,9 +10,7 @@
 #include <cstdint>
 #include <limits>
 
-#include "../types/FORMAT.hpp"
-#include "../types/COLOR_SPACE.hpp"
-#include "../types/FRAME_BUFFERING.hpp"
+#include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
 
 namespace bvk = boitatah::vk;
@@ -20,42 +18,59 @@ namespace bvk = boitatah::vk;
 using boitatah::COLOR_SPACE;
 using boitatah::FORMAT;
 using boitatah::FRAME_BUFFERING;
+using boitatah::Shader;
+using boitatah::ShaderDesc;
 
 #pragma region Enum Specializations
 
+template <>
+inline VkFormat boitatah::vk::Vulkan::castEnum(FORMAT format)
+{
+    switch (format)
+    {
+    case RGBA_8_SRGB:
+        return VK_FORMAT_R8G8B8A8_SRGB;
+    case BGRA_8_SRGB:
+        return VK_FORMAT_B8G8R8A8_SRGB;
+    case RGBA_8_UNORM:
+        return VK_FORMAT_R8G8B8A8_UNORM;
+    case BGRA_8_UNORM:
+        return VK_FORMAT_B8G8R8A8_UNORM;
+    default:
+        return VK_FORMAT_UNDEFINED;
+    }
+}
+template VkFormat boitatah::vk::Vulkan::castEnum<FORMAT, VkFormat>(FORMAT);
 
-    template <>
-    inline VkFormat boitatah::vk::Vulkan::castEnum(FORMAT format)
+template <>
+inline VkColorSpaceKHR boitatah::vk::Vulkan::castEnum(COLOR_SPACE colorSpace)
+{
+    switch (colorSpace)
     {
-        switch (format)
-        {
-        case RGBA_8_SRGB:
-            return VK_FORMAT_R8G8B8A8_SRGB;
-        case BGRA_8_SRGB:
-            return VK_FORMAT_B8G8R8A8_SRGB;
-        case RGBA_8_UNORM:
-            return VK_FORMAT_R8G8B8A8_UNORM;
-        case BGRA_8_UNORM:
-            return VK_FORMAT_B8G8R8A8_UNORM;
-        default:
-            return VK_FORMAT_UNDEFINED;
-        }
+    case SRGB_NON_LINEAR:
+        return VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+    default:
+        return VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
     }
-    template VkFormat boitatah::vk::Vulkan::castEnum<FORMAT, VkFormat>(FORMAT);
-    
-    template <>
-    inline VkColorSpaceKHR boitatah::vk::Vulkan::castEnum(COLOR_SPACE colorSpace)
+}
+template VkColorSpaceKHR boitatah::vk::Vulkan::castEnum<COLOR_SPACE, VkColorSpaceKHR>(COLOR_SPACE);
+
+template <>
+inline VkPresentModeKHR boitatah::vk::Vulkan::castEnum(FRAME_BUFFERING buffering_mode)
+{
+    switch (buffering_mode)
     {
-        switch (colorSpace)
-        {
-        case SRGB_NON_LINEAR:
-            return VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-        default:
-            return VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-        }
+    case NO_BUFFER:
+        return VK_PRESENT_MODE_IMMEDIATE_KHR;
+    case VSYNC:
+        return VK_PRESENT_MODE_FIFO_KHR;
+    case TRIPLE_BUFFER:
+        return VK_PRESENT_MODE_MAILBOX_KHR;
+    default:
+        return VK_PRESENT_MODE_FIFO_KHR;
     }
-    template VkColorSpaceKHR boitatah::vk::Vulkan::castEnum<COLOR_SPACE, VkColorSpaceKHR>(COLOR_SPACE);
-    
+}
+template VkPresentModeKHR boitatah::vk::Vulkan::castEnum<FRAME_BUFFERING, VkPresentModeKHR>(FRAME_BUFFERING);
 
 #pragma endregion Enum Specializations
 
@@ -107,6 +122,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 }
 #pragma endregion Validationsupportjank
 /// End Validation Support Jank
+
 
 bvk::Vulkan::Vulkan(VulkanOptions opts)
 {
@@ -209,6 +225,222 @@ void boitatah::vk::Vulkan::initInstance()
         throw std::runtime_error("Failed to create Vulkan Instance.");
 }
 
+#pragma region PSO Building
+
+void boitatah::vk::Vulkan::buildShader(const ShaderDesc &desc, Shader &shader)
+{
+    injectPipelineLayout(desc, shader);
+    injectRenderPass(desc, shader);
+    injectPSO(desc, shader);
+}
+
+void boitatah::vk::Vulkan::injectRenderPass(const ShaderDesc &desc, Shader &shader)
+{
+    VkAttachmentDescription colorAttachment{
+        .format = swapchainFormat,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+    };
+
+    //Directly related to layout(location = 0) in shader.
+    VkAttachmentReference colorAttachmentRef{
+        .attachment = 0,
+        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+    };
+
+    VkSubpassDescription subpass{
+        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &colorAttachmentRef,
+    };
+
+    VkRenderPassCreateInfo renderPassCreate{
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .attachmentCount = 1,
+        .pAttachments = &colorAttachment,
+        .subpassCount = 1,
+        .pSubpasses = &subpass
+    };
+
+    if(vkCreateRenderPass(device, &renderPassCreate, nullptr, &(shader.renderPass))!= VK_SUCCESS){
+        throw std::runtime_error("Failed to create Render Pass");
+    }
+
+}
+
+void boitatah::vk::Vulkan::injectPipelineLayout(const ShaderDesc &desc, Shader &shader)
+{
+    VkPipelineLayoutCreateInfo layoutCreate{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .setLayoutCount = 0,
+        .pSetLayouts = nullptr,
+        .pushConstantRangeCount = 0,
+        .pPushConstantRanges = nullptr, 
+    };
+
+    if(vkCreatePipelineLayout(device, &layoutCreate, nullptr, &(shader.layout)) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create Pipeline Layout");
+    } 
+}
+
+void boitatah::vk::Vulkan::injectPSO(const ShaderDesc &desc, Shader &shader)
+{
+    std::vector<VkDynamicState> dynamicStates = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR,
+    };
+    
+    VkPipelineDynamicStateCreateInfo dynamicState{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
+        .pDynamicStates = dynamicStates.data()
+    };
+
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .vertexBindingDescriptionCount = 0,
+        .pVertexBindingDescriptions = nullptr,
+        .vertexAttributeDescriptionCount = 0,
+        .pVertexAttributeDescriptions = nullptr
+
+    };
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .primitiveRestartEnable = VK_FALSE
+    };
+
+    //Dynamic state
+    VkPipelineViewportStateCreateInfo dynamicViewportState{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .viewportCount = 1,
+        .scissorCount = 1
+    };
+
+    VkPipelineRasterizationStateCreateInfo rasterizer{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .depthClampEnable = VK_FALSE,
+        .rasterizerDiscardEnable = VK_FALSE, //if true rasterizes discards geometry.
+        .polygonMode = VK_POLYGON_MODE_FILL,
+        .cullMode = VK_CULL_MODE_BACK_BIT,
+        .frontFace = VK_FRONT_FACE_CLOCKWISE,
+        
+        .depthBiasEnable = VK_FALSE,
+        .depthBiasConstantFactor = 0.0f,
+        .depthBiasClamp = 0.0f,
+        .depthBiasSlopeFactor = 0.0f,
+
+        .lineWidth = 1.0f,
+    };
+
+    VkPipelineMultisampleStateCreateInfo multisampling{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+        .sampleShadingEnable = VK_FALSE,
+        .minSampleShading = 1.0f,
+        .pSampleMask = nullptr,
+        .alphaToCoverageEnable= VK_FALSE,
+        .alphaToOneEnable = VK_FALSE,
+    };
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachment{
+        .blendEnable = VK_FALSE,
+        .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
+        .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+        .colorBlendOp = VK_BLEND_OP_ADD,
+        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+        .alphaBlendOp = VK_BLEND_OP_ADD,
+        .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+        VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+    };
+
+    VkPipelineColorBlendStateCreateInfo colorBlending{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .logicOpEnable = VK_FALSE,
+        .logicOp = VK_LOGIC_OP_COPY,
+        .attachmentCount = 1,
+        .pAttachments = &colorBlendAttachment,
+        .blendConstants = { 0.0f, 0.0f, 0.0f, 0.0f},
+    };
+
+    VkPipelineShaderStageCreateInfo stages[] = {
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .stage = VK_SHADER_STAGE_VERTEX_BIT,
+            .module = shader.vert,
+            .pName = desc.vert.entryFunction.c_str()
+        },
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .module = shader.frag,
+            .pName = desc.frag.entryFunction.c_str()
+        }
+    };
+
+    VkGraphicsPipelineCreateInfo pipelineInfo{
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .stageCount = 2,
+        .pStages = stages,
+        .pVertexInputState = &vertexInputInfo,
+        .pInputAssemblyState = &inputAssembly,
+        .pViewportState = &dynamicViewportState,
+        .pRasterizationState = &rasterizer,
+        .pMultisampleState = &multisampling,
+        .pDepthStencilState = nullptr,
+        .pColorBlendState = &colorBlending,
+        .pDynamicState = &dynamicState,
+        .layout = shader.layout,
+        .renderPass = shader.renderPass,
+        .subpass = 0,
+
+        // for deriving pipelines.
+        .basePipelineHandle = VK_NULL_HANDLE,
+        .basePipelineIndex = -1,
+    };
+
+    if(vkCreateGraphicsPipelines(device, 
+    VK_NULL_HANDLE, 
+    1, 
+    &pipelineInfo, 
+    nullptr,
+    &(shader.PSO) )!= VK_SUCCESS){
+        throw std::runtime_error("Failed to create pipeline");
+    }
+
+}
+
+VkShaderModule boitatah::vk::Vulkan::createShaderModule(const std::vector<char> &bytecode)
+{
+    VkShaderModuleCreateInfo shaderCreate{
+        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .codeSize = bytecode.size(),
+        .pCode = reinterpret_cast<const uint32_t *>(bytecode.data()),
+    };
+
+    VkShaderModule module;
+    if (vkCreateShaderModule(device, &shaderCreate, nullptr, &module) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create Shader Module");
+    }
+    return module;
+}
+
+void boitatah::vk::Vulkan::destroyShaderModule(VkShaderModule module)
+{
+    vkDestroyShaderModule(device, module, nullptr);
+}
+
+#pragma endregion PSO Building
+
 #pragma region SWAPCHAIN
 
 void boitatah::vk::Vulkan::clearSwapchainViews()
@@ -229,30 +461,6 @@ void boitatah::vk::Vulkan::buildSwapchain(FORMAT scFormat)
     createSwapchainViews(scFormat);
 }
 
-VkPipeline boitatah::vk::Vulkan::createPSO()
-{
-    return VkPipeline();
-}
-
-VkShaderModule boitatah::vk::Vulkan::createShaderModule(const std::vector<char> &bytecode)
-{
-    VkShaderModuleCreateInfo shaderCreate{
-        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-        .codeSize = bytecode.size(),
-        .pCode = reinterpret_cast<const uint32_t*>(bytecode.data()),
-    };
-
-    VkShaderModule module;
-    if(vkCreateShaderModule(device, &shaderCreate, nullptr, &module) != VK_SUCCESS){
-        throw std::runtime_error("Failed to create Shader Module");
-    }
-    return module;
-}
-
-
-void boitatah::vk::Vulkan::destroyShaderModule(VkShaderModule module){
-    vkDestroyShaderModule(device, module, nullptr);
-}
 
 boitatah::vk::SwapchainSupport boitatah::vk::Vulkan::getSwapchainSupport(VkPhysicalDevice device)
 {
@@ -302,8 +510,8 @@ VkSurfaceFormatKHR boitatah::vk::Vulkan::chooseSwapSurfaceFormat(
     for (const auto &surfaceFormat : availableFormats)
     {
         // GPUs usually display in BGRA [citation needed]
-        if (surfaceFormat.format ==  castEnum<FORMAT, VkFormat>(scFormat) &&
-            surfaceFormat.colorSpace == castEnum<COLOR_SPACE,VkColorSpaceKHR>(scColorSpace))
+        if (surfaceFormat.format == castEnum<FORMAT, VkFormat>(scFormat) &&
+            surfaceFormat.colorSpace == castEnum<COLOR_SPACE, VkColorSpaceKHR>(scColorSpace))
         {
             return surfaceFormat;
         }
@@ -316,14 +524,13 @@ VkPresentModeKHR boitatah::vk::Vulkan::chooseSwapPresentMode(
 {
     for (const auto &mode : availableModes)
     {
-        if (mode == (VkPresentModeKHR)FRAME_BUFFERING::TRIPLE_BUFFER)
+        if (mode == castEnum<FRAME_BUFFERING, VkPresentModeKHR>(FRAME_BUFFERING::TRIPLE_BUFFER))
         {
             return mode;
         }
     }
 
-    // TODO jank
-    return (VkPresentModeKHR)FRAME_BUFFERING::VSYNC;
+    return castEnum<FRAME_BUFFERING, VkPresentModeKHR>(FRAME_BUFFERING::VSYNC);
 }
 
 VkExtent2D boitatah::vk::Vulkan::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities)
@@ -718,8 +925,6 @@ bool boitatah::vk::Vulkan::checkDeviceExtensionSupport(VkPhysicalDevice device)
 }
 
 #pragma endregion VALIDATION
-
-
 
 // bvk::Vulkan &bvk::Vulkan::operator=(const Vulkan &v)
 // {

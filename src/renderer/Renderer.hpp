@@ -10,7 +10,7 @@
 
 #include "../types/Dimension.hpp"
 #include "../vulkan/Vulkan.hpp"
-#include "../types/FORMAT.hpp"
+#include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
 #include "../structures/Pool.hpp"
 
@@ -51,7 +51,7 @@ namespace boitatah
         // RenderTarget get(Handle<RenderTarget> target);
         // void clear(Handle<RenderTarget> target);
 
-        Handle<Shader> createShader(CreateShader data);
+        Handle<Shader> createShader(ShaderDesc data);
         void destroyShader(Handle<Shader> shader);
 
     private:

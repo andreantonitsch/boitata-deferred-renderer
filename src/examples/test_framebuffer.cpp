@@ -2,7 +2,7 @@
 // #pragma once
 #include <iostream>
 // #include <unistd.h>
-#include "../types/FORMAT.hpp"
+#include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
 #include "../utils/utils.hpp"
 #include "../structures/Pool.hpp"
@@ -20,10 +20,10 @@ int main()
     Handle<Shader> shader = r.createShader({
         .name = "test",
         .vert = {
-            .byteCode = utils::readFile("./src/vert.spv"),
+            .byteCode = utils::readFile("./src/09_shader_base_vert.spv"),
             .entryFunction = "main"},
         .frag = {
-            .byteCode = utils::readFile("./src/frag.spv"),
+            .byteCode = utils::readFile("./src/09_shader_base_frag.spv"),
             .entryFunction = "main"},
     });
 
@@ -33,7 +33,6 @@ int main()
     while (!r.isWindowClosed())
     {
         r.render();
-        //    r.present(target);
     }
 
 

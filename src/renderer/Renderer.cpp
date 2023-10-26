@@ -78,13 +78,16 @@ namespace boitatah
         vk->buildSwapchain(options.swapchainFormat);
     }
 
-    Handle<Shader> Renderer::createShader(CreateShader data)
+    Handle<Shader> Renderer::createShader(ShaderDesc data)
     {
         Shader shader{
             .name = data.name,
             .vert = vk->createShaderModule(data.vert.byteCode),
             .frag = vk->createShaderModule(data.frag.byteCode),
             };
+
+        vk->buildShader(data, shader);
+
         return shaderPool.set(shader);
     }
 
