@@ -95,8 +95,7 @@ namespace boitatah
     {
         Shader shader;
         if(shaderPool.clear(handle, shader)){
-            vk->destroyShaderModule(shader.vert);
-            vk->destroyShaderModule(shader.frag);
+            vk->destroyShader(shader);
         }
         else {
             std::cout << "Shader Double Destruction" << std::endl;

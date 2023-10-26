@@ -56,7 +56,7 @@ namespace boitatah::vk
         void buildSwapchain(FORMAT scFormat);
 
         VkShaderModule createShaderModule(const std::vector<char> &bytecode);
-        void destroyShaderModule(VkShaderModule module);
+        void destroyShader(Shader shader);
 
         void buildShader(const ShaderDesc &desc, Shader& shader);
 

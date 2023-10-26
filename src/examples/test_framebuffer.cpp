@@ -27,14 +27,11 @@ int main()
             .entryFunction = "main"},
     });
 
-    r.destroyShader(shader);
-
-
     while (!r.isWindowClosed())
     {
         r.render();
     }
 
-
+    r.destroyShader(shader);
     return EXIT_SUCCESS;
 }

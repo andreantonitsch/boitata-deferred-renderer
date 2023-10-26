@@ -434,9 +434,13 @@ VkShaderModule boitatah::vk::Vulkan::createShaderModule(const std::vector<char> 
     return module;
 }
 
-void boitatah::vk::Vulkan::destroyShaderModule(VkShaderModule module)
+void boitatah::vk::Vulkan::destroyShader(Shader shader)
 {
-    vkDestroyShaderModule(device, module, nullptr);
+    vkDestroyShaderModule(device, shader.vert, nullptr);
+    vkDestroyShaderModule(device, shader.frag, nullptr);
+    vkDestroyRenderPass(device, shader.renderPass, nullptr);
+    vkDestroyPipelineLayout(device, shader.layout, nullptr);
+    vkDestroyPipeline(device, shader.PSO, nullptr);
 }
 
 #pragma endregion PSO Building
