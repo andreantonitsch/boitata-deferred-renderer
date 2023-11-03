@@ -55,11 +55,19 @@ namespace boitatah::vk
         void buildSwapchain(FORMAT scFormat);
 
         VkShaderModule createShaderModule(const std::vector<char> &bytecode);
+        VkFramebuffer createFramebuffer(const FramebufferDescVk &desc);
+        VkAttachmentDescription createAttachmentDescription(const AttachmentDesc &attDesc);
+        VkRenderPass createRenderPass(const RenderPassDesc &desc);
+        VkImage createImage(const ImageDesc &desc);
+        VkPipelineLayout createPipelineLayout(const PipelineLayoutDesc &desc);
         void destroyShader(Shader &shader);
         void destroyRenderpass(RenderPass &pass);
         void destroyFramebuffer(Framebuffer &framebuffer);
+        void destroyImage(Image image);
         void buildShader(const ShaderDescVk &desc, Shader& shader);
+        
 
+        std::vector<Image> getSwapchainImages();
 
         // Copy assignment?
         // Vulkan& operator= (const Vulkan &v);//copy assignment
@@ -79,16 +87,15 @@ namespace boitatah::vk
 
         VkSwapchainKHR swapchain = VK_NULL_HANDLE;
         std::vector<VkImage> swapchainImages;
+        std::vector<VkImageView> swapchainViews;
         VkFormat swapchainFormat;
         VkExtent2D swapchainExtent;
-        std::vector<VkImageView> swapchainViews;
 
         std::vector<const char *> validationLayers;
         std::vector<const char *> deviceExtensions;
         std::vector<const char *> instanceExtensions;
 
-        VkRenderPass createRenderpass(const RenderPassDesc &desc);
-        void injectPipelineLayout(const ShaderDesc &desc, Shader& shader);
+        //VkRenderPass createRenderpass(const RenderPassDesc &desc);
         
 
 #pragma region Vulkan Setup
@@ -127,6 +134,7 @@ namespace boitatah::vk
         void createSwapchain(FORMAT scFormat);
         void createSwapchainViews(FORMAT scFormat);
         void clearSwapchainViews();
+        void clearSwapchainImages();
 #pragma endregion SwapChain
 
 #pragma region Enum Conversion

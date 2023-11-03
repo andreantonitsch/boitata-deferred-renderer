@@ -15,6 +15,8 @@ namespace boitatah{
     struct Image{
         VkImage image;
         VkImageView view;
+        Vector2<uint32_t> dimensions;
+        bool swapchain  = false;
     };
 
     struct AttachmentDesc{
@@ -36,13 +38,23 @@ namespace boitatah{
         VkRenderPass renderPass;
     };
 
+    struct FramebufferDescVk{
+        std::vector<VkImageView> views;
+        VkRenderPass pass;
+        Vector2<uint32_t> dimensions;
+    };
+
     // If VK_NULL_HANDLE a new image is created.
     struct FramebufferDesc{
+        //Either RenderPassDesc or pass need to be non null.
         RenderPassDesc renderpassDesc;
+        RenderPass pass;
+
         std::vector<AttachmentDesc> attachments;
+        std::vector<Handle<Image>> attachmentImages;
         Vector2<uint32_t> dimensions;
-        VkImage image = VK_NULL_HANDLE;
-        VkImageView imageView = VK_NULL_HANDLE;
+        //If image handles are VK_NULL_HANDLE imageDesc is mandatory.
+        ImageDesc imageDesc;
     };
 
     //attachments here are images

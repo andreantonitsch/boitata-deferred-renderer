@@ -8,7 +8,13 @@
 
 namespace boitatah
 {
+    struct PipelineLayoutDesc{
+        
+    };
 
+    struct PipelineLayout{
+        VkPipelineLayout layout;
+    };
 
     struct ShaderModule{
         VkShaderModule shaderModule;

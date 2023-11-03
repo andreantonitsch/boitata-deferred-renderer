@@ -20,7 +20,6 @@ int main()
         .appName = "Test Frame Buffer",
         .debug = true,
         .swapchainFormat = FORMAT::BGRA_8_SRGB,
-        //.renderpassFormat = FORMAT::RGBA_8_SRGB
     });
 
     std::vector<AttachmentDesc> attachments{
@@ -31,22 +30,21 @@ int main()
          .finalLayout = COLOR_ATT_OPTIMAL},
     };
 
-    Handle<Framebuffer> framebuffer = r.createFramebuffer(
-        {
-            .renderpassDesc = {.format = RGBA_8_SRGB, .attachments = attachments},
-            .attachments = attachments,
-            .dimensions = {windowWidth, windowHeight},
-        });
+    // Handle<Framebuffer> framebuffer = r.createFramebuffer(
+    //     {
+    //         .renderpassDesc = {.format = RGBA_8_SRGB, .attachments = attachments},
+    //         .attachments = attachments,
+    //         .dimensions = {windowWidth, windowHeight},
+    //     });
 
-    Handle<Shader> shader = r.createShader({
-        .name = "test",
-        .vert = {
-            .byteCode = utils::readFile("./src/09_shader_base_vert.spv"),
-            .entryFunction = "main"},
-        .frag = {.byteCode = utils::readFile("./src/09_shader_base_frag.spv"), .entryFunction = "main"},
-        .framebuffer = framebuffer,
-    });
-
+    // Handle<Shader> shader = r.createShader({
+    //     .name = "test",
+    //     .vert = {
+    //         .byteCode = utils::readFile("./src/09_shader_base_vert.spv"),
+    //         .entryFunction = "main"},
+    //     .frag = {.byteCode = utils::readFile("./src/09_shader_base_frag.spv"), .entryFunction = "main"},
+    //     .framebuffer = framebuffer,
+    // });
 
     while (!r.isWindowClosed())
     {
@@ -55,6 +53,8 @@ int main()
         // r.present(target);
     }
 
-    r.destroyShader(shader);
+    //r.destroyFramebuffer(framebuffer);
+    //r.destroyShader(shader);
+
     return EXIT_SUCCESS;
 }

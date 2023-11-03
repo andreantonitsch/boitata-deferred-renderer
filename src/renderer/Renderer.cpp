@@ -42,8 +42,18 @@ namespace boitatah
     // Clean Up // Destructors
     void Renderer::cleanup()
     {
+        cleanupSwapchainBuffers();
         delete vk;
         cleanupWindow();
+    }
+
+    void Renderer::cleanupSwapchainBuffers()
+    {
+        for (auto &bufferhandle : swapchainBuffers)
+        {
+            destroyFramebuffer(bufferhandle);
+        }
+        swapchainBuffers.resize(0);
     }
 
     Renderer::~Renderer(void)
@@ -77,10 +87,55 @@ namespace boitatah
 
     void Renderer::buildSwapchain()
     {
+        // Clear old swapchain and get new images.
+        cleanupSwapchainBuffers();
         vk->buildSwapchain(options.swapchainFormat);
+        std::vector<Image> swapchainImages = vk->getSwapchainImages();
+
+        // Create new swapchain framebuffers
+        std::vector<AttachmentDesc> attachments;
+        std::vector<Handle<Image>> imageAttachments;
+        attachments.push_back({.index = 0,
+                               .format = BGRA_8_SRGB,
+                               .samples = SAMPLES_1,
+                               .initialLayout = UNDEFINED,
+                               .finalLayout = PRESENT_SRC});
+
+        for (const auto &image : swapchainImages)
+        {
+            imageAttachments.push_back(imagePool.set(image));
+            FramebufferDesc desc{
+                .renderpassDesc = {
+                    .format = BGRA_8_SRGB,
+                    .attachments = attachments,
+                },
+                .attachments = attachments,
+                .attachmentImages = imageAttachments,
+                .dimensions = image.dimensions,
+            };
+            Handle<RenderPass> passhandle = renderpassPool.set(
+                {.renderPass = vk->createRenderPass(desc.renderpassDesc)});
+            RenderPass pass;
+            if (!renderpassPool.get(passhandle, pass))
+                throw std::runtime_error("Failed to create render pass");
+
+            const FramebufferDescVk vkDesc = {.views = {image.view},
+                                              .pass = pass.renderPass,
+                                              .dimensions = desc.dimensions};
+
+            // Pushes the Pool handle for the created framebuffer.
+            swapchainBuffers.push_back(
+                frameBufferPool.set(
+                    {
+                        .buffer = vk->createFramebuffer(vkDesc),
+                        .attachments = imageAttachments,
+                        .renderpass = passhandle,
+                        // vk->createFramebuffer
+                    }));
+        }
     }
 
-    Handle<Shader> Renderer::createShader(ShaderDesc data)
+    Handle<Shader> Renderer::createShader(const ShaderDesc &data)
     {
         Shader shader{
             .name = data.name,
@@ -106,25 +161,53 @@ namespace boitatah
         return shaderPool.set(shader);
     }
 
-    Handle<Framebuffer> Renderer::createFramebuffer(FramebufferDesc data)
+    Handle<Framebuffer> Renderer::createFramebuffer(const FramebufferDesc &data)
     {
+        if (data.attachmentImages.empty())
+        {
+            // Create images.
+        }
 
-        RenderPass renderpass{
+        Handle<RenderPass> passhandle = createRenderPass(data.renderpassDesc);
+        RenderPass pass;
+        if (!renderpassPool.get(passhandle, pass))
+        {
+            throw std::runtime_error("Failed to create renderpass.");
+        }
 
+        std::vector<VkImageView> imageViews;
+
+        for (auto &imagehandle : data.attachmentImages)
+        {
+            Image image;
+            if (imagePool.get(imagehandle, image))
+                imageViews.push_back(image.view);
+        }
+
+        FramebufferDescVk vkDesc{
+            .views = imageViews,
+            .pass = pass.renderPass,
+            .dimensions = data.dimensions,
         };
 
-        Handle<RenderPass> passHandle = renderpassPool.set(renderpass);
-
         Framebuffer framebuffer{
-            .buffer = nullptr,
-            .renderpass = passHandle};
+            .buffer = vk->createFramebuffer(vkDesc),
+            .renderpass = passhandle};
 
         return frameBufferPool.set(framebuffer);
     }
 
-    Handle<RenderPass> Renderer::createRenderPass(RenderPassDesc data)
+    Handle<RenderPass> Renderer::createRenderPass(const RenderPassDesc &data)
     {
-        return Handle<RenderPass>();
+        RenderPass pass{
+            .renderPass = vk->createRenderPass(data)};
+
+        return renderpassPool.set(pass);
+    }
+
+    Handle<PipelineLayout> Renderer::createPipelineLayout(const PipelineLayoutDesc &desc)
+    {
+        return Handle<PipelineLayout>();
     }
 
     void Renderer::destroyShader(Handle<Shader> handle)
@@ -137,6 +220,32 @@ namespace boitatah
         else
         {
             std::cout << "Shader Double Destruction" << std::endl;
+        }
+    }
+
+    void Renderer::destroyFramebuffer(Handle<Framebuffer> bufferhandle)
+    {
+        Framebuffer framebuffer;
+        if (frameBufferPool.clear(bufferhandle, framebuffer))
+        {
+
+            for (auto &imagehandle : framebuffer.attachments)
+            {
+                Image image;
+                if (imagePool.clear(imagehandle, image))
+                {
+                    if(!image.swapchain)
+                        vk->destroyImage(image);
+                }
+            }
+
+            vk->destroyFramebuffer(framebuffer);
+
+            RenderPass pass;
+            if (renderpassPool.clear(framebuffer.renderpass, pass))
+            {
+                vk->destroyRenderpass(pass);
+            }
         }
     }
 

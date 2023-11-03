@@ -19,6 +19,7 @@ namespace bvk = boitatah::vk;
 using boitatah::COLOR_SPACE;
 using boitatah::FORMAT;
 using boitatah::FRAME_BUFFERING;
+using boitatah::Image;
 using boitatah::IMAGE_LAYOUT;
 using boitatah::SAMPLES;
 using boitatah::Shader;
@@ -270,32 +271,23 @@ void boitatah::vk::Vulkan::initInstance()
 
 #pragma region PSO Building
 
-VkRenderPass boitatah::vk::Vulkan::createRenderpass(const RenderPassDesc &desc)
+VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
 {
     std::vector<VkAttachmentDescription> colorAttachments;
     std::vector<VkAttachmentReference> colorAttachmentRefs;
 
-    for (auto &attDesc : desc.attachments)
+    for (const auto &attDesc : desc.attachments)
     {
         if (attDesc.layout == COLOR_ATT_OPTIMAL)
         {
             // TODO How would i do this with emplace_back?
-            colorAttachments.push_back({
-                .format = castEnum<FORMAT, VkFormat>(attDesc.format),
-                .samples = castEnum<SAMPLES, VkSampleCountFlagBits>(attDesc.samples),
-                .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-                .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .initialLayout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.initialLayout),
-                .finalLayout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.finalLayout)});
+            colorAttachments.push_back(createAttachmentDescription(attDesc));
 
             colorAttachmentRefs.push_back({
                 .attachment = attDesc.index,
                 .layout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.layout),
             });
         }
-
     }
 
     VkSubpassDescription subpass{
@@ -319,8 +311,10 @@ VkRenderPass boitatah::vk::Vulkan::createRenderpass(const RenderPassDesc &desc)
     return pass;
 }
 
-void boitatah::vk::Vulkan::injectPipelineLayout(const ShaderDesc &desc, Shader &shader)
+VkPipelineLayout boitatah::vk::Vulkan::createPipelineLayout(const PipelineLayoutDesc &desc)
 {
+    VkPipelineLayout layout;
+
     VkPipelineLayoutCreateInfo layoutCreate{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .setLayoutCount = 0,
@@ -329,10 +323,12 @@ void boitatah::vk::Vulkan::injectPipelineLayout(const ShaderDesc &desc, Shader &
         .pPushConstantRanges = nullptr,
     };
 
-    if (vkCreatePipelineLayout(device, &layoutCreate, nullptr, &(shader.layout)) != VK_SUCCESS)
+    if (vkCreatePipelineLayout(device, &layoutCreate, nullptr, &layout) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create Pipeline Layout");
     }
+
+    return layout;
 }
 
 void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
@@ -472,13 +468,43 @@ VkShaderModule boitatah::vk::Vulkan::createShaderModule(const std::vector<char> 
     return module;
 }
 
+VkFramebuffer boitatah::vk::Vulkan::createFramebuffer(const FramebufferDescVk &desc)
+{
+
+    VkFramebufferCreateInfo createInfo{
+        .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+        .renderPass = desc.pass,
+        .attachmentCount = static_cast<uint32_t>(desc.views.size()),
+        .pAttachments = desc.views.data(),
+        .width = desc.dimensions.x,
+        .height = desc.dimensions.y};
+
+    return VkFramebuffer();
+}
+
+VkAttachmentDescription boitatah::vk::Vulkan::createAttachmentDescription(const AttachmentDesc &attDesc)
+{
+    return VkAttachmentDescription{.format = castEnum<FORMAT, VkFormat>(attDesc.format),
+                                   .samples = castEnum<SAMPLES, VkSampleCountFlagBits>(attDesc.samples),
+                                   .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                   .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+                                   .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                   .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                                   .initialLayout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.initialLayout),
+                                   .finalLayout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.finalLayout)};
+}
+
 void boitatah::vk::Vulkan::destroyShader(Shader &shader)
 {
     vkDestroyShaderModule(device, shader.vert.shaderModule, nullptr);
     vkDestroyShaderModule(device, shader.frag.shaderModule, nullptr);
-    //vkDestroyRenderPass(device, shader.renderPass, nullptr);
     vkDestroyPipelineLayout(device, shader.layout, nullptr);
     vkDestroyPipeline(device, shader.pipeline, nullptr);
+}
+
+void boitatah::vk::Vulkan::destroyRenderpass(RenderPass &pass)
+{
+    vkDestroyRenderPass(device, pass.renderPass, nullptr);
 }
 
 void boitatah::vk::Vulkan::destroyFramebuffer(Framebuffer &framebuffer)
@@ -486,9 +512,33 @@ void boitatah::vk::Vulkan::destroyFramebuffer(Framebuffer &framebuffer)
     vkDestroyFramebuffer(device, framebuffer.buffer, nullptr);
 }
 
+void boitatah::vk::Vulkan::destroyImage(Image image)
+{
+    vkDestroyImageView(device, image.view, nullptr);
+    if (!image.swapchain)
+    {
+        vkDestroyImage(device, image.image, nullptr);
+    }
+}
+
 #pragma endregion PSO Building
 
 #pragma region SWAPCHAIN
+
+std::vector<Image> boitatah::vk::Vulkan::getSwapchainImages()
+{
+    std::vector<Image> swapimages(swapchainImages.size());
+
+    for (int i = 0; i < swapimages.size(); i++)
+    {
+        swapimages[i] = {
+            .image = swapchainImages[i],
+            .view = swapchainViews[i],
+            .dimensions = {swapchainExtent.width, swapchainExtent.height},
+            .swapchain = true};
+    }
+    return swapimages;
+}
 
 void boitatah::vk::Vulkan::clearSwapchainViews()
 {
