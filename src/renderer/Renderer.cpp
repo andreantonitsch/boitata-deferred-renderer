@@ -30,11 +30,13 @@ namespace boitatah
     {
         uint32_t extensionCount = 0;
 
-        vk = new Vulkan({.appName = (char *)options.appName,
-                         .extensions = requiredWindowExtensions(),
-                         .useValidationLayers = options.debug,
-                         .debugMessages = options.debug,
-                         .window = window});
+        vk = new Vulkan({
+            .appName = (char *)options.appName,
+            .extensions = requiredWindowExtensions(),
+            .useValidationLayers = options.debug,
+            .debugMessages = options.debug,
+            .window = window,
+        });
     }
 
     // Clean Up // Destructors
@@ -82,22 +84,58 @@ namespace boitatah
     {
         Shader shader{
             .name = data.name,
-            .vert = vk->createShaderModule(data.vert.byteCode),
-            .frag = vk->createShaderModule(data.frag.byteCode),
-            };
+            .vert = {.shaderModule = vk->createShaderModule(data.vert.byteCode),
+                     .entryFunction = data.vert.entryFunction},
+            .frag = {.shaderModule = vk->createShaderModule(data.frag.byteCode),
+                     .entryFunction = data.vert.entryFunction}};
 
-        vk->buildShader(data, shader);
+        Framebuffer buffer;
+        RenderPass pass;
+        if (!frameBufferPool.get(data.framebuffer, buffer))
+            throw std::runtime_error("failed to get framebuffer");
+        if (!renderpassPool.get(buffer.renderpass, pass))
+            throw std::runtime_error("failed to get renderpass");
+
+        vk->buildShader(
+            {.name = shader.name,
+             .vert = shader.vert,
+             .frag = shader.frag,
+             .renderpass = pass.renderPass},
+            shader);
 
         return shaderPool.set(shader);
+    }
+
+    Handle<Framebuffer> Renderer::createFramebuffer(FramebufferDesc data)
+    {
+
+        RenderPass renderpass{
+
+        };
+
+        Handle<RenderPass> passHandle = renderpassPool.set(renderpass);
+
+        Framebuffer framebuffer{
+            .buffer = nullptr,
+            .renderpass = passHandle};
+
+        return frameBufferPool.set(framebuffer);
+    }
+
+    Handle<RenderPass> Renderer::createRenderPass(RenderPassDesc data)
+    {
+        return Handle<RenderPass>();
     }
 
     void Renderer::destroyShader(Handle<Shader> handle)
     {
         Shader shader;
-        if(shaderPool.clear(handle, shader)){
+        if (shaderPool.clear(handle, shader))
+        {
             vk->destroyShader(shader);
         }
-        else {
+        else
+        {
             std::cout << "Shader Double Destruction" << std::endl;
         }
     }
@@ -121,5 +159,4 @@ namespace boitatah
     }
 
     /// END WINDOW FUNCTIONS
-
 }

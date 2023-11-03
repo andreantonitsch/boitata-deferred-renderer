@@ -12,12 +12,15 @@
 
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
+#include "../types/Framebuffer.hpp"
 
 namespace bvk = boitatah::vk;
 
 using boitatah::COLOR_SPACE;
 using boitatah::FORMAT;
 using boitatah::FRAME_BUFFERING;
+using boitatah::IMAGE_LAYOUT;
+using boitatah::SAMPLES;
 using boitatah::Shader;
 using boitatah::ShaderDesc;
 
@@ -72,6 +75,44 @@ inline VkPresentModeKHR boitatah::vk::Vulkan::castEnum(FRAME_BUFFERING buffering
 }
 template VkPresentModeKHR boitatah::vk::Vulkan::castEnum<FRAME_BUFFERING, VkPresentModeKHR>(FRAME_BUFFERING);
 
+template <>
+inline VkImageLayout boitatah::vk::Vulkan::castEnum(IMAGE_LAYOUT imageLayout)
+{
+    switch (imageLayout)
+    {
+    case COLOR_ATT_OPTIMAL:
+        return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    case PRESENT_SRC:
+        return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    case UNDEFINED:
+        return VK_IMAGE_LAYOUT_UNDEFINED;
+    default:
+        return VK_IMAGE_LAYOUT_UNDEFINED;
+    }
+}
+template VkImageLayout boitatah::vk::Vulkan::castEnum<IMAGE_LAYOUT, VkImageLayout>(IMAGE_LAYOUT);
+
+template <>
+inline VkSampleCountFlagBits boitatah::vk::Vulkan::castEnum(SAMPLES samples)
+{
+    switch (samples)
+    {
+    case SAMPLES_1:
+        return VK_SAMPLE_COUNT_1_BIT;
+    case SAMPLES_2:
+        return VK_SAMPLE_COUNT_2_BIT;
+    case SAMPLES_4:
+        return VK_SAMPLE_COUNT_4_BIT;
+    case SAMPLES_8:
+        return VK_SAMPLE_COUNT_8_BIT;
+    case SAMPLES_16:
+        return VK_SAMPLE_COUNT_16_BIT;
+    default:
+        return VK_SAMPLE_COUNT_1_BIT;
+    }
+}
+template VkSampleCountFlagBits boitatah::vk::Vulkan::castEnum<SAMPLES, VkSampleCountFlagBits>(SAMPLES);
+
 #pragma endregion Enum Specializations
 
 #pragma region Validationsupportjank
@@ -123,7 +164,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 #pragma endregion Validationsupportjank
 /// End Validation Support Jank
 
-
+#pragma region Initialization
 bvk::Vulkan::Vulkan(VulkanOptions opts)
 {
     options = opts;
@@ -225,52 +266,57 @@ void boitatah::vk::Vulkan::initInstance()
         throw std::runtime_error("Failed to create Vulkan Instance.");
 }
 
+#pragma endregion Initialization
+
 #pragma region PSO Building
 
-void boitatah::vk::Vulkan::buildShader(const ShaderDesc &desc, Shader &shader)
+VkRenderPass boitatah::vk::Vulkan::createRenderpass(const RenderPassDesc &desc)
 {
-    injectPipelineLayout(desc, shader);
-    injectRenderPass(desc, shader);
-    injectPSO(desc, shader);
-}
+    std::vector<VkAttachmentDescription> colorAttachments;
+    std::vector<VkAttachmentReference> colorAttachmentRefs;
 
-void boitatah::vk::Vulkan::injectRenderPass(const ShaderDesc &desc, Shader &shader)
-{
-    VkAttachmentDescription colorAttachment{
-        .format = swapchainFormat,
-        .samples = VK_SAMPLE_COUNT_1_BIT,
-        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-        .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-    };
+    for (auto &attDesc : desc.attachments)
+    {
+        if (attDesc.layout == COLOR_ATT_OPTIMAL)
+        {
+            // TODO How would i do this with emplace_back?
+            colorAttachments.push_back({
+                .format = castEnum<FORMAT, VkFormat>(attDesc.format),
+                .samples = castEnum<SAMPLES, VkSampleCountFlagBits>(attDesc.samples),
+                .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+                .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                .initialLayout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.initialLayout),
+                .finalLayout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.finalLayout)});
 
-    //Directly related to layout(location = 0) in shader.
-    VkAttachmentReference colorAttachmentRef{
-        .attachment = 0,
-        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-    };
+            colorAttachmentRefs.push_back({
+                .attachment = attDesc.index,
+                .layout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.layout),
+            });
+        }
+
+    }
 
     VkSubpassDescription subpass{
         .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-        .colorAttachmentCount = 1,
-        .pColorAttachments = &colorAttachmentRef,
+        .colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRefs.size()),
+        .pColorAttachments = colorAttachmentRefs.data(),
     };
 
     VkRenderPassCreateInfo renderPassCreate{
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-        .attachmentCount = 1,
-        .pAttachments = &colorAttachment,
+        .attachmentCount = static_cast<uint32_t>(colorAttachments.size()),
+        .pAttachments = colorAttachments.data(),
         .subpassCount = 1,
-        .pSubpasses = &subpass
-    };
-
-    if(vkCreateRenderPass(device, &renderPassCreate, nullptr, &(shader.renderPass))!= VK_SUCCESS){
+        .pSubpasses = &subpass};
+    VkRenderPass pass;
+    if (vkCreateRenderPass(device, &renderPassCreate, nullptr, &pass) != VK_SUCCESS)
+    {
         throw std::runtime_error("Failed to create Render Pass");
     }
 
+    return pass;
 }
 
 void boitatah::vk::Vulkan::injectPipelineLayout(const ShaderDesc &desc, Shader &shader)
@@ -280,27 +326,26 @@ void boitatah::vk::Vulkan::injectPipelineLayout(const ShaderDesc &desc, Shader &
         .setLayoutCount = 0,
         .pSetLayouts = nullptr,
         .pushConstantRangeCount = 0,
-        .pPushConstantRanges = nullptr, 
+        .pPushConstantRanges = nullptr,
     };
 
-    if(vkCreatePipelineLayout(device, &layoutCreate, nullptr, &(shader.layout)) != VK_SUCCESS)
+    if (vkCreatePipelineLayout(device, &layoutCreate, nullptr, &(shader.layout)) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create Pipeline Layout");
-    } 
+    }
 }
 
-void boitatah::vk::Vulkan::injectPSO(const ShaderDesc &desc, Shader &shader)
+void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
 {
     std::vector<VkDynamicState> dynamicStates = {
         VK_DYNAMIC_STATE_VIEWPORT,
         VK_DYNAMIC_STATE_SCISSOR,
     };
-    
+
     VkPipelineDynamicStateCreateInfo dynamicState{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
         .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
-        .pDynamicStates = dynamicStates.data()
-    };
+        .pDynamicStates = dynamicStates.data()};
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -314,24 +359,22 @@ void boitatah::vk::Vulkan::injectPSO(const ShaderDesc &desc, Shader &shader)
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
         .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-        .primitiveRestartEnable = VK_FALSE
-    };
+        .primitiveRestartEnable = VK_FALSE};
 
-    //Dynamic state
+    // Dynamic state
     VkPipelineViewportStateCreateInfo dynamicViewportState{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
         .viewportCount = 1,
-        .scissorCount = 1
-    };
+        .scissorCount = 1};
 
     VkPipelineRasterizationStateCreateInfo rasterizer{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         .depthClampEnable = VK_FALSE,
-        .rasterizerDiscardEnable = VK_FALSE, //if true rasterizes discards geometry.
+        .rasterizerDiscardEnable = VK_FALSE, // if true rasterizes discards geometry.
         .polygonMode = VK_POLYGON_MODE_FILL,
         .cullMode = VK_CULL_MODE_BACK_BIT,
         .frontFace = VK_FRONT_FACE_CLOCKWISE,
-        
+
         .depthBiasEnable = VK_FALSE,
         .depthBiasConstantFactor = 0.0f,
         .depthBiasClamp = 0.0f,
@@ -346,7 +389,7 @@ void boitatah::vk::Vulkan::injectPSO(const ShaderDesc &desc, Shader &shader)
         .sampleShadingEnable = VK_FALSE,
         .minSampleShading = 1.0f,
         .pSampleMask = nullptr,
-        .alphaToCoverageEnable= VK_FALSE,
+        .alphaToCoverageEnable = VK_FALSE,
         .alphaToOneEnable = VK_FALSE,
     };
 
@@ -359,7 +402,7 @@ void boitatah::vk::Vulkan::injectPSO(const ShaderDesc &desc, Shader &shader)
         .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
         .alphaBlendOp = VK_BLEND_OP_ADD,
         .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-        VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+                          VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     };
 
     VkPipelineColorBlendStateCreateInfo colorBlending{
@@ -368,23 +411,18 @@ void boitatah::vk::Vulkan::injectPSO(const ShaderDesc &desc, Shader &shader)
         .logicOp = VK_LOGIC_OP_COPY,
         .attachmentCount = 1,
         .pAttachments = &colorBlendAttachment,
-        .blendConstants = { 0.0f, 0.0f, 0.0f, 0.0f},
+        .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f},
     };
 
     VkPipelineShaderStageCreateInfo stages[] = {
-        {
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            .stage = VK_SHADER_STAGE_VERTEX_BIT,
-            .module = shader.vert,
-            .pName = desc.vert.entryFunction.c_str()
-        },
-        {
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .module = shader.frag,
-            .pName = desc.frag.entryFunction.c_str()
-        }
-    };
+        {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+         .stage = VK_SHADER_STAGE_VERTEX_BIT,
+         .module = shader.vert.shaderModule,
+         .pName = desc.vert.entryFunction.c_str()},
+        {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+         .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+         .module = shader.frag.shaderModule,
+         .pName = desc.frag.entryFunction.c_str()}};
 
     VkGraphicsPipelineCreateInfo pipelineInfo{
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -399,7 +437,7 @@ void boitatah::vk::Vulkan::injectPSO(const ShaderDesc &desc, Shader &shader)
         .pColorBlendState = &colorBlending,
         .pDynamicState = &dynamicState,
         .layout = shader.layout,
-        .renderPass = shader.renderPass,
+        .renderPass = desc.renderpass,
         .subpass = 0,
 
         // for deriving pipelines.
@@ -407,15 +445,15 @@ void boitatah::vk::Vulkan::injectPSO(const ShaderDesc &desc, Shader &shader)
         .basePipelineIndex = -1,
     };
 
-    if(vkCreateGraphicsPipelines(device, 
-    VK_NULL_HANDLE, 
-    1, 
-    &pipelineInfo, 
-    nullptr,
-    &(shader.PSO) )!= VK_SUCCESS){
+    if (vkCreateGraphicsPipelines(device,
+                                  VK_NULL_HANDLE,
+                                  1,
+                                  &pipelineInfo,
+                                  nullptr,
+                                  &(shader.pipeline)) != VK_SUCCESS)
+    {
         throw std::runtime_error("Failed to create pipeline");
     }
-
 }
 
 VkShaderModule boitatah::vk::Vulkan::createShaderModule(const std::vector<char> &bytecode)
@@ -434,13 +472,18 @@ VkShaderModule boitatah::vk::Vulkan::createShaderModule(const std::vector<char> 
     return module;
 }
 
-void boitatah::vk::Vulkan::destroyShader(Shader shader)
+void boitatah::vk::Vulkan::destroyShader(Shader &shader)
 {
-    vkDestroyShaderModule(device, shader.vert, nullptr);
-    vkDestroyShaderModule(device, shader.frag, nullptr);
-    vkDestroyRenderPass(device, shader.renderPass, nullptr);
+    vkDestroyShaderModule(device, shader.vert.shaderModule, nullptr);
+    vkDestroyShaderModule(device, shader.frag.shaderModule, nullptr);
+    //vkDestroyRenderPass(device, shader.renderPass, nullptr);
     vkDestroyPipelineLayout(device, shader.layout, nullptr);
-    vkDestroyPipeline(device, shader.PSO, nullptr);
+    vkDestroyPipeline(device, shader.pipeline, nullptr);
+}
+
+void boitatah::vk::Vulkan::destroyFramebuffer(Framebuffer &framebuffer)
+{
+    vkDestroyFramebuffer(device, framebuffer.buffer, nullptr);
 }
 
 #pragma endregion PSO Building
@@ -464,7 +507,6 @@ void boitatah::vk::Vulkan::buildSwapchain(FORMAT scFormat)
     createSwapchain(scFormat);
     createSwapchainViews(scFormat);
 }
-
 
 boitatah::vk::SwapchainSupport boitatah::vk::Vulkan::getSwapchainSupport(VkPhysicalDevice device)
 {

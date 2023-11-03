@@ -10,8 +10,7 @@
 #include <optional>
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
-using boitatah::Shader;
-using boitatah::ShaderDesc;
+#include "../types/Framebuffer.hpp"
 
 namespace boitatah::vk
 {
@@ -56,9 +55,10 @@ namespace boitatah::vk
         void buildSwapchain(FORMAT scFormat);
 
         VkShaderModule createShaderModule(const std::vector<char> &bytecode);
-        void destroyShader(Shader shader);
-
-        void buildShader(const ShaderDesc &desc, Shader& shader);
+        void destroyShader(Shader &shader);
+        void destroyRenderpass(RenderPass &pass);
+        void destroyFramebuffer(Framebuffer &framebuffer);
+        void buildShader(const ShaderDescVk &desc, Shader& shader);
 
 
         // Copy assignment?
@@ -87,13 +87,9 @@ namespace boitatah::vk
         std::vector<const char *> deviceExtensions;
         std::vector<const char *> instanceExtensions;
 
-        void injectRenderPass(const ShaderDesc &desc, Shader& shader);
+        VkRenderPass createRenderpass(const RenderPassDesc &desc);
         void injectPipelineLayout(const ShaderDesc &desc, Shader& shader);
-        void injectPSO(const ShaderDesc &desc, Shader& shader);
         
-        void destroyPSO(VkPipeline pipeline);
-        void destroyPipelineLayout(VkPipelineLayout layout);
-        void destroyRenderPass(VkRenderPass pass);
 
 #pragma region Vulkan Setup
 

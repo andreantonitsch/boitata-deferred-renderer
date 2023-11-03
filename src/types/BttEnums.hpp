@@ -22,6 +22,26 @@ namespace boitatah{
         TRIPLE_BUFFER = 3,
     };
 
+    enum SAMPLES{
+        SAMPLES_1 = 1,
+        SAMPLES_2 = 2,
+        SAMPLES_4 = 3,
+        SAMPLES_8 = 4,
+        SAMPLES_16 = 5
+    };
+
+    enum IMAGE_LAYOUT{
+        UNDEFINED = 0,
+        COLOR_ATT_OPTIMAL = 1,
+        PRESENT_SRC = 2,
+    };
+
+    enum USAGE {
+        TRANSFER_SRC = 1,
+        TRANSFER_DST = 2,
+        COLOR_ATT = 3,
+        DEPTH_STENCIL = 4,
+    };
 }
 
 #endif //BOITATAH_BTT_ENUMS_HPP
