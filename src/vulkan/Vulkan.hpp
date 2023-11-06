@@ -11,6 +11,8 @@
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
 #include "../types/Framebuffer.hpp"
+#include "../types/Memory.hpp"
+#include "../types/Image.hpp"
 
 namespace boitatah::vk
 {
@@ -58,7 +60,11 @@ namespace boitatah::vk
         VkFramebuffer createFramebuffer(const FramebufferDescVk &desc);
         VkAttachmentDescription createAttachmentDescription(const AttachmentDesc &attDesc);
         VkRenderPass createRenderPass(const RenderPassDesc &desc);
-        VkImage createImage(const ImageDesc &desc);
+        Image createImage(const ImageDesc &desc);
+        VkImageView createImageView(VkImage image, const ImageDesc &desc);
+        VkDeviceMemory allocateMemory(const MemoryDesc &desc);
+        void bindImageMemory(VkDeviceMemory memory, VkImage image);
+        uint32_t findMemoryIndex(const MemoryDesc &props);
         VkPipelineLayout createPipelineLayout(const PipelineLayoutDesc &desc);
         void destroyShader(Shader &shader);
         void destroyRenderpass(RenderPass &pass);

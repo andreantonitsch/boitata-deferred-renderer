@@ -13,6 +13,7 @@
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
 #include "../types/Framebuffer.hpp"
+#include "../types/Image.hpp"
 
 namespace bvk = boitatah::vk;
 
@@ -21,9 +22,11 @@ using boitatah::FORMAT;
 using boitatah::FRAME_BUFFERING;
 using boitatah::Image;
 using boitatah::IMAGE_LAYOUT;
+using boitatah::MEMORY_PROPERTY;
 using boitatah::SAMPLES;
 using boitatah::Shader;
 using boitatah::ShaderDesc;
+using boitatah::USAGE;
 
 #pragma region Enum Specializations
 
@@ -113,6 +116,51 @@ inline VkSampleCountFlagBits boitatah::vk::Vulkan::castEnum(SAMPLES samples)
     }
 }
 template VkSampleCountFlagBits boitatah::vk::Vulkan::castEnum<SAMPLES, VkSampleCountFlagBits>(SAMPLES);
+
+template <>
+inline VkImageUsageFlagBits boitatah::vk::Vulkan::castEnum(USAGE samples)
+{
+    switch (samples)
+    {
+    case TRANSFER_SRC:
+        return VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    case TRANSFER_DST:
+        return VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    case COLOR_ATT:
+        return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    case TRANSFER_DST_SAMPLED:
+        return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    case SAMPLED:
+        return VK_IMAGE_USAGE_SAMPLED_BIT;
+    default:
+        return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    }
+}
+template VkImageUsageFlagBits boitatah::vk::Vulkan::castEnum<USAGE, VkImageUsageFlagBits>(USAGE);
+
+template <>
+inline VkMemoryPropertyFlagBits boitatah::vk::Vulkan::castEnum(MEMORY_PROPERTY properties)
+{
+    switch (properties)
+    {
+    case DEVICE_LOCAL:
+        return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    case HOST_VISIBLE:
+        return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    case HOST_COHERENT:
+        return VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    case HOST_CACHED:
+        return VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+    case LAZY_ALLOCATE:
+        return VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+    case HOST_VISIBLE_COHERENT:
+        return (VkMemoryPropertyFlagBits)(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    default:
+        return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    }
+}
+template VkMemoryPropertyFlagBits boitatah::vk::Vulkan::castEnum<MEMORY_PROPERTY, VkMemoryPropertyFlagBits>(MEMORY_PROPERTY);
 
 #pragma endregion Enum Specializations
 
@@ -272,7 +320,8 @@ void boitatah::vk::Vulkan::initInstance()
 #pragma region PSO Building
 
 VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
-{
+{  
+    //std::cout << "VK Create Render Pass " << std::endl;
     std::vector<VkAttachmentDescription> colorAttachments;
     std::vector<VkAttachmentReference> colorAttachmentRefs;
 
@@ -309,6 +358,126 @@ VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
     }
 
     return pass;
+}
+
+Image boitatah::vk::Vulkan::createImage(const ImageDesc &desc)
+{
+
+    Image image;
+
+    VkImageCreateInfo createInfo{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .flags = 0,
+        .imageType = VK_IMAGE_TYPE_2D,
+        .format = castEnum<FORMAT, VkFormat>(desc.format),
+        .extent = {
+            .width = desc.dimensions.x,
+            .height = desc.dimensions.y,
+            .depth = 1,
+        },
+        .mipLevels = desc.mipLevels,
+        .arrayLayers = 1,
+        .samples = castEnum<SAMPLES, VkSampleCountFlagBits>(desc.samples),
+        .tiling = VK_IMAGE_TILING_OPTIMAL,
+        .usage = castEnum<USAGE, VkImageUsageFlagBits>(desc.usage),
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE, // TODO SHARING MODE change later.
+        .initialLayout = castEnum<IMAGE_LAYOUT, VkImageLayout>(desc.initialLayout),
+    };
+
+    VkImage vkImage;
+
+    if (vkCreateImage(device, &createInfo, nullptr, &vkImage) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to Create Image");
+    }
+
+    image.dimensions = desc.dimensions;
+    image.image = vkImage;
+
+    VkMemoryRequirements reqs;
+    vkGetImageMemoryRequirements(device, vkImage, &reqs);
+
+    image.memory = allocateMemory({
+        .size = reqs.size,
+        .type = DEVICE_LOCAL,
+        .typeBits = reqs.memoryTypeBits,
+    });
+
+    bindImageMemory(image.memory, image.image);
+
+    return image;
+}
+
+VkImageView boitatah::vk::Vulkan::createImageView(VkImage image, const ImageDesc &desc)
+{
+
+    VkImageView view;
+
+    VkImageViewCreateInfo createInfo{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .image = image,
+        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .format = castEnum<FORMAT, VkFormat>(desc.format),
+        .components = {
+            .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .a = VK_COMPONENT_SWIZZLE_IDENTITY},
+        .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .baseMipLevel = 0, .levelCount = 1, .baseArrayLayer = 0, .layerCount = 1},
+    };
+
+    if (vkCreateImageView(device, &createInfo, nullptr, &view) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create Swapchain image view");
+    }
+
+    return view;
+}
+
+uint32_t boitatah::vk::Vulkan::findMemoryIndex(const MemoryDesc &props)
+{
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+    {
+        auto flags = castEnum<MEMORY_PROPERTY, VkMemoryPropertyFlagBits>(props.type);
+        // If the memory has all required properties.
+        if ((props.typeBits & (i << i)) &&
+            ((memProperties.memoryTypes[i].propertyFlags &
+              flags) == flags))
+        {
+            return i;
+        }
+    }
+    throw std::runtime_error("Failed to find memory");
+    return 0;
+}
+
+VkDeviceMemory boitatah::vk::Vulkan::allocateMemory(const MemoryDesc &desc)
+{
+    VkMemoryAllocateInfo allocateInfo{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        .allocationSize = desc.size,
+        .memoryTypeIndex = findMemoryIndex(desc),
+    };
+
+    VkDeviceMemory memory;
+
+    if (vkAllocateMemory(device, &allocateInfo, nullptr, &memory) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to allocate Memory");
+    }
+
+    return memory;
+}
+
+
+void boitatah::vk::Vulkan::bindImageMemory(VkDeviceMemory memory, VkImage image)
+{
+    // binds from start.
+    // currently using one buffer per image.
+    vkBindImageMemory(device, image, memory, 0);
 }
 
 VkPipelineLayout boitatah::vk::Vulkan::createPipelineLayout(const PipelineLayoutDesc &desc)
@@ -518,6 +687,7 @@ void boitatah::vk::Vulkan::destroyImage(Image image)
     if (!image.swapchain)
     {
         vkDestroyImage(device, image.image, nullptr);
+        vkFreeMemory(device, image.memory, nullptr);
     }
 }
 

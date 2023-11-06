@@ -30,12 +30,22 @@ int main()
          .finalLayout = COLOR_ATT_OPTIMAL},
     };
 
-    // Handle<Framebuffer> framebuffer = r.createFramebuffer(
-    //     {
-    //         .renderpassDesc = {.format = RGBA_8_SRGB, .attachments = attachments},
-    //         .attachments = attachments,
-    //         .dimensions = {windowWidth, windowHeight},
-    //     });
+    std::vector<ImageDesc> fbAttImageDesc = {
+        {
+            .format = RGBA_8_SRGB,
+            .dimensions = {windowWidth, windowHeight},
+            .initialLayout = UNDEFINED,
+            .usage = USAGE::COLOR_ATT,
+        }
+    };
+
+    Handle<Framebuffer> framebuffer = r.createFramebuffer(
+        {
+            .renderpassDesc = {.format = RGBA_8_SRGB, .attachments = attachments},
+            .attachments = attachments,
+            .imageDesc = fbAttImageDesc,
+            .dimensions = {windowWidth, windowHeight},
+        });
 
     // Handle<Shader> shader = r.createShader({
     //     .name = "test",
@@ -53,7 +63,7 @@ int main()
         // r.present(target);
     }
 
-    //r.destroyFramebuffer(framebuffer);
+    r.destroyFramebuffer(framebuffer);
     //r.destroyShader(shader);
 
     return EXIT_SUCCESS;

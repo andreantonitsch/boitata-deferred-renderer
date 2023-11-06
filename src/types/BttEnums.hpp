@@ -41,6 +41,18 @@ namespace boitatah{
         TRANSFER_DST = 2,
         COLOR_ATT = 3,
         DEPTH_STENCIL = 4,
+        SAMPLED = 5,
+        TRANSFER_DST_SAMPLED = 6,
+    };
+
+    enum MEMORY_PROPERTY {
+        DEVICE_LOCAL = 1,
+        HOST_VISIBLE = 2,
+        HOST_COHERENT = 3,
+        HOST_CACHED = 4,
+        LAZY_ALLOCATE = 5,
+        HOST_VISIBLE_COHERENT = 6,
+
     };
 }
 

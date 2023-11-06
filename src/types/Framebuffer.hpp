@@ -5,19 +5,10 @@
 #include "BttEnums.hpp"
 #include "../collections/Pool.hpp"
 #include "Vector.hpp"
+#include "Image.hpp"
 
 namespace boitatah{
 
-    struct ImageDesc{
-
-    };
-
-    struct Image{
-        VkImage image;
-        VkImageView view;
-        Vector2<uint32_t> dimensions;
-        bool swapchain  = false;
-    };
 
     struct AttachmentDesc{
         uint32_t index;
@@ -52,9 +43,9 @@ namespace boitatah{
 
         std::vector<AttachmentDesc> attachments;
         std::vector<Handle<Image>> attachmentImages;
+        //If attachmentImages are nullptr imageDesc is mandatory.
+        std::vector<ImageDesc> imageDesc;
         Vector2<uint32_t> dimensions;
-        //If image handles are VK_NULL_HANDLE imageDesc is mandatory.
-        ImageDesc imageDesc;
     };
 
     //attachments here are images
