@@ -18,6 +18,7 @@
 namespace bvk = boitatah::vk;
 
 using boitatah::COLOR_SPACE;
+using boitatah::COMMAND_BUFFER_LEVEL;
 using boitatah::FORMAT;
 using boitatah::FRAME_BUFFERING;
 using boitatah::Image;
@@ -162,6 +163,22 @@ inline VkMemoryPropertyFlagBits boitatah::vk::Vulkan::castEnum(MEMORY_PROPERTY p
 }
 template VkMemoryPropertyFlagBits boitatah::vk::Vulkan::castEnum<MEMORY_PROPERTY, VkMemoryPropertyFlagBits>(MEMORY_PROPERTY);
 
+template <>
+inline VkCommandBufferLevel boitatah::vk::Vulkan::castEnum(COMMAND_BUFFER_LEVEL properties)
+{
+    switch (properties)
+    {
+    case PRIMARY:
+        return VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    case SECONDARY:
+        return VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+
+    default:
+        return VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    }
+}
+template VkCommandBufferLevel boitatah::vk::Vulkan::castEnum<COMMAND_BUFFER_LEVEL, VkCommandBufferLevel>(COMMAND_BUFFER_LEVEL);
+
 #pragma endregion Enum Specializations
 
 #pragma region Validationsupportjank
@@ -237,6 +254,7 @@ bvk::Vulkan::Vulkan(VulkanOptions opts)
     initPhysicalDevice();
     initLogicalDeviceNQueues();
     setQueues();
+    createCommandPools();
 }
 
 bvk::Vulkan::~Vulkan(void)
@@ -245,6 +263,8 @@ bvk::Vulkan::~Vulkan(void)
     clearSwapchainViews();
 
     vkDestroySwapchainKHR(device, swapchain, nullptr);
+
+    vkDestroyCommandPool(device, commandPool, nullptr);
 
     vkDestroyDevice(device, nullptr);
 
@@ -320,8 +340,8 @@ void boitatah::vk::Vulkan::initInstance()
 #pragma region PSO Building
 
 VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
-{  
-    //std::cout << "VK Create Render Pass " << std::endl;
+{
+    // std::cout << "VK Create Render Pass " << std::endl;
     std::vector<VkAttachmentDescription> colorAttachments;
     std::vector<VkAttachmentReference> colorAttachmentRefs;
 
@@ -454,6 +474,21 @@ uint32_t boitatah::vk::Vulkan::findMemoryIndex(const MemoryDesc &props)
     return 0;
 }
 
+VkCommandBuffer boitatah::vk::Vulkan::allocateCommandBuffer(const CommandBufferDesc &desc)
+{
+    VkCommandBufferAllocateInfo allocateInfo{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = commandPool,
+        .level = castEnum<COMMAND_BUFFER_LEVEL, VkCommandBufferLevel>(desc.level),
+        .commandBufferCount = desc.count};
+    VkCommandBuffer buffer;
+    if (vkAllocateCommandBuffers(device, &allocateInfo, &buffer) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to allocate Command Buffer");
+    }
+    return buffer;
+}
+
 VkDeviceMemory boitatah::vk::Vulkan::allocateMemory(const MemoryDesc &desc)
 {
     VkMemoryAllocateInfo allocateInfo{
@@ -471,7 +506,6 @@ VkDeviceMemory boitatah::vk::Vulkan::allocateMemory(const MemoryDesc &desc)
 
     return memory;
 }
-
 
 void boitatah::vk::Vulkan::bindImageMemory(VkDeviceMemory memory, VkImage image)
 {
@@ -969,6 +1003,21 @@ void boitatah::vk::Vulkan::setQueues()
 {
     QueueFamilyIndices familyIndices = findQueueFamilies(physicalDevice);
     vkGetDeviceQueue(device, familyIndices.graphicsFamily.value(), 0, &graphicsQueue);
+}
+
+void boitatah::vk::Vulkan::createCommandPools()
+{
+    VkCommandPoolCreateInfo info{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        // two types of pools. The other is VK_COMMNAD_POOL_CREATE_TRANSIENT_BIT
+        .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        .queueFamilyIndex = findQueueFamilies(physicalDevice).graphicsFamily.value(),
+    };
+
+    if (vkCreateCommandPool(device, &info, nullptr, &commandPool) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create Command Pool");
+    }
 }
 
 #pragma endregion QUEUE_SETUP

@@ -13,6 +13,7 @@
 #include "../types/Framebuffer.hpp"
 #include "../types/Memory.hpp"
 #include "../types/Image.hpp"
+#include "../types/CommandBuffer.hpp"
 
 namespace boitatah::vk
 {
@@ -50,30 +51,39 @@ namespace boitatah::vk
     class Vulkan
     {
     public:
+        VkCommandPool commandPool;
+        
         // Vulkan();
         Vulkan(VulkanOptions opts);
         ~Vulkan(void);
 
+        // set up swapchain
         void buildSwapchain(FORMAT scFormat);
+        std::vector<Image> getSwapchainImages();
 
+        // Create Objects
         VkShaderModule createShaderModule(const std::vector<char> &bytecode);
         VkFramebuffer createFramebuffer(const FramebufferDescVk &desc);
         VkAttachmentDescription createAttachmentDescription(const AttachmentDesc &attDesc);
         VkRenderPass createRenderPass(const RenderPassDesc &desc);
         Image createImage(const ImageDesc &desc);
         VkImageView createImageView(VkImage image, const ImageDesc &desc);
+        VkPipelineLayout createPipelineLayout(const PipelineLayoutDesc &desc);
+
+        // Manage Memory
         VkDeviceMemory allocateMemory(const MemoryDesc &desc);
         void bindImageMemory(VkDeviceMemory memory, VkImage image);
         uint32_t findMemoryIndex(const MemoryDesc &props);
-        VkPipelineLayout createPipelineLayout(const PipelineLayoutDesc &desc);
+
+        //Commands
+        VkCommandBuffer allocateCommandBuffer(const CommandBufferDesc& desc);
+
+        // Destroy Objects
         void destroyShader(Shader &shader);
         void destroyRenderpass(RenderPass &pass);
         void destroyFramebuffer(Framebuffer &framebuffer);
         void destroyImage(Image image);
         void buildShader(const ShaderDescVk &desc, Shader& shader);
-        
-
-        std::vector<Image> getSwapchainImages();
 
         // Copy assignment?
         // Vulkan& operator= (const Vulkan &v);//copy assignment
@@ -89,6 +99,7 @@ namespace boitatah::vk
         VkQueue graphicsQueue;
         VkQueue presentQueue;
 
+
         VkSurfaceKHR surface;
 
         VkSwapchainKHR swapchain = VK_NULL_HANDLE;
@@ -100,9 +111,6 @@ namespace boitatah::vk
         std::vector<const char *> validationLayers;
         std::vector<const char *> deviceExtensions;
         std::vector<const char *> instanceExtensions;
-
-        //VkRenderPass createRenderpass(const RenderPassDesc &desc);
-        
 
 #pragma region Vulkan Setup
 
@@ -127,6 +135,7 @@ namespace boitatah::vk
         // Queues
         QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
         void setQueues();
+        void createCommandPools();
         // Window Surfaces
         void createSurface(GLFWwindow *window);
 
@@ -140,7 +149,6 @@ namespace boitatah::vk
         void createSwapchain(FORMAT scFormat);
         void createSwapchainViews(FORMAT scFormat);
         void clearSwapchainViews();
-        void clearSwapchainImages();
 #pragma endregion SwapChain
 
 #pragma region Enum Conversion

@@ -11,19 +11,17 @@
 
 namespace boitatah
 {
-    /// CONSTRUCTORS
+#pragma region Initialization
     Renderer::Renderer(RendererOptions opts)
     {
         options = opts;
         initWindow();
         createVulkan();
         buildSwapchain();
-    }
-    /// END CONSTRUCTORS
-
-    void Renderer::render()
-    {
-        windowEvents();
+        allocateCommandBuffer({
+            .count =1,
+            .level = PRIMARY
+        });
     }
 
     void Renderer::createVulkan()
@@ -38,10 +36,19 @@ namespace boitatah
             .window = window,
         });
     }
+#pragma endregion Initialization
 
-    // Clean Up // Destructors
+#pragma region Rendering
+    void Renderer::render()
+    {
+        windowEvents();
+    }
+#pragma end region Rendering
+
+#pragma region CleanUp/Destructor
     void Renderer::cleanup()
     {
+
         cleanupSwapchainBuffers();
         delete vk;
         cleanupWindow();
@@ -60,8 +67,22 @@ namespace boitatah
     {
         cleanup();
     }
+#pragma endregion CleanUp/Destructor
 
-    /// WINDOWN FUNCTIONS
+#pragma region Command Buffers
+
+    CommandBuffer Renderer::allocateCommandBuffer(const CommandBufferDesc &desc)
+    {
+        CommandBuffer buffer {
+            .buffer = vk->allocateCommandBuffer(desc)
+        };
+
+        return buffer;
+    }
+
+#pragma endregion Command Buffers
+
+#pragma region Window Functions
 
     void Renderer::initWindow()
     {
@@ -126,6 +147,27 @@ namespace boitatah
             swapchainBuffers.push_back(framebuffer);
         }
     }
+
+    const std::vector<const char *> Renderer::requiredWindowExtensions()
+    {
+        std::vector<const char *> requiredExtensions;
+        uint32_t extensionCount = 0;
+        const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&extensionCount);
+
+        for (uint32_t i = 0; i < extensionCount; i++)
+        {
+            requiredExtensions.emplace_back(glfwExtensions[i]);
+        }
+        return requiredExtensions;
+    }
+
+    void Renderer::windowEvents()
+    {
+        glfwPollEvents();
+    }
+#pragma endregion Window Functions
+
+#pragma region Create Vulkan Objects
 
     Handle<Shader> Renderer::createShader(const ShaderDesc &data)
     {
@@ -226,6 +268,9 @@ namespace boitatah
         return Handle<PipelineLayout>();
     }
 
+#pragma endregion Create Vulkan Objects
+
+#pragma region Destroy Vulkan Objects
     void Renderer::destroyShader(Handle<Shader> handle)
     {
         Shader shader;
@@ -270,23 +315,6 @@ namespace boitatah
         }
     }
 
-    const std::vector<const char *> Renderer::requiredWindowExtensions()
-    {
-        std::vector<const char *> requiredExtensions;
-        uint32_t extensionCount = 0;
-        const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&extensionCount);
+#pragma endregion Destroy Vulkan Objects
 
-        for (uint32_t i = 0; i < extensionCount; i++)
-        {
-            requiredExtensions.emplace_back(glfwExtensions[i]);
-        }
-        return requiredExtensions;
-    }
-
-    void Renderer::windowEvents()
-    {
-        glfwPollEvents();
-    }
-
-    /// END WINDOW FUNCTIONS
 }

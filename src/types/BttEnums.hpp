@@ -54,6 +54,11 @@ namespace boitatah{
         HOST_VISIBLE_COHERENT = 6,
 
     };
+
+    enum COMMAND_BUFFER_LEVEL{
+        PRIMARY = 1,
+        SECONDARY = 2
+    };
 }
 
 #endif //BOITATAH_BTT_ENUMS_HPP
