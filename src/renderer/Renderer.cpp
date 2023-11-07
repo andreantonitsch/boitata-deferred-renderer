@@ -18,10 +18,8 @@ namespace boitatah
         initWindow();
         createVulkan();
         buildSwapchain();
-        allocateCommandBuffer({
-            .count =1,
-            .level = PRIMARY
-        });
+        allocateCommandBuffer({.count = 1,
+                               .level = PRIMARY});
     }
 
     void Renderer::createVulkan()
@@ -42,8 +40,13 @@ namespace boitatah
     void Renderer::render()
     {
         windowEvents();
+        drawFrame();
     }
-#pragma end region Rendering
+
+    void Renderer::drawFrame(){
+
+    }
+#pragma endregion Rendering
 
 #pragma region CleanUp/Destructor
     void Renderer::cleanup()
@@ -67,17 +70,46 @@ namespace boitatah
     {
         cleanup();
     }
-#pragma endregion CleanUp/Destructor
+#pragma endregion CleanUp / Destructor
+
+
 
 #pragma region Command Buffers
 
     CommandBuffer Renderer::allocateCommandBuffer(const CommandBufferDesc &desc)
     {
-        CommandBuffer buffer {
-            .buffer = vk->allocateCommandBuffer(desc)
-        };
+        CommandBuffer buffer{
+            .buffer = vk->allocateCommandBuffer(desc)};
 
         return buffer;
+    }
+
+    void Renderer::recordCommand(const DrawCommand &command)
+    {
+        Framebuffer framebuffer;
+        if (!frameBufferPool.get(command.buffer, framebuffer))
+        {
+            throw std::runtime_error("failed to get the Framebuffer data");
+        }
+
+        RenderPass pass;
+        if (!renderpassPool.get(framebuffer.renderpass, pass))
+        {
+            throw std::runtime_error("failed to get the Render Pass data");
+        }
+
+        vk->recordCommand({
+            .drawBuffer = drawBuffer.buffer,
+            .pass = pass.renderPass,
+            .frameBuffer = framebuffer.buffer,
+            .areaDims = {.x = static_cast<int>(options.windowDimensions.x),
+                         .y = static_cast<int>(options.windowDimensions.y)},
+            .areaOffset = {.x = 0, .y = 0},
+            .vertexCount = 3,
+            .instaceCount = 1,
+            .firstVertex = 0,
+            .firstInstance = 0,
+        });
     }
 
 #pragma endregion Command Buffers

@@ -489,6 +489,56 @@ VkCommandBuffer boitatah::vk::Vulkan::allocateCommandBuffer(const CommandBufferD
     return buffer;
 }
 
+void boitatah::vk::Vulkan::recordCommand(const DrawCommandVk &command)
+{
+    VkCommandBufferBeginInfo beginInfo{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = 0,
+        .pInheritanceInfo = nullptr};
+    if (vkBeginCommandBuffer(command.drawBuffer, &beginInfo) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to initialize buffer");
+    }
+
+    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+
+    VkRect2D scissor = {
+        .offset = {command.areaOffset.x, command.areaOffset.y},
+        .extent = {.width = command.areaDims.x, .height = command.areaDims.y},
+    };
+    VkRenderPassBeginInfo passInfo{
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = command.pass,
+        .framebuffer = command.frameBuffer,
+        .renderArea = scissor,
+        .clearValueCount = 1,
+        .pClearValues = &clearColor,
+    };
+
+    vkCmdBeginRenderPass(command.drawBuffer, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    VkViewport viewport{
+        .x = 0.0f,
+        .y = 0.0f,
+        .width = static_cast<float>(scissor.extent.width),
+        .height = static_cast<float>(scissor.extent.height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    };
+    vkCmdSetViewport(command.drawBuffer, 0, 1, &viewport);
+    vkCmdSetScissor(command.drawBuffer, 0, 1, &scissor);
+
+    vkCmdDraw(command.drawBuffer,
+              command.vertexCount,
+              command.instaceCount,
+              command.firstVertex, command.firstInstance);
+
+    vkCmdEndRenderPass(command.drawBuffer);
+    if(vkEndCommandBuffer(command.drawBuffer) != VK_SUCCESS){
+        throw std::runtime_error("Failed to record a draw command buffer");
+    }
+}
+
 VkDeviceMemory boitatah::vk::Vulkan::allocateMemory(const MemoryDesc &desc)
 {
     VkMemoryAllocateInfo allocateInfo{

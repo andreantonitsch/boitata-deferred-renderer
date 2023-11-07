@@ -47,14 +47,14 @@ int main()
             .dimensions = {windowWidth, windowHeight},
         });
 
-    // Handle<Shader> shader = r.createShader({
-    //     .name = "test",
-    //     .vert = {
-    //         .byteCode = utils::readFile("./src/09_shader_base_vert.spv"),
-    //         .entryFunction = "main"},
-    //     .frag = {.byteCode = utils::readFile("./src/09_shader_base_frag.spv"), .entryFunction = "main"},
-    //     .framebuffer = framebuffer,
-    // });
+    Handle<Shader> shader = r.createShader({
+        .name = "test",
+        .vert = {
+            .byteCode = utils::readFile("./src/09_shader_base_vert.spv"),
+            .entryFunction = "main"},
+        .frag = {.byteCode = utils::readFile("./src/09_shader_base_frag.spv"), .entryFunction = "main"},
+        .framebuffer = framebuffer,
+    });
 
     while (!r.isWindowClosed())
     {
@@ -64,7 +64,7 @@ int main()
     }
 
     r.destroyFramebuffer(framebuffer);
-    //r.destroyShader(shader);
+    r.destroyShader(shader);
 
     return EXIT_SUCCESS;
 }

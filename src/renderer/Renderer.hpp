@@ -46,17 +46,16 @@ namespace boitatah
         Renderer(RendererOptions options);
         ~Renderer(void);
 
-        // Methods
+        // Render Methods
         void render();
+        void drawFrame();
+
+        // Window Methods
         void initWindow();
         bool isWindowClosed();
         void buildSwapchain();
 
         // Object Creation
-        // RenderTarget createRenderTarget();
-        // RenderTarget get(Handle<RenderTarget> target);
-        // void clear(Handle<RenderTarget> target);
-
         // Creates PSO object, shader + pipeline.
         // Needs a Framebuffer for compatibility.
         Handle<Shader> createShader(const ShaderDesc &data);
@@ -67,7 +66,7 @@ namespace boitatah
         Handle<PipelineLayout> createPipelineLayout(const PipelineLayoutDesc &desc);
         
         CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
-
+        void recordCommand(const DrawCommand& command);
 
         void destroyShader(Handle<Shader> shader);
         void destroyFramebuffer(Handle<Framebuffer> buffer);

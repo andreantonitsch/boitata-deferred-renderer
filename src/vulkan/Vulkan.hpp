@@ -51,7 +51,6 @@ namespace boitatah::vk
     class Vulkan
     {
     public:
-        VkCommandPool commandPool;
         
         // Vulkan();
         Vulkan(VulkanOptions opts);
@@ -77,6 +76,7 @@ namespace boitatah::vk
 
         //Commands
         VkCommandBuffer allocateCommandBuffer(const CommandBufferDesc& desc);
+        void recordCommand(const DrawCommandVk& command);
 
         // Destroy Objects
         void destroyShader(Shader &shader);
@@ -96,6 +96,7 @@ namespace boitatah::vk
 
         VkDevice device; // Logical Device
 
+        VkCommandPool commandPool;
         VkQueue graphicsQueue;
         VkQueue presentQueue;
 
