@@ -60,7 +60,7 @@ int main()
         .layout = layout,
     });
 
-    SceneNode scene{};
+    SceneNode scene{.children = {}, .shader = shader};
 
 
     while (!r.isWindowClosed())

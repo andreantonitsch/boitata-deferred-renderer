@@ -367,12 +367,12 @@ VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
 
     for (const auto &attDesc : desc.attachments)
     {
-            colorAttachments.push_back(createAttachmentDescription(attDesc));
+        colorAttachments.push_back(createAttachmentDescription(attDesc));
 
-            colorAttachmentRefs.push_back({
-                .attachment = attDesc.index,
-                .layout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.layout),
-            });
+        colorAttachmentRefs.push_back({
+            .attachment = attDesc.index,
+            .layout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.layout),
+        });
     }
 
     VkSubpassDescription subpass{
@@ -534,6 +534,10 @@ void boitatah::vk::Vulkan::recordCommand(const DrawCommandVk &command)
     };
 
     vkCmdBeginRenderPass(command.drawBuffer, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    vkCmdBindPipeline(command.drawBuffer,
+                      VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      command.pipeline);
 
     VkViewport viewport{
         .x = 0.0f,

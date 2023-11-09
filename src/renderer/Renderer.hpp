@@ -48,15 +48,15 @@ namespace boitatah
         Renderer(RendererOptions options);
         ~Renderer(void);
 
+        // Window Methods
+        bool isWindowClosed();
+
+
         // Render Methods
         void render(SceneNode &scene, Handle<Framebuffer> &rendertarget);
         void writeCommandBuffer(SceneNode &scene, Handle<Framebuffer> &rendertarget);
         void present(Handle<Framebuffer> &rendertarget);
 
-        // Window Methods
-        void initWindow();
-        bool isWindowClosed();
-        void buildSwapchain();
 
         // Object Creation
         // Creates PSO object, shader + pipeline.
@@ -76,9 +76,11 @@ namespace boitatah
         void destroyRenderPass(Handle<RenderPass> pass);
         void destroyLayout(Handle<PipelineLayout> layout);
 
-
-
     private:
+
+        // Window Methods
+        void initWindow();
+        void buildSwapchain();
         // Members
         CommandBuffer drawBuffer;
         

@@ -54,10 +54,8 @@ namespace boitatah
         ShaderModule vert;
         ShaderModule frag;
 
-        Handle<Framebuffer> frameBuffer;
+//        Handle<Framebuffer> frameBuffer;
 
-        //VkPipelineLayout layout;
-        //VkRenderPass renderPass;
         VkPipeline pipeline;
 
     };

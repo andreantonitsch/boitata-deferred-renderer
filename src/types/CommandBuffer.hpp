@@ -14,6 +14,7 @@ namespace boitatah
         VkCommandBuffer drawBuffer;
         VkRenderPass pass;
         VkFramebuffer frameBuffer;
+        VkPipeline pipeline;
         Vector2<int> areaDims;
         Vector2<int> areaOffset;
         uint32_t vertexCount;

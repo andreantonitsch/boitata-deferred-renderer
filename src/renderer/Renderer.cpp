@@ -64,11 +64,17 @@ namespace boitatah
         {
             throw std::runtime_error("Failed to write command buffer");
         }
-        std::cout<<buffer.buffer;
+
+        Shader shader;
+        if(!shaderPool.get(scene.shader, shader)){
+            throw std::runtime_error("Failed to retrieve material");
+        }
+        
         vk->recordCommand({
             .drawBuffer = drawBuffer.buffer,
             .pass = pass.renderPass,
             .frameBuffer = buffer.buffer,
+            .pipeline = shader.pipeline,
             .areaDims = {static_cast<int>(image.dimensions.x),
                          static_cast<int>(image.dimensions.y)},
             .areaOffset = {0, 0},
@@ -77,7 +83,6 @@ namespace boitatah
             .firstVertex = 0,
             .firstInstance = 0,
         });
-        // blah blah sets up draw commands
     }
 
     void Renderer::present(Handle<Framebuffer> &rendertarget)
