@@ -26,7 +26,6 @@ int main()
         {.index = 0,
          .format = RGBA_8_SRGB,
          .layout = COLOR_ATT_OPTIMAL,
-         .samples = SAMPLES_1,
          .initialLayout = UNDEFINED,
          .finalLayout = COLOR_ATT_OPTIMAL},
     };
@@ -48,6 +47,7 @@ int main()
             .dimensions = {windowWidth, windowHeight},
         });
 
+
     Handle<PipelineLayout> layout = r.createPipelineLayout({});
 
     Handle<Shader> shader = r.createShader({
@@ -66,14 +66,17 @@ int main()
     while (!r.isWindowClosed())
     {
         //wait for frame to finish
+
+        // record command buffer to render scene into image
+        // submit command buffer
         r.render(scene, rendertarget);
-
-        std::cout << "rendered" << std::endl;
-        // r.render(scene, target);
-        //copy rendered frame to swapchain
+        std::cout << "rendered scene " << std::endl;
+        // present the rendered frame to swapchain
+        //      acquire image from swapchain.
+        //      transfer rendertarget to swapchain.
+        //      present image to screen, return to swapchain
         r.present(rendertarget);
-
-        std::cout << "presented" << std::endl;
+        std::cout << "presented scene " << std::endl;
     }
 
     r.destroyLayout(layout);

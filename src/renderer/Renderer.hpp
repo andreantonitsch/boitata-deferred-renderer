@@ -15,6 +15,8 @@
 #include "../types/Framebuffer.hpp"
 #include "../collections/Pool.hpp"
 #include "../types/CommandBuffer.hpp"
+#include "../types/Scene.hpp"
+
 
 // Objective here is to have expose no lone vulkan types.
 // so that we can manage them. Thats what the vulkan class is for.
@@ -47,8 +49,9 @@ namespace boitatah
         ~Renderer(void);
 
         // Render Methods
-        void render();
-        void drawFrame();
+        void render(SceneNode &scene, Handle<Framebuffer> &rendertarget);
+        void writeCommandBuffer(SceneNode &scene, Handle<Framebuffer> &rendertarget);
+        void present(Handle<Framebuffer> &rendertarget);
 
         // Window Methods
         void initWindow();
@@ -71,6 +74,9 @@ namespace boitatah
         void destroyShader(Handle<Shader> shader);
         void destroyFramebuffer(Handle<Framebuffer> buffer);
         void destroyRenderPass(Handle<RenderPass> pass);
+        void destroyLayout(Handle<PipelineLayout> layout);
+
+
 
     private:
         // Members
@@ -85,6 +91,8 @@ namespace boitatah
         Pool<Framebuffer> frameBufferPool = Pool<Framebuffer>({.size = 50});
         Pool<RenderPass> renderpassPool = Pool<RenderPass>({.size = 50});
         Pool<Image> imagePool = Pool<Image>({.size = 500});
+        Pool<PipelineLayout> pipelineLayoutPool = Pool<PipelineLayout>({.size = 50});
+
         // Base objects
         // if this is a value member, then i have to deal with member initialization
         // This being a reference makes the code simpler for now

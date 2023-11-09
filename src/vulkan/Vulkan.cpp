@@ -255,10 +255,13 @@ bvk::Vulkan::Vulkan(VulkanOptions opts)
     initLogicalDeviceNQueues();
     setQueues();
     createCommandPools();
+    createSyncObjects();
 }
 
 bvk::Vulkan::~Vulkan(void)
 {
+
+    cleanupSyncObjects();
 
     clearSwapchainViews();
 
@@ -284,7 +287,7 @@ void boitatah::vk::Vulkan::initInstance()
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
         .pEngineName = "No Engine",
         .engineVersion = VK_MAKE_VERSION(1, 0, 0),
-        .apiVersion = VK_API_VERSION_1_0};
+        .apiVersion = VK_API_VERSION_1_3};
 
     // Extension Availability check
     // TODO For some MacOS sdks we need to add VK_KHR_PORTABILITY_subset.
@@ -337,26 +340,39 @@ void boitatah::vk::Vulkan::initInstance()
 
 #pragma endregion Initialization
 
+#pragma region Synchronization
+void boitatah::vk::Vulkan::waitForFrame()
+{
+    vkWaitForFences(device, 1, &FenInFlight, VK_TRUE, UINT64_MAX);
+    vkResetFences(device, 1, &FenInFlight);
+    std::cout << "fence reset" << std::endl;
+}
+
+Image boitatah::vk::Vulkan::acquireSwapChainImage()
+{
+    uint32_t index;
+    vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, SemImageAvailable, VK_NULL_HANDLE, &index);
+
+    return getSwapchainImages()[index];
+}
+
+#pragma endregion Synchronization
+
 #pragma region PSO Building
 
 VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
 {
-    // std::cout << "VK Create Render Pass " << std::endl;
     std::vector<VkAttachmentDescription> colorAttachments;
     std::vector<VkAttachmentReference> colorAttachmentRefs;
 
     for (const auto &attDesc : desc.attachments)
     {
-        if (attDesc.layout == COLOR_ATT_OPTIMAL)
-        {
-            // TODO How would i do this with emplace_back?
             colorAttachments.push_back(createAttachmentDescription(attDesc));
 
             colorAttachmentRefs.push_back({
                 .attachment = attDesc.index,
                 .layout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.layout),
             });
-        }
     }
 
     VkSubpassDescription subpass{
@@ -486,6 +502,7 @@ VkCommandBuffer boitatah::vk::Vulkan::allocateCommandBuffer(const CommandBufferD
     {
         throw std::runtime_error("Failed to allocate Command Buffer");
     }
+
     return buffer;
 }
 
@@ -504,7 +521,8 @@ void boitatah::vk::Vulkan::recordCommand(const DrawCommandVk &command)
 
     VkRect2D scissor = {
         .offset = {command.areaOffset.x, command.areaOffset.y},
-        .extent = {.width = command.areaDims.x, .height = command.areaDims.y},
+        .extent = {.width = static_cast<uint32_t>(command.areaDims.x),
+                   .height = static_cast<uint32_t>(command.areaDims.y)},
     };
     VkRenderPassBeginInfo passInfo{
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -534,9 +552,56 @@ void boitatah::vk::Vulkan::recordCommand(const DrawCommandVk &command)
               command.firstVertex, command.firstInstance);
 
     vkCmdEndRenderPass(command.drawBuffer);
-    if(vkEndCommandBuffer(command.drawBuffer) != VK_SUCCESS){
+    if (vkEndCommandBuffer(command.drawBuffer) != VK_SUCCESS)
+    {
         throw std::runtime_error("Failed to record a draw command buffer");
     }
+}
+
+void boitatah::vk::Vulkan::resetCommandBuffer(const CommandBuffer buffer)
+{
+    vkResetCommandBuffer(buffer.buffer, 0);
+}
+
+void boitatah::vk::Vulkan::submitCommandBuffer(const CommandBuffer buffer)
+{
+    std::vector<VkSemaphore> semaphores{SemImageAvailable};
+    std::vector<VkPipelineStageFlags> stageFlags{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    std::vector<VkSemaphore> signals{SemRenderFinished};
+    VkSubmitInfo submitInfo{
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = semaphores.data(),
+        .pWaitDstStageMask = stageFlags.data(),
+        .commandBufferCount = 1,
+        .pCommandBuffers = &buffer.buffer,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = signals.data()};
+
+    if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, FenInFlight) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to submit graphics queue");
+    }
+}
+
+void boitatah::vk::Vulkan::presentFrame()
+{
+
+    std::vector<VkSemaphore> signals{SemRenderFinished};
+    uint32_t index;
+    vkAcquireNextImageKHR(device, swapchain, UINT64_MAX,
+                          SemImageAvailable, VK_NULL_HANDLE, &index);
+
+    VkPresentInfoKHR presentInfo{
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = signals.data(),
+        .swapchainCount = 1,
+        .pSwapchains = &swapchain,
+        .pImageIndices = &index,
+        .pResults = nullptr};
+
+    vkQueuePresentKHR(presentQueue, &presentInfo);
 }
 
 VkDeviceMemory boitatah::vk::Vulkan::allocateMemory(const MemoryDesc &desc)
@@ -685,7 +750,7 @@ void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
         .pDepthStencilState = nullptr,
         .pColorBlendState = &colorBlending,
         .pDynamicState = &dynamicState,
-        .layout = shader.layout,
+        .layout = desc.layout,
         .renderPass = desc.renderpass,
         .subpass = 0,
 
@@ -723,16 +788,22 @@ VkShaderModule boitatah::vk::Vulkan::createShaderModule(const std::vector<char> 
 
 VkFramebuffer boitatah::vk::Vulkan::createFramebuffer(const FramebufferDescVk &desc)
 {
-
+    VkFramebuffer buffer;
     VkFramebufferCreateInfo createInfo{
         .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
         .renderPass = desc.pass,
         .attachmentCount = static_cast<uint32_t>(desc.views.size()),
         .pAttachments = desc.views.data(),
         .width = desc.dimensions.x,
-        .height = desc.dimensions.y};
+        .height = desc.dimensions.y,
+        .layers = 1};
 
-    return VkFramebuffer();
+    if (vkCreateFramebuffer(device, &createInfo, nullptr, &buffer) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create framebuffer");
+    }
+
+    return buffer;
 }
 
 VkAttachmentDescription boitatah::vk::Vulkan::createAttachmentDescription(const AttachmentDesc &attDesc)
@@ -751,7 +822,6 @@ void boitatah::vk::Vulkan::destroyShader(Shader &shader)
 {
     vkDestroyShaderModule(device, shader.vert.shaderModule, nullptr);
     vkDestroyShaderModule(device, shader.frag.shaderModule, nullptr);
-    vkDestroyPipelineLayout(device, shader.layout, nullptr);
     vkDestroyPipeline(device, shader.pipeline, nullptr);
 }
 
@@ -775,23 +845,33 @@ void boitatah::vk::Vulkan::destroyImage(Image image)
     }
 }
 
+void boitatah::vk::Vulkan::destroyPipelineLayout(PipelineLayout &layout)
+{
+    vkDestroyPipelineLayout(device, layout.layout, nullptr);
+}
+
 #pragma endregion PSO Building
 
 #pragma region SWAPCHAIN
 
 std::vector<Image> boitatah::vk::Vulkan::getSwapchainImages()
 {
-    std::vector<Image> swapimages(swapchainImages.size());
-
-    for (int i = 0; i < swapimages.size(); i++)
+    if (swapchainImageCache.size() == 0)
     {
-        swapimages[i] = {
-            .image = swapchainImages[i],
-            .view = swapchainViews[i],
-            .dimensions = {swapchainExtent.width, swapchainExtent.height},
-            .swapchain = true};
+        std::vector<Image> swapimages(swapchainImages.size());
+
+        for (int i = 0; i < swapimages.size(); i++)
+        {
+            swapimages[i] = {
+                .image = swapchainImages[i],
+                .view = swapchainViews[i],
+                .dimensions = {swapchainExtent.width, swapchainExtent.height},
+                .swapchain = true};
+        }
+        swapchainImageCache = swapimages;
     }
-    return swapimages;
+
+    return swapchainImageCache;
 }
 
 void boitatah::vk::Vulkan::clearSwapchainViews()
@@ -810,6 +890,32 @@ void boitatah::vk::Vulkan::buildSwapchain(FORMAT scFormat)
     clearSwapchainViews();
     createSwapchain(scFormat);
     createSwapchainViews(scFormat);
+}
+
+void boitatah::vk::Vulkan::createSyncObjects()
+{
+    VkSemaphoreCreateInfo semaphoreInfo{
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+    };
+
+    VkFenceCreateInfo fenceInfo{
+        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+        //.flags = VK_FENCE_CREATE_SIGNALED_BIT,
+    };
+
+    if ((vkCreateSemaphore(device, &semaphoreInfo, nullptr, &SemImageAvailable) != VK_SUCCESS) ||
+        (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &SemRenderFinished) != VK_SUCCESS) ||
+        (vkCreateFence(device, &fenceInfo, nullptr, &FenInFlight) != VK_SUCCESS))
+    {
+        throw std::runtime_error("Failed to create Synchronization Objects");
+    }
+}
+
+void boitatah::vk::Vulkan::cleanupSyncObjects()
+{
+    vkDestroySemaphore(device, SemImageAvailable, nullptr);
+    vkDestroySemaphore(device, SemRenderFinished, nullptr);
+    vkDestroyFence(device, FenInFlight, nullptr);
 }
 
 boitatah::vk::SwapchainSupport boitatah::vk::Vulkan::getSwapchainSupport(VkPhysicalDevice device)
@@ -1020,18 +1126,27 @@ void boitatah::vk::Vulkan::initLogicalDeviceNQueues()
     QueueFamilyIndices familyIndices = findQueueFamilies(physicalDevice);
 
     float queuePriority = 1.0;
-    VkDeviceQueueCreateInfo queueCreateInfo{
+    VkDeviceQueueCreateInfo graphicsQueueCreateInfo{
         .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
         .queueFamilyIndex = familyIndices.graphicsFamily.value(),
         .queueCount = 1,
         .pQueuePriorities = &queuePriority};
 
+    VkDeviceQueueCreateInfo presentQueueCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        .queueFamilyIndex = familyIndices.presentFamily.value(),
+        .queueCount = 1,
+        .pQueuePriorities = &queuePriority};
+
     VkPhysicalDeviceFeatures deviceFeatures{};
+
+    std::vector<VkDeviceQueueCreateInfo> queueCreation{
+        graphicsQueueCreateInfo, presentQueueCreateInfo};
 
     VkDeviceCreateInfo createInfo{
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        .queueCreateInfoCount = 1,
-        .pQueueCreateInfos = &queueCreateInfo,
+        .queueCreateInfoCount = 2,
+        .pQueueCreateInfos = queueCreation.data(),
         .enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size()),
         .ppEnabledExtensionNames = deviceExtensions.data(),
         .pEnabledFeatures = &deviceFeatures,
@@ -1053,6 +1168,7 @@ void boitatah::vk::Vulkan::setQueues()
 {
     QueueFamilyIndices familyIndices = findQueueFamilies(physicalDevice);
     vkGetDeviceQueue(device, familyIndices.graphicsFamily.value(), 0, &graphicsQueue);
+    vkGetDeviceQueue(device, familyIndices.presentFamily.value(), 0, &presentQueue);
 }
 
 void boitatah::vk::Vulkan::createCommandPools()

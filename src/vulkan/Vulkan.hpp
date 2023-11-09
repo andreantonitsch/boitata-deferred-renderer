@@ -56,9 +56,11 @@ namespace boitatah::vk
         Vulkan(VulkanOptions opts);
         ~Vulkan(void);
 
-        // set up swapchain
+        // Swapchain Methos
         void buildSwapchain(FORMAT scFormat);
         std::vector<Image> getSwapchainImages();
+        Image acquireSwapChainImage();
+
 
         // Create Objects
         VkShaderModule createShaderModule(const std::vector<char> &bytecode);
@@ -77,12 +79,20 @@ namespace boitatah::vk
         //Commands
         VkCommandBuffer allocateCommandBuffer(const CommandBufferDesc& desc);
         void recordCommand(const DrawCommandVk& command);
+        void resetCommandBuffer(const CommandBuffer buffer);
+        void submitCommandBuffer(const CommandBuffer buffer);
+        void presentFrame();
+
+
+        // Sync Methods
+        void waitForFrame();
 
         // Destroy Objects
         void destroyShader(Shader &shader);
         void destroyRenderpass(RenderPass &pass);
         void destroyFramebuffer(Framebuffer &framebuffer);
         void destroyImage(Image image);
+        void destroyPipelineLayout(PipelineLayout &layout);
         void buildShader(const ShaderDescVk &desc, Shader& shader);
 
         // Copy assignment?
@@ -90,25 +100,34 @@ namespace boitatah::vk
     private:
         VulkanOptions options;
 
+        // Instances and Devices
         VkInstance instance;
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
         VkDebugUtilsMessengerEXT debugMessenger;
 
         VkDevice device; // Logical Device
 
+        // Queues and Pools
         VkCommandPool commandPool;
         VkQueue graphicsQueue;
         VkQueue presentQueue;
 
 
+        // Swapchain responsabilities
         VkSurfaceKHR surface;
+
+        VkSemaphore SemImageAvailable;
+        VkSemaphore SemRenderFinished;
+        VkFence FenInFlight;
 
         VkSwapchainKHR swapchain = VK_NULL_HANDLE;
         std::vector<VkImage> swapchainImages;
         std::vector<VkImageView> swapchainViews;
         VkFormat swapchainFormat;
         VkExtent2D swapchainExtent;
+        std::vector<Image> swapchainImageCache;
 
+        // Extensions and Layers
         std::vector<const char *> validationLayers;
         std::vector<const char *> deviceExtensions;
         std::vector<const char *> instanceExtensions;
@@ -140,6 +159,9 @@ namespace boitatah::vk
         // Window Surfaces
         void createSurface(GLFWwindow *window);
 
+        // Sync Objects
+        void createSyncObjects();
+        void cleanupSyncObjects();
 #pragma endregion Vulkan Setup
 
 #pragma region SwapChain

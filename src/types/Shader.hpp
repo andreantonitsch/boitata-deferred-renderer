@@ -35,6 +35,7 @@ namespace boitatah
         // A compatible framebuffer.
         // sets the RenderPass for this PSO.
         Handle<Framebuffer> framebuffer;
+        Handle<PipelineLayout> layout;
     };
 
     struct ShaderDescVk{
@@ -44,6 +45,7 @@ namespace boitatah
         ShaderModule frag;
 
         VkRenderPass renderpass;
+        VkPipelineLayout layout;
     };
 
     struct Shader
@@ -54,7 +56,7 @@ namespace boitatah
 
         Handle<Framebuffer> frameBuffer;
 
-        VkPipelineLayout layout;
+        //VkPipelineLayout layout;
         //VkRenderPass renderPass;
         VkPipeline pipeline;
 

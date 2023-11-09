@@ -18,8 +18,8 @@ namespace boitatah
         initWindow();
         createVulkan();
         buildSwapchain();
-        allocateCommandBuffer({.count = 1,
-                               .level = PRIMARY});
+        drawBuffer = allocateCommandBuffer({.count = 1,
+                                            .level = PRIMARY});
     }
 
     void Renderer::createVulkan()
@@ -37,15 +37,57 @@ namespace boitatah
 #pragma endregion Initialization
 
 #pragma region Rendering
-    void Renderer::render()
+    void Renderer::render(SceneNode &scene, Handle<Framebuffer> &rendertarget)
+    {
+        vk->resetCommandBuffer(drawBuffer);
+
+        writeCommandBuffer(scene, rendertarget);
+
+        vk->submitCommandBuffer(drawBuffer);
+    }
+
+    void Renderer::writeCommandBuffer(SceneNode &scene, Handle<Framebuffer> &rendertarget)
+    {
+        Framebuffer buffer;
+        if (!frameBufferPool.get(rendertarget, buffer))
+        {
+            throw std::runtime_error("Failed to write command buffer");
+        }
+        RenderPass pass;
+        if (!renderpassPool.get(buffer.renderpass, pass))
+        {
+            throw std::runtime_error("Failed to write command buffer");
+        }
+
+        Image image;
+        if (!imagePool.get(buffer.attachments[0], image))
+        {
+            throw std::runtime_error("Failed to write command buffer");
+        }
+        std::cout<<buffer.buffer;
+        vk->recordCommand({
+            .drawBuffer = drawBuffer.buffer,
+            .pass = pass.renderPass,
+            .frameBuffer = buffer.buffer,
+            .areaDims = {static_cast<int>(image.dimensions.x),
+                         static_cast<int>(image.dimensions.y)},
+            .areaOffset = {0, 0},
+            .vertexCount = 3,
+            .instaceCount = 1,
+            .firstVertex = 0,
+            .firstInstance = 0,
+        });
+        // blah blah sets up draw commands
+    }
+
+    void Renderer::present(Handle<Framebuffer> &rendertarget)
     {
         windowEvents();
-        drawFrame();
+        vk->waitForFrame();
+        // vk->copyRendertargetToSwapchain
+        vk->presentFrame();
     }
 
-    void Renderer::drawFrame(){
-
-    }
 #pragma endregion Rendering
 
 #pragma region CleanUp/Destructor
@@ -71,8 +113,6 @@ namespace boitatah
         cleanup();
     }
 #pragma endregion CleanUp / Destructor
-
-
 
 #pragma region Command Buffers
 
@@ -149,6 +189,7 @@ namespace boitatah
         std::vector<AttachmentDesc> attachments;
         attachments.push_back({.index = 0,
                                .format = BGRA_8_SRGB,
+                               .layout = COLOR_ATT_OPTIMAL,
                                .samples = SAMPLES_1,
                                .initialLayout = UNDEFINED,
                                .finalLayout = PRESENT_SRC});
@@ -169,13 +210,6 @@ namespace boitatah
 
             Handle<Framebuffer> framebuffer = createFramebuffer(desc);
 
-            // Handle<RenderPass> passhandle = renderpassPool.set(
-            //     {.renderPass = vk->createRenderPass(desc.renderpassDesc)});
-            // RenderPass pass;
-            // if (!renderpassPool.get(passhandle, pass))
-            //     throw std::runtime_error("Failed to create render pass");
-
-            // Pushes the Pool handle for the created framebuffer.
             swapchainBuffers.push_back(framebuffer);
         }
     }
@@ -210,6 +244,9 @@ namespace boitatah
             .frag = {.shaderModule = vk->createShaderModule(data.frag.byteCode),
                      .entryFunction = data.vert.entryFunction}};
 
+        PipelineLayout layout;
+        if (!pipelineLayoutPool.get(data.layout, layout))
+            throw std::runtime_error("failed to get pipeline layout");
         Framebuffer buffer;
         RenderPass pass;
         if (!frameBufferPool.get(data.framebuffer, buffer))
@@ -221,7 +258,8 @@ namespace boitatah
             {.name = shader.name,
              .vert = shader.vert,
              .frag = shader.frag,
-             .renderpass = pass.renderPass},
+             .renderpass = pass.renderPass,
+             .layout = layout.layout},
             shader);
 
         return shaderPool.set(shader);
@@ -232,6 +270,7 @@ namespace boitatah
         std::vector<Handle<Image>> images(data.attachmentImages);
         if (images.empty())
         {
+
             // Create images.
             for (const auto &imageDesc : data.imageDesc)
             {
@@ -297,7 +336,8 @@ namespace boitatah
 
     Handle<PipelineLayout> Renderer::createPipelineLayout(const PipelineLayoutDesc &desc)
     {
-        return Handle<PipelineLayout>();
+        PipelineLayout layout{.layout = vk->createPipelineLayout(desc)};
+        return pipelineLayoutPool.set(layout);
     }
 
 #pragma endregion Create Vulkan Objects
@@ -309,10 +349,6 @@ namespace boitatah
         if (shaderPool.clear(handle, shader))
         {
             vk->destroyShader(shader);
-        }
-        else
-        {
-            std::cout << "Shader Double Destruction" << std::endl;
         }
     }
 
@@ -344,6 +380,15 @@ namespace boitatah
         if (renderpassPool.clear(passhandle, pass))
         {
             vk->destroyRenderpass(pass);
+        }
+    }
+
+    void Renderer::destroyLayout(Handle<PipelineLayout> layouthandle)
+    {
+        PipelineLayout layout;
+        if (pipelineLayoutPool.clear(layouthandle, layout))
+        {
+            vk->destroyPipelineLayout(layout);
         }
     }
 
