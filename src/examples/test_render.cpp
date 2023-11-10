@@ -35,7 +35,7 @@ int main()
             .format = RGBA_8_SRGB,
             .dimensions = {windowWidth, windowHeight},
             .initialLayout = UNDEFINED,
-            .usage = USAGE::COLOR_ATT,
+            .usage = USAGE::COLOR_ATT_TRANSFER_SRC,
         }
     };
 
@@ -62,22 +62,26 @@ int main()
 
     SceneNode scene{.children = {}, .shader = shader};
 
-
+    int i = 0;
     while (!r.isWindowClosed())
     {
+        std::cout << "\r loop " << i << std::flush;
         //wait for frame to finish
-
         // record command buffer to render scene into image
         // submit command buffer
         r.render(scene, rendertarget);
-        std::cout << "rendered scene " << std::endl;
+        //std::cout << "rendered scene" << std::endl;
         // present the rendered frame to swapchain
         //      acquire image from swapchain.
         //      transfer rendertarget to swapchain.
         //      present image to screen, return to swapchain
         r.present(rendertarget);
-        std::cout << "presented scene " << std::endl;
+        //std::cout << "presented scene" << std::endl;
+        i++;
+        if(i == 1) break;
     }
+
+    r.waitIdle();
 
     r.destroyLayout(layout);
     r.destroyFramebuffer(rendertarget);

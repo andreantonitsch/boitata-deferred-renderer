@@ -19,7 +19,15 @@ namespace boitatah
         createVulkan();
         buildSwapchain();
         drawBuffer = allocateCommandBuffer({.count = 1,
-                                            .level = PRIMARY});
+                                            .level = PRIMARY,
+                                            .type = GRAPHICS});
+        transferBuffer = allocateCommandBuffer({.count = 1,
+                                                .level = PRIMARY,
+                                                .type = TRANSFER});
+        // presentBuffer = allocateCommandBuffer({.count = 1,
+        //                                         .level = PRIMARY,
+        //                                         .type = PRESENT});
+        
     }
 
     void Renderer::createVulkan()
@@ -37,13 +45,17 @@ namespace boitatah
 #pragma endregion Initialization
 
 #pragma region Rendering
+    void Renderer::waitIdle()
+    {
+        vk-> waitIdle();
+    }
     void Renderer::render(SceneNode &scene, Handle<Framebuffer> &rendertarget)
     {
-        vk->resetCommandBuffer(drawBuffer);
+        vk->resetCommandBuffer(drawBuffer.buffer);
 
         writeCommandBuffer(scene, rendertarget);
 
-        vk->submitCommandBuffer(drawBuffer);
+        vk->submitCommandBuffer(drawBuffer.buffer);
     }
 
     void Renderer::writeCommandBuffer(SceneNode &scene, Handle<Framebuffer> &rendertarget)
@@ -66,10 +78,11 @@ namespace boitatah
         }
 
         Shader shader;
-        if(!shaderPool.get(scene.shader, shader)){
+        if (!shaderPool.get(scene.shader, shader))
+        {
             throw std::runtime_error("Failed to retrieve material");
         }
-        
+
         vk->recordCommand({
             .drawBuffer = drawBuffer.buffer,
             .pass = pass.renderPass,
@@ -88,9 +101,19 @@ namespace boitatah
     void Renderer::present(Handle<Framebuffer> &rendertarget)
     {
         windowEvents();
+
+        Framebuffer fb;
+        if(!frameBufferPool.get(rendertarget, fb))
+            throw std::runtime_error("failed to get framebuffer");
+
+        Image image;
+        if(!imagePool.get(fb.attachments[0], image))
+            throw std::runtime_error("failed to get framebuffer");
+        
+
         vk->waitForFrame();
-        // vk->copyRendertargetToSwapchain
-        vk->presentFrame();
+
+        vk->presentFrame(image, transferBuffer.buffer);
     }
 
 #pragma endregion Rendering
@@ -124,7 +147,8 @@ namespace boitatah
     CommandBuffer Renderer::allocateCommandBuffer(const CommandBufferDesc &desc)
     {
         CommandBuffer buffer{
-            .buffer = vk->allocateCommandBuffer(desc)};
+            .buffer = vk->allocateCommandBuffer(desc),
+            .type = desc.type};
 
         return buffer;
     }
@@ -154,6 +178,39 @@ namespace boitatah
             .instaceCount = 1,
             .firstVertex = 0,
             .firstInstance = 0,
+        });
+    }
+
+    void Renderer::clearCommandBuffer(const CommandBuffer &buffer)
+    {
+        vk->resetCommandBuffer(buffer.buffer);
+    }
+
+    void Renderer::transferImage(const TransferCommand &command)
+    {
+        Framebuffer dstBuffer;
+        if(!frameBufferPool.get(command.dst, dstBuffer))
+            throw std::runtime_error("failed to transfer buffers");
+
+        Framebuffer srcBuffer;
+        if(!frameBufferPool.get(command.src, srcBuffer))
+            throw std::runtime_error("failed to transfer buffers");
+
+        Image dstImage;
+        if(!imagePool.get(dstBuffer.attachments[0], dstImage))
+            throw std::runtime_error("failed to transfer buffers");
+        
+        Image srcImage;
+        if(!imagePool.get(srcBuffer.attachments[0], srcImage))
+            throw std::runtime_error("failed to transfer buffers");
+
+        vk->transferImage({
+            .buffer = transferBuffer.buffer,
+            .srcImage  = srcImage.image,
+            .srcLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .dstImage = dstImage.image,
+            .dstLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .extent = srcImage.dimensions
         });
     }
 

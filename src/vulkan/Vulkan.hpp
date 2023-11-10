@@ -18,14 +18,29 @@
 namespace boitatah::vk
 {
 
+    struct CommandPools{
+        VkCommandPool graphicsPool;
+        VkCommandPool transferPool;
+        VkCommandPool presentPool;
+    };
+
+    struct CommandQueues{
+        VkQueue graphicsQueue;
+        VkQueue transferQueue;
+        VkQueue presentQueue;
+    };
+
     struct QueueFamilyIndices
     {
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentFamily;
+        std::optional<uint32_t> transferFamily;
 
         bool hasFullSupport()
         {
-            return graphicsFamily.has_value() && presentFamily.has_value();
+            return graphicsFamily.has_value() &&
+                   presentFamily.has_value() &&
+                   transferFamily.has_value();
         }
     };
 
@@ -51,7 +66,6 @@ namespace boitatah::vk
     class Vulkan
     {
     public:
-        
         // Vulkan();
         Vulkan(VulkanOptions opts);
         ~Vulkan(void);
@@ -60,7 +74,6 @@ namespace boitatah::vk
         void buildSwapchain(FORMAT scFormat);
         std::vector<Image> getSwapchainImages();
         Image acquireSwapChainImage();
-
 
         // Create Objects
         VkShaderModule createShaderModule(const std::vector<char> &bytecode);
@@ -76,24 +89,29 @@ namespace boitatah::vk
         void bindImageMemory(VkDeviceMemory memory, VkImage image);
         uint32_t findMemoryIndex(const MemoryDesc &props);
 
-        //Commands
-        VkCommandBuffer allocateCommandBuffer(const CommandBufferDesc& desc);
-        void recordCommand(const DrawCommandVk& command);
-        void resetCommandBuffer(const CommandBuffer buffer);
-        void submitCommandBuffer(const CommandBuffer buffer);
-        void presentFrame();
+        // Generic Commands
+        VkCommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
+        void resetCommandBuffer(const VkCommandBuffer buffer);
 
+        // Render Commands
+        void recordCommand(const DrawCommandVk &command);
+        void submitCommandBuffer(const VkCommandBuffer buffer);
+        void presentFrame(Image image, VkCommandBuffer transferBuffer);
+
+        // Transfer Commands
+        void transferImage(const TransferCommandVk &command);
 
         // Sync Methods
         void waitForFrame();
-
+        void waitIdle();
+        
         // Destroy Objects
         void destroyShader(Shader &shader);
         void destroyRenderpass(RenderPass &pass);
         void destroyFramebuffer(Framebuffer &framebuffer);
         void destroyImage(Image image);
         void destroyPipelineLayout(PipelineLayout &layout);
-        void buildShader(const ShaderDescVk &desc, Shader& shader);
+        void buildShader(const ShaderDescVk &desc, Shader &shader);
 
         // Copy assignment?
         // Vulkan& operator= (const Vulkan &v);//copy assignment
@@ -108,17 +126,18 @@ namespace boitatah::vk
         VkDevice device; // Logical Device
 
         // Queues and Pools
-        VkCommandPool commandPool;
-        VkQueue graphicsQueue;
-        VkQueue presentQueue;
-
+        CommandPools commandPools;
+        CommandQueues queues;
 
         // Swapchain responsabilities
         VkSurfaceKHR surface;
 
+        // Sync Objects
         VkSemaphore SemImageAvailable;
         VkSemaphore SemRenderFinished;
+        VkSemaphore SemTransferComplete;
         VkFence FenInFlight;
+        VkFence FenTransferSwapchain;
 
         VkSwapchainKHR swapchain = VK_NULL_HANDLE;
         std::vector<VkImage> swapchainImages;
@@ -131,6 +150,18 @@ namespace boitatah::vk
         std::vector<const char *> validationLayers;
         std::vector<const char *> deviceExtensions;
         std::vector<const char *> instanceExtensions;
+
+#pragma region Commands
+
+        //void beginOneshotCommands(const BufferType)
+        //void endOneshotCommands(const BufferType)
+
+        void beginCommands(const VkCommandBuffer &buffer);
+        void endCommands(const VkCommandBuffer &buffer, const VkQueue &queue, VkFence fence);
+        void transitionLayoutCmd(const TransitionLayoutCmdVk &command);
+
+#pragma endregion Commands
+
 
 #pragma region Vulkan Setup
 
@@ -162,6 +193,7 @@ namespace boitatah::vk
         // Sync Objects
         void createSyncObjects();
         void cleanupSyncObjects();
+
 #pragma endregion Vulkan Setup
 
 #pragma region SwapChain
@@ -180,7 +212,6 @@ namespace boitatah::vk
 
 #pragma endregion Enum Conversion
     };
-
 
 }
 

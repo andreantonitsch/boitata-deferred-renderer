@@ -43,6 +43,8 @@ namespace boitatah{
         DEPTH_STENCIL = 4,
         SAMPLED = 5,
         TRANSFER_DST_SAMPLED = 6,
+        COLOR_ATT_TRANSFER_DST = 7,
+        COLOR_ATT_TRANSFER_SRC = 8
     };
 
     enum MEMORY_PROPERTY {
@@ -58,6 +60,12 @@ namespace boitatah{
     enum COMMAND_BUFFER_LEVEL{
         PRIMARY = 1,
         SECONDARY = 2
+    };
+
+    enum COMMAND_BUFFER_TYPE{
+        GRAPHICS,
+        TRANSFER,
+        PRESENT
     };
 }
 

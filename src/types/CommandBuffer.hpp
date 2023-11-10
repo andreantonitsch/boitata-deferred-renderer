@@ -9,6 +9,44 @@
 namespace boitatah
 {
 
+    struct EndCommandBuffer{
+        
+    };
+
+    struct CommandBuffer
+    {
+        VkCommandBuffer buffer;
+        COMMAND_BUFFER_TYPE type;
+    };
+    struct TransitionLayoutCmdVk{
+        VkCommandBuffer buffer;
+        VkImageLayout src;
+        VkImageLayout dst;
+        VkImage image;
+
+        VkPipelineStageFlags srcStage;
+        VkPipelineStageFlags dstStage;
+
+        VkAccessFlags srcAccess;
+        VkAccessFlags dstAccess;
+    };
+
+    struct TransferCommandVk{
+        VkCommandBuffer buffer;
+        //VkQueue queue;
+        VkImage srcImage;
+        VkImageLayout srcLayout;
+        VkImage dstImage;
+        VkImageLayout dstLayout;
+        Vector2<uint32_t> extent;
+    };
+
+    struct TransferCommand{
+        Handle<Framebuffer> src;
+        Handle<Framebuffer> dst;
+        CommandBuffer buffer;
+    }; 
+
     struct DrawCommandVk
     {
         VkCommandBuffer drawBuffer;
@@ -33,12 +71,9 @@ namespace boitatah
     {
         uint32_t count;
         COMMAND_BUFFER_LEVEL level;
+        COMMAND_BUFFER_TYPE type;
     };
 
-    struct CommandBuffer
-    {
-        VkCommandBuffer buffer;
-    };
 }
 
 #endif // BOITATAH_COMMANDS_HPP

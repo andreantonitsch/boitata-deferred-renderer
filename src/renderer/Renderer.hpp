@@ -52,6 +52,9 @@ namespace boitatah
         bool isWindowClosed();
 
 
+        //Sync Methods
+        void waitIdle();
+
         // Render Methods
         void render(SceneNode &scene, Handle<Framebuffer> &rendertarget);
         void writeCommandBuffer(SceneNode &scene, Handle<Framebuffer> &rendertarget);
@@ -70,6 +73,8 @@ namespace boitatah
         
         CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
         void recordCommand(const DrawCommand& command);
+        void clearCommandBuffer(const CommandBuffer &buffer); 
+        void transferImage(const TransferCommand& command);
 
         void destroyShader(Handle<Shader> shader);
         void destroyFramebuffer(Handle<Framebuffer> buffer);
@@ -83,6 +88,8 @@ namespace boitatah
         void buildSwapchain();
         // Members
         CommandBuffer drawBuffer;
+        CommandBuffer transferBuffer;
+        //CommandBuffer presentBuffer;
         
         
         std::vector<Handle<Framebuffer>> swapchainBuffers;
