@@ -71,7 +71,7 @@ namespace boitatah::vk
         ~Vulkan(void);
 
         // Swapchain Methos
-        void buildSwapchain(FORMAT scFormat);
+        void buildSwapchain(FORMAT scFormat, USAGE usage);
         std::vector<Image> getSwapchainImages();
         Image acquireSwapChainImage();
 
@@ -99,7 +99,7 @@ namespace boitatah::vk
         void presentFrame(Image image, VkCommandBuffer transferBuffer);
 
         // Transfer Commands
-        void transferImage(const TransferCommandVk &command);
+        void CmdCopyImage(const CopyImageCommandVk &command);
 
         // Sync Methods
         void waitForFrame();
@@ -201,7 +201,7 @@ namespace boitatah::vk
         VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats, FORMAT scFormat, COLOR_SPACE scColorSpace);
         VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
         VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availableModes);
-        void createSwapchain(FORMAT scFormat);
+        void createSwapchain(FORMAT scFormat, USAGE usage);
         void createSwapchainViews(FORMAT scFormat);
         void clearSwapchainViews();
 #pragma endregion SwapChain

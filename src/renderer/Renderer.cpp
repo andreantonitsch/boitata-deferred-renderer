@@ -204,12 +204,12 @@ namespace boitatah
         if(!imagePool.get(srcBuffer.attachments[0], srcImage))
             throw std::runtime_error("failed to transfer buffers");
 
-        vk->transferImage({
+        vk->CmdCopyImage({
             .buffer = transferBuffer.buffer,
             .srcImage  = srcImage.image,
-            .srcLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .srcImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .dstImage = dstImage.image,
-            .dstLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .dstImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .extent = srcImage.dimensions
         });
     }
@@ -244,7 +244,7 @@ namespace boitatah
     {
         // Clear old swapchain and get new images.
         cleanupSwapchainBuffers();
-        vk->buildSwapchain(options.swapchainFormat);
+        vk->buildSwapchain(options.swapchainFormat, USAGE::COLOR_ATT_TRANSFER_DST);
         std::vector<Image> swapchainImages = vk->getSwapchainImages();
 
         // Create new swapchain framebuffers

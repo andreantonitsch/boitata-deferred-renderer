@@ -31,13 +31,13 @@ namespace boitatah
         VkAccessFlags dstAccess;
     };
 
-    struct TransferCommandVk{
+    struct CopyImageCommandVk{
         VkCommandBuffer buffer;
         //VkQueue queue;
         VkImage srcImage;
-        VkImageLayout srcLayout;
+        VkImageLayout srcImgLayout;
         VkImage dstImage;
-        VkImageLayout dstLayout;
+        VkImageLayout dstImgLayout;
         Vector2<uint32_t> extent;
     };
 

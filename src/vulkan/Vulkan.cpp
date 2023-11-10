@@ -134,9 +134,9 @@ inline VkImageUsageFlagBits boitatah::vk::Vulkan::castEnum(USAGE samples)
     case SAMPLED:
         return VK_IMAGE_USAGE_SAMPLED_BIT;
     case COLOR_ATT_TRANSFER_DST:
-            return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+        return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
     case COLOR_ATT_TRANSFER_SRC:
-            return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+        return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
     default:
         return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     }
@@ -349,8 +349,8 @@ void boitatah::vk::Vulkan::initInstance()
 #pragma region Synchronization
 void boitatah::vk::Vulkan::waitForFrame()
 {
-    VkResult result =vkWaitForFences(device, 1, &FenInFlight, VK_TRUE, UINT64_MAX);
-    if(result != VK_SUCCESS)
+    VkResult result = vkWaitForFences(device, 1, &FenInFlight, VK_TRUE, UINT64_MAX);
+    if (result != VK_SUCCESS)
         std::cout << "wait for fence failed " << result << std::endl;
     vkResetFences(device, 1, &FenInFlight);
 }
@@ -520,17 +520,17 @@ VkCommandBuffer boitatah::vk::Vulkan::allocateCommandBuffer(const CommandBufferD
         .commandBufferCount = desc.count};
 
     switch (desc.type)
-        {
-        case GRAPHICS:
-            allocateInfo.commandPool = commandPools.graphicsPool;
-            break;
-        case TRANSFER:
-            allocateInfo.commandPool = commandPools.transferPool;
-            break;
-        case PRESENT:
-            allocateInfo.commandPool = commandPools.presentPool;
-            break;
-        }
+    {
+    case GRAPHICS:
+        allocateInfo.commandPool = commandPools.graphicsPool;
+        break;
+    case TRANSFER:
+        allocateInfo.commandPool = commandPools.transferPool;
+        break;
+    case PRESENT:
+        allocateInfo.commandPool = commandPools.presentPool;
+        break;
+    }
 
     VkCommandBuffer buffer;
     if (vkAllocateCommandBuffers(device, &allocateInfo, &buffer) != VK_SUCCESS)
@@ -633,22 +633,22 @@ void boitatah::vk::Vulkan::presentFrame(Image image, VkCommandBuffer transferBuf
                           SemImageAvailable, VK_NULL_HANDLE, &index);
 
     // finished render
-    //std::vector<VkSemaphore> waitSignal{SemImageAvailable};
-
+    // std::vector<VkSemaphore> waitSignal{SemImageAvailable};
 
     // // Finished Transfer
     beginCommands(transferBuffer);
-    transferImage({
+    CmdCopyImage({
         .buffer = transferBuffer,
         .srcImage = image.image,
-        .srcLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        .srcImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         .dstImage = swapchainImages[index],
-        .dstLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-        .extent = image.dimensions,});
+        .dstImgLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+        .extent = image.dimensions,
+    });
     endCommands(transferBuffer, queues.transferQueue, FenTransferSwapchain);
 
     vkWaitForFences(device, 1, &FenTransferSwapchain, VK_TRUE, UINT64_MAX);
-    std::cout <<  " finished waiting for transfer";
+
     //  Present
     VkPresentInfoKHR presentInfo{
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -662,7 +662,7 @@ void boitatah::vk::Vulkan::presentFrame(Image image, VkCommandBuffer transferBuf
     vkQueuePresentKHR(queues.presentQueue, &presentInfo);
 }
 
-void boitatah::vk::Vulkan::transferImage(const TransferCommandVk &command)
+void boitatah::vk::Vulkan::CmdCopyImage(const CopyImageCommandVk &command)
 {
 
     VkImageCopy copy{
@@ -683,6 +683,21 @@ void boitatah::vk::Vulkan::transferImage(const TransferCommandVk &command)
         .extent = {command.extent.x, command.extent.y, 1},
     };
 
+    // transition source image to
+    // transfer source layout.
+    transitionLayoutCmd({
+        .buffer = command.buffer,
+        .src = command.srcImgLayout,
+        .dst = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        .image = command.srcImage,
+        .srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        .dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT,
+        .srcAccess = 0,
+        .dstAccess = VK_ACCESS_TRANSFER_READ_BIT,
+    });
+
+    // transition destination image to
+    // transfer destination layout
     transitionLayoutCmd({
         .buffer = command.buffer,
         .src = VK_IMAGE_LAYOUT_UNDEFINED,
@@ -695,22 +710,37 @@ void boitatah::vk::Vulkan::transferImage(const TransferCommandVk &command)
     });
 
     vkCmdCopyImage(command.buffer,
-                   command.srcImage, command.srcLayout,
-                   command.dstImage, command.dstLayout,
+                   command.srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                   command.dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                    1, &copy);
 
-    // transitionLayoutCmd({
-    //     .buffer = command.buffer,
-    //     .src = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-    //     .dst = command.dstLayout,
-    //     .image = command.dstImage,
+    // transition destination image back
+    // to its original layout
+    transitionLayoutCmd({
+        .buffer = command.buffer,
+        .src = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        .dst = command.dstImgLayout,
+        .image = command.dstImage,
 
-    //     .srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT,
-    //     .dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT,
-    //     .srcAccess = VK_ACCESS_TRANSFER_WRITE_BIT,
-    //     .dstAccess = 0,
-    // });
+        .srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT,
+        .dstStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        .srcAccess = VK_ACCESS_TRANSFER_WRITE_BIT,
+        .dstAccess = 0,
+    });
 
+    //transition source image back
+    // to its original layout
+    transitionLayoutCmd({
+        .buffer = command.buffer,
+        .src = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        .dst = command.srcImgLayout,
+        .image = command.srcImage,
+
+        .srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT,
+        .dstStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        .srcAccess = VK_ACCESS_TRANSFER_WRITE_BIT,
+        .dstAccess = 0,
+    });
 }
 
 void boitatah::vk::Vulkan::beginCommands(const VkCommandBuffer &buffer)
@@ -1018,10 +1048,10 @@ void boitatah::vk::Vulkan::clearSwapchainViews()
 // does 3 main things.
 // chooses, format (e.g. rgba8 srgb), present mode (e.g. vsync) and extent(i.e. resolution
 // buildSwapchain();
-void boitatah::vk::Vulkan::buildSwapchain(FORMAT scFormat)
+void boitatah::vk::Vulkan::buildSwapchain(FORMAT scFormat, USAGE usage)
 {
     clearSwapchainViews();
-    createSwapchain(scFormat);
+    createSwapchain(scFormat, usage);
     createSwapchainViews(scFormat);
 }
 
@@ -1149,7 +1179,7 @@ VkExtent2D boitatah::vk::Vulkan::chooseSwapExtent(const VkSurfaceCapabilitiesKHR
     }
 }
 
-void boitatah::vk::Vulkan::createSwapchain(FORMAT scFormat)
+void boitatah::vk::Vulkan::createSwapchain(FORMAT scFormat, USAGE usage)
 {
     SwapchainSupport support = getSwapchainSupport(physicalDevice);
 
@@ -1177,7 +1207,7 @@ void boitatah::vk::Vulkan::createSwapchain(FORMAT scFormat)
         .imageColorSpace = format.colorSpace,
         .imageExtent = extent,
         .imageArrayLayers = 1, // 2 for stereoscopic aplications (nothing to do with deffered rendering)
-        .imageUsage = castEnum<USAGE, VkImageUsageFlagBits>(COLOR_ATT_TRANSFER_DST)};
+        .imageUsage = castEnum<USAGE, VkImageUsageFlagBits>(usage)};
 
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
@@ -1311,14 +1341,14 @@ void boitatah::vk::Vulkan::transitionLayoutCmd(const TransitionLayoutCmdVk &comm
 {
     VkImageMemoryBarrier barrier{
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .srcAccessMask = command.srcAccess, // TODO
-        .dstAccessMask = command.dstAccess, // TODO,
-        .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-        .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        .srcAccessMask = command.srcAccess,
+        .dstAccessMask = command.dstAccess, 
+        .oldLayout = command.src,
+        .newLayout = command.dst,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .image = command.image,
-        
+
         .subresourceRange = {
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
             .baseMipLevel = 0,
