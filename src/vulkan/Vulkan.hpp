@@ -10,7 +10,7 @@
 #include <optional>
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
-#include "../types/Framebuffer.hpp"
+#include "../types/RenderTarget.hpp"
 #include "../types/Memory.hpp"
 #include "../types/Image.hpp"
 #include "../types/CommandBuffer.hpp"
@@ -108,7 +108,7 @@ namespace boitatah::vk
         // Destroy Objects
         void destroyShader(Shader &shader);
         void destroyRenderpass(RenderPass &pass);
-        void destroyFramebuffer(Framebuffer &framebuffer);
+        void destroyFramebuffer(RenderTarget &framebuffer);
         void destroyImage(Image image);
         void destroyPipelineLayout(PipelineLayout &layout);
         void buildShader(const ShaderDescVk &desc, Shader &shader);

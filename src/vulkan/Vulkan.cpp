@@ -12,7 +12,6 @@
 
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
-#include "../types/Framebuffer.hpp"
 #include "../types/Image.hpp"
 
 namespace bvk = boitatah::vk;
@@ -993,7 +992,7 @@ void boitatah::vk::Vulkan::destroyRenderpass(RenderPass &pass)
     vkDestroyRenderPass(device, pass.renderPass, nullptr);
 }
 
-void boitatah::vk::Vulkan::destroyFramebuffer(Framebuffer &framebuffer)
+void boitatah::vk::Vulkan::destroyFramebuffer(RenderTarget &framebuffer)
 {
     vkDestroyFramebuffer(device, framebuffer.buffer, nullptr);
 }

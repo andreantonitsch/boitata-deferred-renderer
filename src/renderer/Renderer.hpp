@@ -12,11 +12,11 @@
 #include "../vulkan/Vulkan.hpp"
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
-#include "../types/Framebuffer.hpp"
+#include "../types/RenderTarget.hpp"
 #include "../collections/Pool.hpp"
 #include "../types/CommandBuffer.hpp"
 #include "../types/Scene.hpp"
-
+#include "../types/BackBuffer.hpp"
 
 // Objective here is to have expose no lone vulkan types.
 // so that we can manage them. Thats what the vulkan class is for.
@@ -28,9 +28,13 @@ namespace boitatah
     using namespace vk;
 
     template class Pool<Shader>;
-    template class Pool<Framebuffer>;
+    template class Pool<RenderTarget>;
     template class Pool<RenderPass>;
     template class Pool<Image>;
+
+    struct FramebufferDescription {
+
+    };
 
     struct RendererOptions
     {
@@ -38,6 +42,7 @@ namespace boitatah
         const char *appName = "Window";
         bool debug = false;
         FORMAT swapchainFormat = FORMAT::BGRA_8_SRGB;
+        RenderTargetDesc backBufferDescription;
         // FORMAT renderpassColorFormat = FORMAT::RGBA_8_SRGB;
     };
 
@@ -56,9 +61,9 @@ namespace boitatah
         void waitIdle();
 
         // Render Methods
-        void render(SceneNode &scene, Handle<Framebuffer> &rendertarget);
-        void writeCommandBuffer(SceneNode &scene, Handle<Framebuffer> &rendertarget);
-        void present(Handle<Framebuffer> &rendertarget);
+        void renderRenderTarget(SceneNode &scene, Handle<RenderTarget> &rendertarget);
+        void writeCommandBuffer(SceneNode &scene, Handle<RenderTarget> &rendertarget);
+        void present(Handle<RenderTarget> &rendertarget);
 
 
         // Object Creation
@@ -66,7 +71,7 @@ namespace boitatah
         // Needs a Framebuffer for compatibility.
         Handle<Shader> createShader(const ShaderDesc &data);
         // Creates a framebuffer with a renderpass.
-        Handle<Framebuffer> createFramebuffer(const FramebufferDesc &data);
+        Handle<RenderTarget> createRenderTarget(const RenderTargetDesc &data);
         Handle<RenderPass> createRenderPass(const RenderPassDesc &data);
         Handle<Image> createImage(const ImageDesc &desc);
         Handle<PipelineLayout> createPipelineLayout(const PipelineLayoutDesc &desc);
@@ -77,7 +82,7 @@ namespace boitatah
         void transferImage(const TransferCommand& command);
 
         void destroyShader(Handle<Shader> shader);
-        void destroyFramebuffer(Handle<Framebuffer> buffer);
+        void destroyFramebuffer(Handle<RenderTarget> buffer);
         void destroyRenderPass(Handle<RenderPass> pass);
         void destroyLayout(Handle<PipelineLayout> layout);
 
@@ -86,18 +91,18 @@ namespace boitatah
         // Window Methods
         void initWindow();
         void buildSwapchain();
+
         // Members
         CommandBuffer drawBuffer;
         CommandBuffer transferBuffer;
-        //CommandBuffer presentBuffer;
+        BackBufferManager backBuffers;
         
-        
-        std::vector<Handle<Framebuffer>> swapchainBuffers;
+        std::vector<Handle<RenderTarget>> swapchainBuffers;
         
         // Pools
         //  Pool<RenderTarget> renderTargetPool;
         Pool<Shader> shaderPool = Pool<Shader>({.size = 100});
-        Pool<Framebuffer> frameBufferPool = Pool<Framebuffer>({.size = 50});
+        Pool<RenderTarget> renderTargetPool = Pool<RenderTarget>({.size = 50});
         Pool<RenderPass> renderpassPool = Pool<RenderPass>({.size = 50});
         Pool<Image> imagePool = Pool<Image>({.size = 500});
         Pool<PipelineLayout> pipelineLayoutPool = Pool<PipelineLayout>({.size = 50});
@@ -111,6 +116,11 @@ namespace boitatah
 
         // Options Members
         RendererOptions options;
+
+
+        // Backbuffer Methods
+        BackBufferManager createBackBufferManager(RenderTargetDesc &targetDesc);
+        void destroyBackBufferManager(BackBufferManager &manager);
 
         // Window Functions
         const std::vector<const char *> requiredWindowExtensions();

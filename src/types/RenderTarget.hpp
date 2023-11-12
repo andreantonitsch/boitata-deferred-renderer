@@ -1,5 +1,5 @@
-#ifndef BOITATAH_FRAME_BUFFER_HPP
-#define BOITATAH_FRAME_BUFFER_HPP
+#ifndef BOITATAH_RENDERTARGET_HPP
+#define BOITATAH_RENDERTARGET_HPP
 
 #include <vulkan/vulkan.h>
 #include "BttEnums.hpp"
@@ -36,7 +36,7 @@ namespace boitatah{
     };
 
     // If VK_NULL_HANDLE a new image is created.
-    struct FramebufferDesc{
+    struct RenderTargetDesc{
         //Either RenderPassDesc or pass need to be non null.
         RenderPassDesc renderpassDesc;
         RenderPass pass;
@@ -49,7 +49,7 @@ namespace boitatah{
     };
 
     //attachments here are images
-    struct Framebuffer{
+    struct RenderTarget{
         VkFramebuffer buffer;
         std::vector<Handle<Image>> attachments;
         Handle<RenderPass> renderpass;
@@ -58,4 +58,4 @@ namespace boitatah{
 
 }
 
-#endif //BOITATAH_FRAME_BUFFER_HPP
+#endif //BOITATAH_RENDERTARGET_HPP

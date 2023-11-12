@@ -4,7 +4,7 @@
 #include <vulkan/vulkan.h>
 #include <string>
 #include "../types/BttEnums.hpp"
-#include "Framebuffer.hpp"
+#include "RenderTarget.hpp"
 
 namespace boitatah
 {
@@ -34,7 +34,7 @@ namespace boitatah
 
         // A compatible framebuffer.
         // sets the RenderPass for this PSO.
-        Handle<Framebuffer> framebuffer;
+        Handle<RenderTarget> framebuffer;
         Handle<PipelineLayout> layout;
     };
 

@@ -6,8 +6,8 @@
 #include "../types/Shader.hpp"
 #include "../utils/utils.hpp"
 #include "../collections/Pool.hpp"
-//#include <format>
-#include <chrono>
+
+
 
 using namespace boitatah;
 
@@ -41,7 +41,7 @@ int main()
         }
     };
 
-    Handle<Framebuffer> rendertarget = r.createFramebuffer(
+    Handle<RenderTarget> rendertarget = r.createRenderTarget(
         {
             .renderpassDesc = {.format = RGBA_8_SRGB, .attachments = attachments},
             .attachments = attachments,
@@ -63,19 +63,16 @@ int main()
     });
 
     SceneNode scene{.children = {}, .shader = shader};
-    std::cout << std::endl;
 
-    int roll_size = 100;
-    std::vector<std::chrono::microseconds> rolling(roll_size);
-    int current;
-    std::chrono::microseconds total = std::chrono::microseconds(0);
+    boitatah::utils::Timewatch timewatch(240);
+
     while (!r.isWindowClosed())
     {
-        auto start = std::chrono::high_resolution_clock::now();
+        
         //wait for frame to finish
         // record command buffer to render scene into image
         // submit command buffer
-        r.render(scene, rendertarget);
+        r.renderRenderTarget(scene, rendertarget);
         //std::cout << "rendered scene" << std::endl;
         // present the rendered frame to swapchain
         //      acquire image from swapchain.
@@ -83,20 +80,8 @@ int main()
         //      present image to screen, return to swapchain
         r.present(rendertarget);
 
-
-        //track time
-        //std::cout << "presented scene" << std::endl;
-        auto stop = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-        total -= rolling[current];
-        rolling[current] = duration;
-        total += duration;
-        current = (current+1) % roll_size;
-        //std::cout << std::format("\rFrametime:{:10}, FPS: {:10}", total / roll_size, roll_size / total )  << std::flush;
-        auto frametime = total / roll_size;
-        auto fps = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::seconds(1)) / std::max(frametime, std::chrono::microseconds(1));
-        if(current % 100 == 0)
-            std::cout << "\rFrametime : " << frametime << " FPS: " << fps   << std::flush;
+        auto lap = timewatch.Lap();
+        std::cout << "\rFrametime :: " << lap << std::endl;
     
     }
 

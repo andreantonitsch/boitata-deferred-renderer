@@ -49,7 +49,8 @@ namespace boitatah
     {
         vk-> waitIdle();
     }
-    void Renderer::render(SceneNode &scene, Handle<Framebuffer> &rendertarget)
+
+    void Renderer::renderRenderTarget(SceneNode &scene, Handle<RenderTarget> &rendertarget)
     {
         vk->resetCommandBuffer(drawBuffer.buffer);
 
@@ -58,10 +59,10 @@ namespace boitatah
         vk->submitCommandBuffer(drawBuffer.buffer);
     }
 
-    void Renderer::writeCommandBuffer(SceneNode &scene, Handle<Framebuffer> &rendertarget)
+    void Renderer::writeCommandBuffer(SceneNode &scene, Handle<RenderTarget> &rendertarget)
     {
-        Framebuffer buffer;
-        if (!frameBufferPool.get(rendertarget, buffer))
+        RenderTarget buffer;
+        if (!renderTargetPool.get(rendertarget, buffer))
         {
             throw std::runtime_error("Failed to write command buffer");
         }
@@ -98,12 +99,12 @@ namespace boitatah
         });
     }
 
-    void Renderer::present(Handle<Framebuffer> &rendertarget)
+    void Renderer::present(Handle<RenderTarget> &rendertarget)
     {
         windowEvents();
 
-        Framebuffer fb;
-        if(!frameBufferPool.get(rendertarget, fb))
+        RenderTarget fb;
+        if(!renderTargetPool.get(rendertarget, fb))
             throw std::runtime_error("failed to get framebuffer");
 
         Image image;
@@ -155,8 +156,8 @@ namespace boitatah
 
     void Renderer::recordCommand(const DrawCommand &command)
     {
-        Framebuffer framebuffer;
-        if (!frameBufferPool.get(command.buffer, framebuffer))
+        RenderTarget framebuffer;
+        if (!renderTargetPool.get(command.buffer, framebuffer))
         {
             throw std::runtime_error("failed to get the Framebuffer data");
         }
@@ -188,12 +189,12 @@ namespace boitatah
 
     void Renderer::transferImage(const TransferCommand &command)
     {
-        Framebuffer dstBuffer;
-        if(!frameBufferPool.get(command.dst, dstBuffer))
+        RenderTarget dstBuffer;
+        if(!renderTargetPool.get(command.dst, dstBuffer))
             throw std::runtime_error("failed to transfer buffers");
 
-        Framebuffer srcBuffer;
-        if(!frameBufferPool.get(command.src, srcBuffer))
+        RenderTarget srcBuffer;
+        if(!renderTargetPool.get(command.src, srcBuffer))
             throw std::runtime_error("failed to transfer buffers");
 
         Image dstImage;
@@ -260,7 +261,7 @@ namespace boitatah
         {
             std::vector<Handle<Image>> imageAttachments;
             imageAttachments.push_back(imagePool.set(image));
-            FramebufferDesc desc{
+            RenderTargetDesc desc{
                 .renderpassDesc = {
                     .format = BGRA_8_SRGB,
                     .attachments = attachments,
@@ -270,7 +271,7 @@ namespace boitatah
                 .dimensions = image.dimensions,
             };
 
-            Handle<Framebuffer> framebuffer = createFramebuffer(desc);
+            Handle<RenderTarget> framebuffer = createRenderTarget(desc);
 
             swapchainBuffers.push_back(framebuffer);
         }
@@ -309,9 +310,9 @@ namespace boitatah
         PipelineLayout layout;
         if (!pipelineLayoutPool.get(data.layout, layout))
             throw std::runtime_error("failed to get pipeline layout");
-        Framebuffer buffer;
+        RenderTarget buffer;
         RenderPass pass;
-        if (!frameBufferPool.get(data.framebuffer, buffer))
+        if (!renderTargetPool.get(data.framebuffer, buffer))
             throw std::runtime_error("failed to get framebuffer");
         if (!renderpassPool.get(buffer.renderpass, pass))
             throw std::runtime_error("failed to get renderpass");
@@ -327,7 +328,7 @@ namespace boitatah
         return shaderPool.set(shader);
     }
 
-    Handle<Framebuffer> Renderer::createFramebuffer(const FramebufferDesc &data)
+    Handle<RenderTarget> Renderer::createRenderTarget(const RenderTargetDesc &data)
     {
         std::vector<Handle<Image>> images(data.attachmentImages);
         if (images.empty())
@@ -363,13 +364,13 @@ namespace boitatah
             .dimensions = data.dimensions,
         };
 
-        Framebuffer framebuffer{
+        RenderTarget framebuffer{
             .buffer = vk->createFramebuffer(vkDesc),
             .attachments = images,
             .renderpass = passhandle,
         };
 
-        return frameBufferPool.set(framebuffer);
+        return renderTargetPool.set(framebuffer);
     }
 
     Handle<RenderPass> Renderer::createRenderPass(const RenderPassDesc &data)
@@ -414,10 +415,10 @@ namespace boitatah
         }
     }
 
-    void Renderer::destroyFramebuffer(Handle<Framebuffer> bufferhandle)
+    void Renderer::destroyFramebuffer(Handle<RenderTarget> bufferhandle)
     {
-        Framebuffer framebuffer;
-        if (frameBufferPool.clear(bufferhandle, framebuffer))
+        RenderTarget framebuffer;
+        if (renderTargetPool.clear(bufferhandle, framebuffer))
         {
             for (auto &imagehandle : framebuffer.attachments)
             {

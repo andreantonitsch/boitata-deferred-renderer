@@ -4,7 +4,7 @@
 
 #include "../collections/Pool.hpp"
 #include "BttEnums.hpp"
-#include "Framebuffer.hpp"
+#include "RenderTarget.hpp"
 
 namespace boitatah
 {
@@ -42,8 +42,8 @@ namespace boitatah
     };
 
     struct TransferCommand{
-        Handle<Framebuffer> src;
-        Handle<Framebuffer> dst;
+        Handle<RenderTarget> src;
+        Handle<RenderTarget> dst;
         CommandBuffer buffer;
     }; 
 
@@ -64,7 +64,7 @@ namespace boitatah
 
     struct DrawCommand
     {
-        Handle<Framebuffer> buffer;
+        Handle<RenderTarget> buffer;
     };
 
     struct CommandBufferDesc
