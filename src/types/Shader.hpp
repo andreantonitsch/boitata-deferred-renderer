@@ -54,18 +54,10 @@ namespace boitatah
         ShaderModule vert;
         ShaderModule frag;
 
-//        Handle<Framebuffer> frameBuffer;
-
         VkPipeline pipeline;
 
     };
 
-    // struct ShaderHot{
-
-    // };
-    // struct ShaderCold{
-
-    // }; than use templates
 }
 
 #endif // BOITATAH_SHADER_HPP

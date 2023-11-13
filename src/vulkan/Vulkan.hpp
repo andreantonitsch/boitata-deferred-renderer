@@ -18,13 +18,15 @@
 namespace boitatah::vk
 {
 
-    struct CommandPools{
+    struct CommandPools
+    {
         VkCommandPool graphicsPool;
         VkCommandPool transferPool;
         VkCommandPool presentPool;
     };
 
-    struct CommandQueues{
+    struct CommandQueues
+    {
         VkQueue graphicsQueue;
         VkQueue transferQueue;
         VkQueue presentQueue;
@@ -83,6 +85,8 @@ namespace boitatah::vk
         Image createImage(const ImageDesc &desc);
         VkImageView createImageView(VkImage image, const ImageDesc &desc);
         VkPipelineLayout createPipelineLayout(const PipelineLayoutDesc &desc);
+        VkFence createFence(bool signaled);
+        VkSemaphore createSemaphore();
 
         // Manage Memory
         VkDeviceMemory allocateMemory(const MemoryDesc &desc);
@@ -95,16 +99,16 @@ namespace boitatah::vk
 
         // Render Commands
         void recordCommand(const DrawCommandVk &command);
-        void submitCommandBuffer(const VkCommandBuffer buffer);
-        void presentFrame(Image image, VkCommandBuffer transferBuffer);
+        void submitDrawCmdBuffer(const SubmitCommand &command);
+        void presentFrame(Image image, SubmitCommand &command);
 
         // Transfer Commands
         void CmdCopyImage(const CopyImageCommandVk &command);
 
         // Sync Methods
-        void waitForFrame();
+        void waitForFrame(RTCmdBuffers &bufferData);
         void waitIdle();
-        
+
         // Destroy Objects
         void destroyShader(Shader &shader);
         void destroyRenderpass(RenderPass &pass);
@@ -112,7 +116,7 @@ namespace boitatah::vk
         void destroyImage(Image image);
         void destroyPipelineLayout(PipelineLayout &layout);
         void buildShader(const ShaderDescVk &desc, Shader &shader);
-
+        void destroyRenderTargetCmdData(const RTCmdBuffers &sync);
         // Copy assignment?
         // Vulkan& operator= (const Vulkan &v);//copy assignment
     private:
@@ -153,15 +157,18 @@ namespace boitatah::vk
 
 #pragma region Commands
 
-        //void beginOneshotCommands(const BufferType)
-        //void endOneshotCommands(const BufferType)
+        // void beginOneshotCommands(const BufferType)
+        // void endOneshotCommands(const BufferType)
 
         void beginCommands(const VkCommandBuffer &buffer);
-        void endCommands(const VkCommandBuffer &buffer, const VkQueue &queue, VkFence fence);
-        void transitionLayoutCmd(const TransitionLayoutCmdVk &command);
+        void endCommands(const VkCommandBuffer &buffer,
+                         const VkQueue &queue,
+                         VkSemaphore &wait,
+                         VkSemaphore &signal,
+                         VkFence &fence);
+        void CmdTransitionLayout(const TransitionLayoutCmdVk &command);
 
 #pragma endregion Commands
-
 
 #pragma region Vulkan Setup
 

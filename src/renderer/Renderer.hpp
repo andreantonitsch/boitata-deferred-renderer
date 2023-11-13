@@ -32,9 +32,6 @@ namespace boitatah
     template class Pool<RenderPass>;
     template class Pool<Image>;
 
-    struct FramebufferDescription {
-
-    };
 
     struct RendererOptions
     {
@@ -42,8 +39,7 @@ namespace boitatah
         const char *appName = "Window";
         bool debug = false;
         FORMAT swapchainFormat = FORMAT::BGRA_8_SRGB;
-        RenderTargetDesc backBufferDescription;
-        // FORMAT renderpassColorFormat = FORMAT::RGBA_8_SRGB;
+        RenderTargetDesc backBufferDesc;
     };
 
     class Renderer
@@ -61,10 +57,15 @@ namespace boitatah
         void waitIdle();
 
         // Render Methods
-        void renderRenderTarget(SceneNode &scene, Handle<RenderTarget> &rendertarget);
-        void writeCommandBuffer(SceneNode &scene, Handle<RenderTarget> &rendertarget);
-        void present(Handle<RenderTarget> &rendertarget);
+        void renderToRenderTarget(SceneNode &scene, Handle<RenderTarget> &rendertarget);
+        void render(SceneNode &scene);
+        void presentRenderTarget(Handle<RenderTarget> &rendertarget);
 
+        //Command Buffers
+        CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
+        void recordCommand(const DrawCommand& command);
+        void clearCommandBuffer(const CommandBuffer &buffer); 
+        void transferImage(const TransferCommand& command);
 
         // Object Creation
         // Creates PSO object, shader + pipeline.
@@ -76,13 +77,12 @@ namespace boitatah
         Handle<Image> createImage(const ImageDesc &desc);
         Handle<PipelineLayout> createPipelineLayout(const PipelineLayoutDesc &desc);
         
-        CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
-        void recordCommand(const DrawCommand& command);
-        void clearCommandBuffer(const CommandBuffer &buffer); 
-        void transferImage(const TransferCommand& command);
+        Handle<RTCmdBuffers> createRenderTargetCmdData();
+
+
 
         void destroyShader(Handle<Shader> shader);
-        void destroyFramebuffer(Handle<RenderTarget> buffer);
+        void destroyRenderTarget(Handle<RenderTarget> buffer);
         void destroyRenderPass(Handle<RenderPass> pass);
         void destroyLayout(Handle<PipelineLayout> layout);
 
@@ -106,6 +106,7 @@ namespace boitatah
         Pool<RenderPass> renderpassPool = Pool<RenderPass>({.size = 50});
         Pool<Image> imagePool = Pool<Image>({.size = 500});
         Pool<PipelineLayout> pipelineLayoutPool = Pool<PipelineLayout>({.size = 50});
+        Pool<RTCmdBuffers> rtCmdPool = Pool<RTCmdBuffers>({.size = 50});
 
         // Base objects
         // if this is a value member, then i have to deal with member initialization

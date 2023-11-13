@@ -3,7 +3,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
-
+#include <iostream>
 // #include <format>
 #include <chrono>
 
@@ -31,31 +31,37 @@ namespace boitatah::utils
         return buffer;
     }
     
-    /// @brief Averaged timewatch
+    /// @brief Rolling Averaged timewatch
+    using timeduration = std::milli;
     struct Timewatch
     {
         int roll_size;
         int current;
-        std::vector<std::chrono::microseconds> rolling;
-        std::chrono::microseconds total;
-        std::chrono::high_resolution_clock::time_point time;
+        std::vector<std::chrono::duration<double, timeduration>> rolling;
+        std::chrono::duration<double, timeduration> total;
+        std::chrono::steady_clock::time_point start;
 
 
-        Timewatch(int numSamples) : rolling(numSamples){
-            time = std::chrono::high_resolution_clock::now();
-            roll_size = numSamples;
+        Timewatch(int rollSize) : rolling(rollSize){
+            for (size_t i = 0; i < rollSize; i++)
+            {
+                rolling[i] = std::chrono::duration<double, timeduration>(0);
+            }
+            total = std::chrono::duration<double, timeduration>(0);
+            start = std::chrono::steady_clock::now();
+            roll_size = rollSize;
         }
 
-        std::chrono::microseconds Lap()
+        std::chrono::duration<double, timeduration> Lap()
         {
-            auto stop = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - time);
+            auto stop = std::chrono::steady_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::duration<double, timeduration>>(stop - start);
+            total += duration;
             total -= rolling[current];
             rolling[current] = duration;
-            total += duration;
             current = (current + 1) % roll_size;
-            time = stop;
-            return  total / roll_size;
+            start = stop;
+            return  total / static_cast<double>(roll_size);
         }
     };
 }

@@ -6,9 +6,24 @@
 #include "../collections/Pool.hpp"
 #include "Vector.hpp"
 #include "Image.hpp"
+//#include "CommandBuffer.hpp"
 
 namespace boitatah{
 
+    struct CommandBuffer
+    {
+        VkCommandBuffer buffer;
+        COMMAND_BUFFER_TYPE type;
+    };
+    struct RTCmdBuffers{
+
+        CommandBuffer drawBuffer;
+        CommandBuffer transferBuffer;
+
+        VkSemaphore acquireSem;
+        VkSemaphore transferSem;
+        VkFence inFlightFen;
+    };
 
     struct AttachmentDesc{
         uint32_t index;
@@ -53,7 +68,9 @@ namespace boitatah{
         VkFramebuffer buffer;
         std::vector<Handle<Image>> attachments;
         Handle<RenderPass> renderpass;
+        Handle<RTCmdBuffers> cmdBuffers;
     };
+
 
 
 }

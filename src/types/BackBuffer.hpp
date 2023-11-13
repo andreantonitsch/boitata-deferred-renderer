@@ -8,9 +8,15 @@
 namespace boitatah{
 
     struct BackBufferManager{
-        std::vector<RenderTarget> buffers;
-    };
+        std::vector<Handle<RenderTarget>> buffers;
+        int current;
 
+        Handle<RenderTarget> getNext(){
+            current = (current + 1) % buffers.size();
+            return buffers[current];
+        }
+
+    };
 }
 
 #endif //BOITATAH_BACKBUFFER_HPP

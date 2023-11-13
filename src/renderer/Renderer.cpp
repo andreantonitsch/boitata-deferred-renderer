@@ -24,10 +24,8 @@ namespace boitatah
         transferBuffer = allocateCommandBuffer({.count = 1,
                                                 .level = PRIMARY,
                                                 .type = TRANSFER});
-        // presentBuffer = allocateCommandBuffer({.count = 1,
-        //                                         .level = PRIMARY,
-        //                                         .type = PRESENT});
-        
+
+        backBuffers = createBackBufferManager(options.backBufferDesc);
     }
 
     void Renderer::createVulkan()
@@ -47,74 +45,86 @@ namespace boitatah
 #pragma region Rendering
     void Renderer::waitIdle()
     {
-        vk-> waitIdle();
+        vk->waitIdle();
     }
 
-    void Renderer::renderRenderTarget(SceneNode &scene, Handle<RenderTarget> &rendertarget)
+    void Renderer::renderToRenderTarget(SceneNode &scene, Handle<RenderTarget> &rendertarget)
     {
-        vk->resetCommandBuffer(drawBuffer.buffer);
-
-        writeCommandBuffer(scene, rendertarget);
-
-        vk->submitCommandBuffer(drawBuffer.buffer);
-    }
-
-    void Renderer::writeCommandBuffer(SceneNode &scene, Handle<RenderTarget> &rendertarget)
-    {
-        RenderTarget buffer;
-        if (!renderTargetPool.get(rendertarget, buffer))
+        RenderTarget target;
+        if (!renderTargetPool.get(rendertarget, target))
         {
-            throw std::runtime_error("Failed to write command buffer");
+            throw std::runtime_error("Failed to write command buffer \n\tRender Target");
         }
         RenderPass pass;
-        if (!renderpassPool.get(buffer.renderpass, pass))
+        if (!renderpassPool.get(target.renderpass, pass))
         {
-            throw std::runtime_error("Failed to write command buffer");
+            throw std::runtime_error("Failed to write command buffer \n\tRender Pass");
         }
 
         Image image;
-        if (!imagePool.get(buffer.attachments[0], image))
+        if (!imagePool.get(target.attachments[0], image))
         {
-            throw std::runtime_error("Failed to write command buffer");
+            throw std::runtime_error("Failed to write command buffer \n\tImage");
         }
 
+        RTCmdBuffers buffers;
+        if (!rtCmdPool.get(target.cmdBuffers, buffers))
+            throw std::runtime_error("Failed to Render to Target");
+
+        // for scene in scene
         Shader shader;
         if (!shaderPool.get(scene.shader, shader))
         {
             throw std::runtime_error("Failed to retrieve material");
         }
 
-        vk->recordCommand({
-            .drawBuffer = drawBuffer.buffer,
-            .pass = pass.renderPass,
-            .frameBuffer = buffer.buffer,
-            .pipeline = shader.pipeline,
-            .areaDims = {static_cast<int>(image.dimensions.x),
-                         static_cast<int>(image.dimensions.y)},
-            .areaOffset = {0, 0},
-            .vertexCount = 3,
-            .instaceCount = 1,
-            .firstVertex = 0,
-            .firstInstance = 0,
-        });
+        vk->waitForFrame(buffers);
+
+        vk->resetCommandBuffer(buffers.drawBuffer.buffer);
+        vk->resetCommandBuffer(buffers.transferBuffer.buffer);
+
+
+        recordCommand({.drawBuffer = buffers.drawBuffer,
+                       .renderTarget = target,
+                       .renderPass = pass,
+                       .shader = shader,
+                       .dimensions = {
+                           .x = static_cast<int>(image.dimensions.x),
+                           .y = static_cast<int>(image.dimensions.y),
+                       },
+                       .vertexInfo = scene.vertexInfo,
+                       .instanceInfo = scene.instanceInfo});
+
+        vk->submitDrawCmdBuffer({.bufferData = buffers,
+                                 .submitType = GRAPHICS});
     }
 
-    void Renderer::present(Handle<RenderTarget> &rendertarget)
+    void Renderer::render(SceneNode &scene)
+    {
+        auto backbuffer = backBuffers.getNext();
+        renderToRenderTarget(scene, backbuffer);
+        presentRenderTarget(backbuffer);
+    }
+
+    void Renderer::presentRenderTarget(Handle<RenderTarget> &rendertarget)
     {
         windowEvents();
 
         RenderTarget fb;
-        if(!renderTargetPool.get(rendertarget, fb))
-            throw std::runtime_error("failed to get framebuffer");
+        if (!renderTargetPool.get(rendertarget, fb))
+            throw std::runtime_error("failed to framebuffer for Presentation");
+
+        RTCmdBuffers buffers;
+        if(!rtCmdPool.get(fb.cmdBuffers, buffers))
+            throw std::runtime_error("failed to framebuffer for Presentation");
 
         Image image;
-        if(!imagePool.get(fb.attachments[0], image))
-            throw std::runtime_error("failed to get framebuffer");
-        
+        if (!imagePool.get(fb.attachments[0], image))
+            throw std::runtime_error("failed to framebuffer for Presentation");
 
-        vk->waitForFrame();
-
-        vk->presentFrame(image, transferBuffer.buffer);
+        vk->waitForFrame(buffers);
+        SubmitCommand command{.bufferData = buffers, .submitType = PRESENT};
+        vk->presentFrame(image,command);
     }
 
 #pragma endregion Rendering
@@ -122,7 +132,7 @@ namespace boitatah
 #pragma region CleanUp/Destructor
     void Renderer::cleanup()
     {
-
+        destroyBackBufferManager(backBuffers);
         cleanupSwapchainBuffers();
         delete vk;
         cleanupWindow();
@@ -132,7 +142,7 @@ namespace boitatah
     {
         for (auto &bufferhandle : swapchainBuffers)
         {
-            destroyFramebuffer(bufferhandle);
+            destroyRenderTarget(bufferhandle);
         }
         swapchainBuffers.resize(0);
     }
@@ -156,22 +166,12 @@ namespace boitatah
 
     void Renderer::recordCommand(const DrawCommand &command)
     {
-        RenderTarget framebuffer;
-        if (!renderTargetPool.get(command.buffer, framebuffer))
-        {
-            throw std::runtime_error("failed to get the Framebuffer data");
-        }
-
-        RenderPass pass;
-        if (!renderpassPool.get(framebuffer.renderpass, pass))
-        {
-            throw std::runtime_error("failed to get the Render Pass data");
-        }
 
         vk->recordCommand({
-            .drawBuffer = drawBuffer.buffer,
-            .pass = pass.renderPass,
-            .frameBuffer = framebuffer.buffer,
+            .drawBuffer = command.drawBuffer.buffer,
+            .pass = command.renderPass.renderPass,
+            .frameBuffer = command.renderTarget.buffer,
+            .pipeline = command.shader.pipeline,
             .areaDims = {.x = static_cast<int>(options.windowDimensions.x),
                          .y = static_cast<int>(options.windowDimensions.y)},
             .areaOffset = {.x = 0, .y = 0},
@@ -190,29 +190,27 @@ namespace boitatah
     void Renderer::transferImage(const TransferCommand &command)
     {
         RenderTarget dstBuffer;
-        if(!renderTargetPool.get(command.dst, dstBuffer))
+        if (!renderTargetPool.get(command.dst, dstBuffer))
             throw std::runtime_error("failed to transfer buffers");
 
         RenderTarget srcBuffer;
-        if(!renderTargetPool.get(command.src, srcBuffer))
+        if (!renderTargetPool.get(command.src, srcBuffer))
             throw std::runtime_error("failed to transfer buffers");
 
         Image dstImage;
-        if(!imagePool.get(dstBuffer.attachments[0], dstImage))
-            throw std::runtime_error("failed to transfer buffers");
-        
-        Image srcImage;
-        if(!imagePool.get(srcBuffer.attachments[0], srcImage))
+        if (!imagePool.get(dstBuffer.attachments[0], dstImage))
             throw std::runtime_error("failed to transfer buffers");
 
-        vk->CmdCopyImage({
-            .buffer = transferBuffer.buffer,
-            .srcImage  = srcImage.image,
-            .srcImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .dstImage = dstImage.image,
-            .dstImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .extent = srcImage.dimensions
-        });
+        Image srcImage;
+        if (!imagePool.get(srcBuffer.attachments[0], srcImage))
+            throw std::runtime_error("failed to transfer buffers");
+
+        vk->CmdCopyImage({.buffer = transferBuffer.buffer,
+                          .srcImage = srcImage.image,
+                          .srcImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                          .dstImage = dstImage.image,
+                          .dstImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                          .extent = srcImage.dimensions});
     }
 
 #pragma endregion Command Buffers
@@ -275,6 +273,21 @@ namespace boitatah
 
             swapchainBuffers.push_back(framebuffer);
         }
+    }
+
+    BackBufferManager Renderer::createBackBufferManager(RenderTargetDesc &targetDesc)
+    {
+
+        std::vector<Handle<RenderTarget>> buffers;
+
+        buffers.push_back(createRenderTarget(targetDesc));
+        buffers.push_back(createRenderTarget(targetDesc));
+
+        BackBufferManager backbuffers{
+            .buffers = buffers,
+            };
+
+        return backbuffers;
     }
 
     const std::vector<const char *> Renderer::requiredWindowExtensions()
@@ -368,8 +381,11 @@ namespace boitatah
             .buffer = vk->createFramebuffer(vkDesc),
             .attachments = images,
             .renderpass = passhandle,
-        };
+            .cmdBuffers = createRenderTargetCmdData()};
 
+        auto bufferHandle = renderTargetPool.set(framebuffer);
+        if(bufferHandle.gen == 0 )
+            throw std::runtime_error("failed to set a rendertarget");
         return renderTargetPool.set(framebuffer);
     }
 
@@ -403,9 +419,34 @@ namespace boitatah
         return pipelineLayoutPool.set(layout);
     }
 
+    Handle<RTCmdBuffers> Renderer::createRenderTargetCmdData()
+    {
+        RTCmdBuffers sync{
+            .drawBuffer = allocateCommandBuffer({.count = 1,
+                                                 .level = PRIMARY,
+                                                 .type = GRAPHICS}),
+            .transferBuffer = allocateCommandBuffer({.count = 1,
+                                                     .level = PRIMARY,
+                                                     .type = TRANSFER}),
+            .acquireSem = vk->createSemaphore(),
+            .transferSem = vk->createSemaphore(),
+            .inFlightFen = vk->createFence(true),
+        };
+
+        return rtCmdPool.set(sync);
+    }
+
 #pragma endregion Create Vulkan Objects
 
 #pragma region Destroy Vulkan Objects
+    void Renderer::destroyBackBufferManager(BackBufferManager &manager)
+    {
+        for (auto &attach : manager.buffers)
+        {
+            destroyRenderTarget(attach);
+        }
+    }
+
     void Renderer::destroyShader(Handle<Shader> handle)
     {
         Shader shader;
@@ -415,7 +456,7 @@ namespace boitatah
         }
     }
 
-    void Renderer::destroyFramebuffer(Handle<RenderTarget> bufferhandle)
+    void Renderer::destroyRenderTarget(Handle<RenderTarget> bufferhandle)
     {
         RenderTarget framebuffer;
         if (renderTargetPool.clear(bufferhandle, framebuffer))
@@ -433,6 +474,11 @@ namespace boitatah
             }
 
             destroyRenderPass(framebuffer.renderpass);
+
+            RTCmdBuffers data;
+            if (rtCmdPool.get(framebuffer.cmdBuffers, data))
+                vk->destroyRenderTargetCmdData(data);
+
             vk->destroyFramebuffer(framebuffer);
         }
     }

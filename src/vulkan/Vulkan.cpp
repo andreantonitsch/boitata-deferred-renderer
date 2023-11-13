@@ -346,12 +346,12 @@ void boitatah::vk::Vulkan::initInstance()
 #pragma endregion Initialization
 
 #pragma region Synchronization
-void boitatah::vk::Vulkan::waitForFrame()
+void boitatah::vk::Vulkan::waitForFrame(RTCmdBuffers &bufferData)
 {
-    VkResult result = vkWaitForFences(device, 1, &FenInFlight, VK_TRUE, UINT64_MAX);
+    VkResult result = vkWaitForFences(device, 1, &bufferData.inFlightFen, VK_TRUE, UINT64_MAX);
     if (result != VK_SUCCESS)
         std::cout << "wait for fence failed " << result << std::endl;
-    vkResetFences(device, 1, &FenInFlight);
+    vkResetFences(device, 1, &bufferData.inFlightFen);
 }
 
 void boitatah::vk::Vulkan::waitIdle()
@@ -601,7 +601,7 @@ void boitatah::vk::Vulkan::resetCommandBuffer(const VkCommandBuffer buffer)
     vkResetCommandBuffer(buffer, 0);
 }
 
-void boitatah::vk::Vulkan::submitCommandBuffer(const VkCommandBuffer buffer)
+void boitatah::vk::Vulkan::submitDrawCmdBuffer(const SubmitCommand &command)
 {
     // TODO buffer available.
     // std::vector<VkSemaphore> semaphores{SemImageAvailable};
@@ -613,26 +613,25 @@ void boitatah::vk::Vulkan::submitCommandBuffer(const VkCommandBuffer buffer)
         //        .pWaitSemaphores = semaphores.data(),
         .pWaitDstStageMask = stageFlags.data(),
         .commandBufferCount = 1,
-        .pCommandBuffers = &buffer,
+        .pCommandBuffers = &command.bufferData.drawBuffer.buffer,
         //.signalSemaphoreCount = 1,
         //.pSignalSemaphores = signals.data()
     };
 
-    if (vkQueueSubmit(queues.graphicsQueue, 1, &submitInfo, FenInFlight) != VK_SUCCESS)
+    if (vkQueueSubmit(queues.graphicsQueue, 1, &submitInfo, command.bufferData.inFlightFen) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit graphics queue");
     }
 }
 
-void boitatah::vk::Vulkan::presentFrame(Image image, VkCommandBuffer transferBuffer)
+void boitatah::vk::Vulkan::presentFrame(Image image, SubmitCommand &command)
 {
     // Get a swapchain image.
     uint32_t index;
     vkAcquireNextImageKHR(device, swapchain, UINT64_MAX,
-                          SemImageAvailable, VK_NULL_HANDLE, &index);
+                          command.bufferData.acquireSem, VK_NULL_HANDLE, &index);
 
-    // finished render
-    // std::vector<VkSemaphore> waitSignal{SemImageAvailable};
+    auto transferBuffer = command.bufferData.transferBuffer.buffer;
 
     // // Finished Transfer
     beginCommands(transferBuffer);
@@ -644,15 +643,18 @@ void boitatah::vk::Vulkan::presentFrame(Image image, VkCommandBuffer transferBuf
         .dstImgLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
         .extent = image.dimensions,
     });
-    endCommands(transferBuffer, queues.transferQueue, FenTransferSwapchain);
 
-    vkWaitForFences(device, 1, &FenTransferSwapchain, VK_TRUE, UINT64_MAX);
+    endCommands(transferBuffer,
+                queues.transferQueue,
+                command.bufferData.acquireSem,
+                command.bufferData.transferSem,
+                command.bufferData.inFlightFen);
 
     //  Present
     VkPresentInfoKHR presentInfo{
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        //.waitSemaphoreCount = 1,
-        //.pWaitSemaphores = waitSignal.data(),
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &command.bufferData.transferSem,
         .swapchainCount = 1,
         .pSwapchains = &swapchain,
         .pImageIndices = &index,
@@ -684,7 +686,7 @@ void boitatah::vk::Vulkan::CmdCopyImage(const CopyImageCommandVk &command)
 
     // transition source image to
     // transfer source layout.
-    transitionLayoutCmd({
+    CmdTransitionLayout({
         .buffer = command.buffer,
         .src = command.srcImgLayout,
         .dst = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -697,7 +699,7 @@ void boitatah::vk::Vulkan::CmdCopyImage(const CopyImageCommandVk &command)
 
     // transition destination image to
     // transfer destination layout
-    transitionLayoutCmd({
+    CmdTransitionLayout({
         .buffer = command.buffer,
         .src = VK_IMAGE_LAYOUT_UNDEFINED,
         .dst = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -715,7 +717,7 @@ void boitatah::vk::Vulkan::CmdCopyImage(const CopyImageCommandVk &command)
 
     // transition destination image back
     // to its original layout
-    transitionLayoutCmd({
+    CmdTransitionLayout({
         .buffer = command.buffer,
         .src = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         .dst = command.dstImgLayout,
@@ -727,9 +729,9 @@ void boitatah::vk::Vulkan::CmdCopyImage(const CopyImageCommandVk &command)
         .dstAccess = 0,
     });
 
-    //transition source image back
-    // to its original layout
-    transitionLayoutCmd({
+    // transition source image back
+    //  to its original layout
+    CmdTransitionLayout({
         .buffer = command.buffer,
         .src = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         .dst = command.srcImgLayout,
@@ -753,7 +755,11 @@ void boitatah::vk::Vulkan::beginCommands(const VkCommandBuffer &buffer)
     vkBeginCommandBuffer(buffer, &beginInfo);
 }
 
-void boitatah::vk::Vulkan::endCommands(const VkCommandBuffer &buffer, const VkQueue &queue, VkFence fence)
+void boitatah::vk::Vulkan::endCommands(const VkCommandBuffer &buffer,
+                                       const VkQueue &queue,
+                                       VkSemaphore &wait,
+                                       VkSemaphore &signal,
+                                       VkFence &fence)
 {
     vkEndCommandBuffer(buffer);
 
@@ -762,7 +768,21 @@ void boitatah::vk::Vulkan::endCommands(const VkCommandBuffer &buffer, const VkQu
         .commandBufferCount = 1,
         .pCommandBuffers = &buffer,
     };
-    vkResetFences(device, 1, &fence);
+
+    if (signal != VK_NULL_HANDLE)
+    {
+        submit.signalSemaphoreCount = 1;
+        submit.pSignalSemaphores = &signal;
+    }
+
+    std::vector<VkPipelineStageFlags> stages{VK_PIPELINE_STAGE_TRANSFER_BIT};
+    if (wait != VK_NULL_HANDLE)
+    {
+        submit.waitSemaphoreCount = 1;
+        submit.pWaitSemaphores = &wait;
+        submit.pWaitDstStageMask = stages.data();
+    }
+
     vkQueueSubmit(queue, 1, &submit, fence);
 }
 
@@ -809,6 +829,36 @@ VkPipelineLayout boitatah::vk::Vulkan::createPipelineLayout(const PipelineLayout
     }
 
     return layout;
+}
+
+VkFence boitatah::vk::Vulkan::createFence(bool signaled)
+{
+    VkFenceCreateInfo fenceInfo{
+        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+    };
+
+    if (signaled)
+        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    VkFence fence;
+    if (vkCreateFence(device, &fenceInfo, nullptr, &fence) != VK_SUCCESS)
+        throw std::runtime_error("Failed to create Fence");
+
+    return fence;
+}
+
+VkSemaphore boitatah::vk::Vulkan::createSemaphore()
+{
+    VkSemaphoreCreateInfo semaphoreInfo{
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+    };
+
+    VkSemaphore semaphore;
+
+    if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore))
+        throw std::runtime_error("Failed to create Semaphore");
+
+    return semaphore;
 }
 
 void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
@@ -930,6 +980,16 @@ void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
     {
         throw std::runtime_error("Failed to create pipeline");
     }
+}
+
+void boitatah::vk::Vulkan::destroyRenderTargetCmdData(const RTCmdBuffers &sync)
+{
+    vkFreeCommandBuffers(device, commandPools.graphicsPool, 1, &(sync.drawBuffer.buffer));
+    vkFreeCommandBuffers(device, commandPools.transferPool, 1, &(sync.transferBuffer.buffer));
+
+    vkDestroyFence(device, sync.inFlightFen, nullptr);
+    vkDestroySemaphore(device, sync.acquireSem, nullptr);
+    vkDestroySemaphore(device, sync.transferSem, nullptr);
 }
 
 VkShaderModule boitatah::vk::Vulkan::createShaderModule(const std::vector<char> &bytecode)
@@ -1336,18 +1396,17 @@ void boitatah::vk::Vulkan::setQueues()
     vkGetDeviceQueue(device, familyIndices.transferFamily.value(), 0, &queues.transferQueue);
 }
 
-void boitatah::vk::Vulkan::transitionLayoutCmd(const TransitionLayoutCmdVk &command)
+void boitatah::vk::Vulkan::CmdTransitionLayout(const TransitionLayoutCmdVk &command)
 {
     VkImageMemoryBarrier barrier{
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
         .srcAccessMask = command.srcAccess,
-        .dstAccessMask = command.dstAccess, 
+        .dstAccessMask = command.dstAccess,
         .oldLayout = command.src,
         .newLayout = command.dst,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .image = command.image,
-
         .subresourceRange = {
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
             .baseMipLevel = 0,

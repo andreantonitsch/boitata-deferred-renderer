@@ -2,22 +2,14 @@
 #define BOITATAH_COMMANDS_HPP
 #include <vulkan/vulkan.h>
 
+#include "RenderTarget.hpp"
 #include "../collections/Pool.hpp"
 #include "BttEnums.hpp"
-#include "RenderTarget.hpp"
 
 namespace boitatah
 {
 
-    struct EndCommandBuffer{
-        
-    };
 
-    struct CommandBuffer
-    {
-        VkCommandBuffer buffer;
-        COMMAND_BUFFER_TYPE type;
-    };
     struct TransitionLayoutCmdVk{
         VkCommandBuffer buffer;
         VkImageLayout src;
@@ -47,6 +39,7 @@ namespace boitatah
         CommandBuffer buffer;
     }; 
 
+
     struct DrawCommandVk
     {
         VkCommandBuffer drawBuffer;
@@ -64,7 +57,20 @@ namespace boitatah
 
     struct DrawCommand
     {
-        Handle<RenderTarget> buffer;
+        CommandBuffer drawBuffer;
+        RenderTarget renderTarget;
+        RenderPass renderPass;
+        Shader shader;
+        Vector2<int> dimensions;
+
+        // count, first
+        Vector2<int> vertexInfo;
+        Vector2<int> instanceInfo;
+    };
+
+    struct SubmitCommand{
+        RTCmdBuffers bufferData;
+        COMMAND_BUFFER_TYPE submitType;
     };
 
     struct CommandBufferDesc
@@ -73,6 +79,7 @@ namespace boitatah
         COMMAND_BUFFER_LEVEL level;
         COMMAND_BUFFER_TYPE type;
     };
+
 
 }
 
