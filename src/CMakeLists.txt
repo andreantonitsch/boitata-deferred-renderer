@@ -6,7 +6,8 @@ set(LIB_DR_SOURCES
             renderer/Renderer.cpp
             vulkan/Vulkan.cpp
             renderer/Window.cpp
-                   
+            types/BackBuffer.cpp
+            types/Swapchain.cpp
 )
 
 add_library(boitatah STATIC ${LIB_DR_SOURCES})

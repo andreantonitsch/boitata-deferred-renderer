@@ -33,8 +33,8 @@ namespace boitatah
     template class Pool<RenderTarget>;
     template class Pool<RenderPass>;
     template class Pool<Image>;
-
-
+    class BackBufferManager;
+    
     struct RendererOptions
     {
         Vector2<uint32_t> windowDimensions = {800, 600};
@@ -93,7 +93,7 @@ namespace boitatah
         // Members
         CommandBuffer drawBuffer;
         CommandBuffer transferBuffer;
-        BackBufferManager backBuffers;
+        BackBufferManager* backBufferManager;
         
         std::vector<Handle<RenderTarget>> swapchainBuffers;
         
@@ -115,11 +115,6 @@ namespace boitatah
 
         // Options Members
         RendererOptions options;
-
-
-        // Backbuffer Methods
-        BackBufferManager createBackBufferManager(RenderTargetDesc &targetDesc);
-        void destroyBackBufferManager(BackBufferManager &manager);
 
         // Vulkan Instance
         void createVulkan();

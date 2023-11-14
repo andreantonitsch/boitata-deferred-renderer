@@ -22,7 +22,8 @@ namespace boitatah
         createVulkan();
         buildSwapchain();
 
-        backBuffers = createBackBufferManager(options.backBufferDesc);
+        backBufferManager = new BackBufferManager(this);
+        backBufferManager->setup(options.backBufferDesc);
 
         drawBuffer = allocateCommandBuffer({.count = 1,
                                             .level = PRIMARY,
@@ -104,7 +105,7 @@ namespace boitatah
 
     void Renderer::render(SceneNode &scene)
     {
-        auto backbuffer = backBuffers.getNext();
+        auto backbuffer = backBufferManager->getNext();
         renderToRenderTarget(scene, backbuffer);
         presentRenderTarget(backbuffer);
     }
@@ -135,8 +136,8 @@ namespace boitatah
 #pragma region CleanUp/Destructor
     void Renderer::cleanup()
     {
-        destroyBackBufferManager(backBuffers);
         cleanupSwapchainBuffers();
+        delete backBufferManager;
         delete vk;
         delete window;
     }
@@ -258,21 +259,6 @@ namespace boitatah
 
             swapchainBuffers.push_back(framebuffer);
         }
-    }
-
-    BackBufferManager Renderer::createBackBufferManager(RenderTargetDesc &targetDesc)
-    {
-
-        std::vector<Handle<RenderTarget>> buffers;
-
-        buffers.push_back(createRenderTarget(targetDesc));
-        buffers.push_back(createRenderTarget(targetDesc));
-
-        BackBufferManager backbuffers{
-            .buffers = buffers,
-        };
-
-        return backbuffers;
     }
 
 #pragma endregion Window Functions
@@ -407,13 +393,6 @@ namespace boitatah
 #pragma endregion Create Vulkan Objects
 
 #pragma region Destroy Vulkan Objects
-    void Renderer::destroyBackBufferManager(BackBufferManager &manager)
-    {
-        for (auto &attach : manager.buffers)
-        {
-            destroyRenderTarget(attach);
-        }
-    }
 
     void Renderer::destroyShader(Handle<Shader> handle)
     {

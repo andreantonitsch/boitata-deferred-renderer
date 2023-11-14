@@ -4,22 +4,27 @@
 #include <vulkan/vulkan.h>
 #include "RenderTarget.hpp"
 #include <vector>
+#include "../renderer/Renderer.hpp"
 
 namespace boitatah{
 
-    struct BackBufferManager{
+    class Renderer;
+
+    class BackBufferManager{
+        public:
+        BackBufferManager(Renderer *renderer);
+        ~BackBufferManager(void);
+
+        void setup(RenderTargetDesc &desc);
+
+        Handle<RenderTarget> getNext();
+        Handle<RenderTarget> getCurrent();
         std::vector<Handle<RenderTarget>> buffers;
-        int current;
 
-        Handle<RenderTarget> getNext(){
-            current = (current + 1) % buffers.size();
-            return buffers[current];
-        }
-
-        Handle<RenderTarget> getCurrent(){
-            return buffers[current];
-        }
-
+        private:
+            Renderer* renderer;
+            int current;
+            void clearBackBuffer();
     };
 }
 
