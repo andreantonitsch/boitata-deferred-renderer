@@ -15,17 +15,21 @@ namespace boitatah
     Renderer::Renderer(RendererOptions opts)
     {
         options = opts;
-        initWindow();
+        WindowDesc desc{.dimensions = options.windowDimensions,
+                                    .windowName = options.appName};
+        window = new WindowManager(desc);
+
         createVulkan();
         buildSwapchain();
+
+        backBuffers = createBackBufferManager(options.backBufferDesc);
+
         drawBuffer = allocateCommandBuffer({.count = 1,
                                             .level = PRIMARY,
                                             .type = GRAPHICS});
         transferBuffer = allocateCommandBuffer({.count = 1,
                                                 .level = PRIMARY,
                                                 .type = TRANSFER});
-
-        backBuffers = createBackBufferManager(options.backBufferDesc);
     }
 
     void Renderer::createVulkan()
@@ -34,10 +38,10 @@ namespace boitatah
 
         vk = new Vulkan({
             .appName = (char *)options.appName,
-            .extensions = requiredWindowExtensions(),
+            .extensions = window->requiredWindowExtensions(),
             .useValidationLayers = options.debug,
             .debugMessages = options.debug,
-            .window = window,
+            .window = window->window,
         });
     }
 #pragma endregion Initialization
@@ -83,7 +87,6 @@ namespace boitatah
         vk->resetCommandBuffer(buffers.drawBuffer.buffer);
         vk->resetCommandBuffer(buffers.transferBuffer.buffer);
 
-
         recordCommand({.drawBuffer = buffers.drawBuffer,
                        .renderTarget = target,
                        .renderPass = pass,
@@ -108,14 +111,14 @@ namespace boitatah
 
     void Renderer::presentRenderTarget(Handle<RenderTarget> &rendertarget)
     {
-        windowEvents();
+        window->windowEvents();
 
         RenderTarget fb;
         if (!renderTargetPool.get(rendertarget, fb))
             throw std::runtime_error("failed to framebuffer for Presentation");
 
         RTCmdBuffers buffers;
-        if(!rtCmdPool.get(fb.cmdBuffers, buffers))
+        if (!rtCmdPool.get(fb.cmdBuffers, buffers))
             throw std::runtime_error("failed to framebuffer for Presentation");
 
         Image image;
@@ -124,7 +127,7 @@ namespace boitatah
 
         vk->waitForFrame(buffers);
         SubmitCommand command{.bufferData = buffers, .submitType = PRESENT};
-        vk->presentFrame(image,command);
+        vk->presentFrame(image, command);
     }
 
 #pragma endregion Rendering
@@ -135,7 +138,7 @@ namespace boitatah
         destroyBackBufferManager(backBuffers);
         cleanupSwapchainBuffers();
         delete vk;
-        cleanupWindow();
+        delete window;
     }
 
     void Renderer::cleanupSwapchainBuffers()
@@ -150,6 +153,10 @@ namespace boitatah
     Renderer::~Renderer(void)
     {
         cleanup();
+    }
+    bool Renderer::isWindowClosed()
+    {
+        return window->isWindowClosed();
     }
 #pragma endregion CleanUp / Destructor
 
@@ -217,28 +224,6 @@ namespace boitatah
 
 #pragma region Window Functions
 
-    void Renderer::initWindow()
-    {
-        glfwInit();
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // TODO temp
-        window = glfwCreateWindow(options.windowDimensions.x,
-                                  options.windowDimensions.y,
-                                  options.appName,
-                                  nullptr,
-                                  nullptr);
-    }
-    void Renderer::cleanupWindow()
-    {
-        glfwDestroyWindow(window);
-        glfwTerminate();
-    }
-
-    bool Renderer::isWindowClosed()
-    {
-        return glfwWindowShouldClose(window);
-    }
-
     void Renderer::buildSwapchain()
     {
         // Clear old swapchain and get new images.
@@ -285,28 +270,11 @@ namespace boitatah
 
         BackBufferManager backbuffers{
             .buffers = buffers,
-            };
+        };
 
         return backbuffers;
     }
 
-    const std::vector<const char *> Renderer::requiredWindowExtensions()
-    {
-        std::vector<const char *> requiredExtensions;
-        uint32_t extensionCount = 0;
-        const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&extensionCount);
-
-        for (uint32_t i = 0; i < extensionCount; i++)
-        {
-            requiredExtensions.emplace_back(glfwExtensions[i]);
-        }
-        return requiredExtensions;
-    }
-
-    void Renderer::windowEvents()
-    {
-        glfwPollEvents();
-    }
 #pragma endregion Window Functions
 
 #pragma region Create Vulkan Objects
@@ -384,7 +352,7 @@ namespace boitatah
             .cmdBuffers = createRenderTargetCmdData()};
 
         auto bufferHandle = renderTargetPool.set(framebuffer);
-        if(bufferHandle.gen == 0 )
+        if (bufferHandle.gen == 0)
             throw std::runtime_error("failed to set a rendertarget");
         return renderTargetPool.set(framebuffer);
     }

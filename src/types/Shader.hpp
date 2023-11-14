@@ -16,10 +16,17 @@ namespace boitatah
         VkPipelineLayout layout;
     };
 
+
     struct ShaderModule{
         VkShaderModule shaderModule;
         std::string entryFunction = "main";
     };
+    
+    struct ShaderModules{
+        ShaderModule vert;
+        ShaderModule frag;
+    };
+
 
     struct ShaderStage{
         std::vector<char> byteCode;
@@ -48,6 +55,8 @@ namespace boitatah
         VkPipelineLayout layout;
     };
 
+
+
     struct Shader
     {
         std::string name;
@@ -55,6 +64,11 @@ namespace boitatah
         ShaderModule frag;
 
         VkPipeline pipeline;
+        //ShaderCompatibility compat;
+        //for shader recreation
+        //Handle<ShaderDesc> description;
+        //Handle<ShaderModules> modules;
+        //int Swapchain swapchain;
 
     };
 

@@ -63,7 +63,7 @@ int main()
                     .vertexInfo = {3, 0},
                     .instanceInfo = {1, 0}};
 
-    boitatah::utils::Timewatch timewatch(5000);
+    boitatah::utils::Timewatch timewatch(1000);
     int i = 0;
     bool renderToTarget = false;
 

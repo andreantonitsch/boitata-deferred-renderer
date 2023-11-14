@@ -16,6 +16,10 @@ namespace boitatah{
             return buffers[current];
         }
 
+        Handle<RenderTarget> getCurrent(){
+            return buffers[current];
+        }
+
     };
 }
 

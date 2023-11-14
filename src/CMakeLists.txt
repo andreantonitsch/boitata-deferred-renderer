@@ -4,7 +4,9 @@ set(LIBRARY_OUTPUT_PATH ${OUTPUT_FOLDER}/libs)
 
 set(LIB_DR_SOURCES
             renderer/Renderer.cpp
-            vulkan/Vulkan.cpp       
+            vulkan/Vulkan.cpp
+            renderer/Window.cpp
+                   
 )
 
 add_library(boitatah STATIC ${LIB_DR_SOURCES})

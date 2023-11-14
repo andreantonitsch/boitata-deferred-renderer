@@ -17,6 +17,7 @@
 #include "../types/CommandBuffer.hpp"
 #include "../types/Scene.hpp"
 #include "../types/BackBuffer.hpp"
+#include "Window.hpp"
 
 // Objective here is to have expose no lone vulkan types.
 // so that we can manage them. Thats what the vulkan class is for.
@@ -26,6 +27,7 @@
 namespace boitatah
 {
     using namespace vk;
+    using namespace window;
 
     template class Pool<Shader>;
     template class Pool<RenderTarget>;
@@ -49,9 +51,8 @@ namespace boitatah
         Renderer(RendererOptions options);
         ~Renderer(void);
 
-        // Window Methods
+        //Window methods
         bool isWindowClosed();
-
 
         //Sync Methods
         void waitIdle();
@@ -79,8 +80,6 @@ namespace boitatah
         
         Handle<RTCmdBuffers> createRenderTargetCmdData();
 
-
-
         void destroyShader(Handle<Shader> shader);
         void destroyRenderTarget(Handle<RenderTarget> buffer);
         void destroyRenderPass(Handle<RenderPass> pass);
@@ -89,7 +88,6 @@ namespace boitatah
     private:
 
         // Window Methods
-        void initWindow();
         void buildSwapchain();
 
         // Members
@@ -113,7 +111,7 @@ namespace boitatah
         // This being a reference makes the code simpler for now
         // this however is not ideal
         Vulkan *vk;
-        GLFWwindow *window;
+        WindowManager *window;
 
         // Options Members
         RendererOptions options;
@@ -122,11 +120,6 @@ namespace boitatah
         // Backbuffer Methods
         BackBufferManager createBackBufferManager(RenderTargetDesc &targetDesc);
         void destroyBackBufferManager(BackBufferManager &manager);
-
-        // Window Functions
-        const std::vector<const char *> requiredWindowExtensions();
-        void windowEvents();
-        void cleanupWindow();
 
         // Vulkan Instance
         void createVulkan();
