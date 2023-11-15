@@ -18,7 +18,7 @@
 #include "../types/Scene.hpp"
 #include "../types/BackBuffer.hpp"
 #include "Window.hpp"
-
+#include "../types/Swapchain.hpp"
 // Objective here is to have expose no lone vulkan types.
 // so that we can manage them. Thats what the vulkan class is for.
 // Renderer manages and exposes them
@@ -34,7 +34,8 @@ namespace boitatah
     template class Pool<RenderPass>;
     template class Pool<Image>;
     class BackBufferManager;
-    
+    class Swapchain;
+
     struct RendererOptions
     {
         Vector2<uint32_t> windowDimensions = {800, 600};
@@ -75,9 +76,11 @@ namespace boitatah
         // Creates a framebuffer with a renderpass.
         Handle<RenderTarget> createRenderTarget(const RenderTargetDesc &data);
         Handle<RenderPass> createRenderPass(const RenderPassDesc &data);
+        Handle<Image> addImage(Image image);
         Handle<Image> createImage(const ImageDesc &desc);
         Handle<PipelineLayout> createPipelineLayout(const PipelineLayoutDesc &desc);
         
+
         Handle<RTCmdBuffers> createRenderTargetCmdData();
 
         void destroyShader(Handle<Shader> shader);
@@ -86,19 +89,16 @@ namespace boitatah
         void destroyLayout(Handle<PipelineLayout> layout);
 
     private:
-
-        // Window Methods
-        void buildSwapchain();
-
-        // Members
-        CommandBuffer drawBuffer;
-        CommandBuffer transferBuffer;
+        // Base objects
+        // if this is a value member, then i have to deal with member initialization
+        // This being a reference makes the code simpler for now
+        // this however is not ideal
+        Vulkan *vk;
+        WindowManager *window;
         BackBufferManager* backBufferManager;
-        
-        std::vector<Handle<RenderTarget>> swapchainBuffers;
-        
+        Swapchain* swapchain;
+
         // Pools
-        //  Pool<RenderTarget> renderTargetPool;
         Pool<Shader> shaderPool = Pool<Shader>({.size = 100});
         Pool<RenderTarget> renderTargetPool = Pool<RenderTarget>({.size = 50});
         Pool<RenderPass> renderpassPool = Pool<RenderPass>({.size = 50});
@@ -106,12 +106,6 @@ namespace boitatah
         Pool<PipelineLayout> pipelineLayoutPool = Pool<PipelineLayout>({.size = 50});
         Pool<RTCmdBuffers> rtCmdPool = Pool<RTCmdBuffers>({.size = 50});
 
-        // Base objects
-        // if this is a value member, then i have to deal with member initialization
-        // This being a reference makes the code simpler for now
-        // this however is not ideal
-        Vulkan *vk;
-        WindowManager *window;
 
         // Options Members
         RendererOptions options;
@@ -119,12 +113,8 @@ namespace boitatah
         // Vulkan Instance
         void createVulkan();
 
-        // Logical and physical devices
-        // void initializeDevices();
-
         // Cleanup Functions
         void cleanup();
-        void cleanupSwapchainBuffers();
     };
 }
 #endif // BOITATAH_RENDERER_HPP

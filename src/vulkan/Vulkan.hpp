@@ -14,6 +14,8 @@
 #include "../types/Memory.hpp"
 #include "../types/Image.hpp"
 #include "../types/CommandBuffer.hpp"
+// #include "../types/Swapchain.hpp"
+#include "../renderer/Window.hpp"
 
 namespace boitatah::vk
 {
@@ -71,11 +73,19 @@ namespace boitatah::vk
         // Vulkan();
         Vulkan(VulkanOptions opts);
         ~Vulkan(void);
+        void completeInit();
+
+        VkInstance getInstance();
+        VkDevice getDevice();
+        VkPhysicalDevice getPhysicalDevice();
+        void attachWindow(boitatah::window::WindowManager *window);
 
         // Swapchain Methos
-        void buildSwapchain(FORMAT scFormat, USAGE usage);
-        std::vector<Image> getSwapchainImages();
-        Image acquireSwapChainImage();
+        // void buildSwapchain(FORMAT scFormat, USAGE usage);
+        // std::vector<Image> getSwapchainImages();
+        // Image acquireSwapChainImage();
+
+        QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
         // Create Objects
         VkShaderModule createShaderModule(const std::vector<char> &bytecode);
@@ -100,7 +110,11 @@ namespace boitatah::vk
         // Render Commands
         void recordCommand(const DrawCommandVk &command);
         void submitDrawCmdBuffer(const SubmitCommand &command);
-        void presentFrame(Image image, SubmitCommand &command);
+        void presentFrame(Image &image,
+                          Image &swapchainImage,
+                          VkSwapchainKHR &swapchain,
+                          uint32_t &scIndex,
+                          SubmitCommand &command);
 
         // Transfer Commands
         void CmdCopyImage(const CopyImageCommandVk &command);
@@ -119,13 +133,16 @@ namespace boitatah::vk
         void destroyRenderTargetCmdData(const RTCmdBuffers &sync);
         // Copy assignment?
         // Vulkan& operator= (const Vulkan &v);//copy assignment
+
     private:
         VulkanOptions options;
+        window::WindowManager *window;
 
         // Instances and Devices
         VkInstance instance;
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
         VkDebugUtilsMessengerEXT debugMessenger;
+        // window::WindowManager *window;
 
         VkDevice device; // Logical Device
 
@@ -133,22 +150,12 @@ namespace boitatah::vk
         CommandPools commandPools;
         CommandQueues queues;
 
-        // Swapchain responsabilities
-        VkSurfaceKHR surface;
-
         // Sync Objects
         VkSemaphore SemImageAvailable;
         VkSemaphore SemRenderFinished;
         VkSemaphore SemTransferComplete;
         VkFence FenInFlight;
         VkFence FenTransferSwapchain;
-
-        VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-        std::vector<VkImage> swapchainImages;
-        std::vector<VkImageView> swapchainViews;
-        VkFormat swapchainFormat;
-        VkExtent2D swapchainExtent;
-        std::vector<Image> swapchainImageCache;
 
         // Extensions and Layers
         std::vector<const char *> validationLayers;
@@ -175,6 +182,7 @@ namespace boitatah::vk
         void initInstance();
 
         // Extensions
+        boitatah::vk::SwapchainSupport getSwapchainSupport(VkPhysicalDevice physicalDevice);
         bool checkRequiredExtensions(const std::vector<VkExtensionProperties> &available,
                                      const std::vector<const char *> &required);
         std::vector<VkExtensionProperties> retrieveInstanceAvailableExtensions();
@@ -191,33 +199,15 @@ namespace boitatah::vk
         void initLogicalDeviceNQueues();
 
         // Queues
-        QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+
         void setQueues();
         void createCommandPools();
-        // Window Surfaces
-        void createSurface(GLFWwindow *window);
 
         // Sync Objects
         void createSyncObjects();
         void cleanupSyncObjects();
 
 #pragma endregion Vulkan Setup
-
-#pragma region SwapChain
-        SwapchainSupport getSwapchainSupport(VkPhysicalDevice device);
-        VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats, FORMAT scFormat, COLOR_SPACE scColorSpace);
-        VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
-        VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availableModes);
-        void createSwapchain(FORMAT scFormat, USAGE usage);
-        void createSwapchainViews(FORMAT scFormat);
-        void clearSwapchainViews();
-#pragma endregion SwapChain
-
-#pragma region Enum Conversion
-        template <typename From, typename To>
-        static To castEnum(From from);
-
-#pragma endregion Enum Conversion
     };
 
 }

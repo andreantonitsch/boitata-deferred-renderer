@@ -6,40 +6,85 @@
 #include <GLFW/glfw3.h>
 
 #include <vulkan/vulkan.h>
-#include <vector>
-#include "../types/Vector.hpp"
-#include <string>
-#include <../collections/Pool.hpp"
 #include "../vulkan/Vulkan.hpp"
+#include "../renderer/Renderer.hpp"
+#include "../renderer/Window.hpp"
+#include "../types/Vector.hpp"
+#include "../collections/Pool.hpp"
+#include <vector>
+#include <string>
 #include "RenderTarget.hpp"
+#include "../types/BttEnums.hpp"
 
-namespace boitatah{
+namespace boitatah
+{
+    using namespace vk;
 
-    class Swapchain{
-        public:
-            Handle<RenderTarget> getNext(); 
-            Handle<RenderTarget> getCurrent();
-            void initSurface(WindowManager* window);
-            void attach(Vulkan* vulkan, Renderer* renderer);
-            void create(Vecctor2<uint32_t> dimensions, bool vsync, bool fullscreen);
+    class Renderer;
 
-            
-
-        private:
-
-            // Swapchain responsabilities
-            VkSurfaceKHR surface;
-            VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-            std::vector<VkImage> swapchainImages;
-            std::vector<VkImageView> swapchainViews;
-            VkFormat swapchainFormat;
-            VkExtent2D swapchainExtent;
-            std::vector<Image> swapchainImageCache;
-
-            std::vector<Handle<RenderTarget>> swapchainRenderTargets;
-            void clearSwapchain();
+    struct SwapchainOptions
+    {
+        FORMAT format;
+        bool useValidationLayers = false;
     };
 
+    struct SwapchainImage{
+        Image image;
+        uint32_t index;
+        VkSwapchainKHR sc;
+    };
+
+    // struct SwapchainSupport
+    // {
+    //     VkSurfaceCapabilitiesKHR capabilities;
+    //     std::vector<VkSurfaceFormatKHR> formats;
+    //     std::vector<VkPresentModeKHR> presentModes;
+    // };
+
+    class Swapchain
+    {
+    public:
+        Swapchain(SwapchainOptions options);
+        ~Swapchain(void);
+        SwapchainImage getNext(VkSemaphore &semaphore);
+        SwapchainImage getCurrent();
+        void attach(vk::Vulkan *vulkan, Renderer *renderer, window::WindowManager *window);
+        void createSwapchain(Vector2<uint32_t> dimensions, bool vsync, bool fullscreen);
+        // void populateBuffers();
+
+    private:
+        SwapchainOptions options;
+        //VkSurfaceKHR surface;
+        vk::Vulkan *vulkan;
+        Renderer *renderer;
+        window::WindowManager *window;
+        uint32_t currentIndex;
+
+        // Swapchain responsabilities
+        VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+        std::vector<VkImage> swapchainImages;
+        std::vector<VkImageView> swapchainViews;
+        VkFormat swapchainFormat;
+        VkExtent2D swapchainExtent;
+        std::vector<Image> swapchainImageCache;
+
+        std::vector<Image> getSwapchainImages();
+
+        void createVkSwapchain();
+        void createViews();
+
+        void clearSwapchainViews();
+
+        //Query and Choose swapchain parameters
+        SwapchainSupport getSwapchainSupport(VkPhysicalDevice physicalDevice);
+        VkSurfaceFormatKHR chooseSwapSurfaceFormat(
+            const std::vector<VkSurfaceFormatKHR> &availableFormats,
+            FORMAT scFormat,
+            COLOR_SPACE scColorSpace);
+        VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
+        VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availableModes);
+        
+    };
 }
 
-#endif //BOITATAH_SWAPCHAIN_HPP
+#endif // BOITATAH_SWAPCHAIN_HPP

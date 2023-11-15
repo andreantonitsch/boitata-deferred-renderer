@@ -8,6 +8,7 @@
 #include <vulkan/vulkan.h>
 
 #include <stdexcept>
+#include "../types/Swapchain.hpp"
 
 namespace boitatah
 {
@@ -16,21 +17,22 @@ namespace boitatah
     {
         options = opts;
         WindowDesc desc{.dimensions = options.windowDimensions,
-                                    .windowName = options.appName};
-        window = new WindowManager(desc);
+                        .windowName = options.appName};
 
+        window = new WindowManager(desc);
         createVulkan();
-        buildSwapchain();
+
+        window->initSurface(vk->getInstance());
+        vk->attachWindow(window);
+        vk->completeInit();
+
+        swapchain = new Swapchain({.format = options.swapchainFormat,
+                                   .useValidationLayers = options.debug});
+        swapchain->attach(vk, this, window);
+        swapchain->createSwapchain(options.windowDimensions, false, false);
 
         backBufferManager = new BackBufferManager(this);
         backBufferManager->setup(options.backBufferDesc);
-
-        drawBuffer = allocateCommandBuffer({.count = 1,
-                                            .level = PRIMARY,
-                                            .type = GRAPHICS});
-        transferBuffer = allocateCommandBuffer({.count = 1,
-                                                .level = PRIMARY,
-                                                .type = TRANSFER});
     }
 
     void Renderer::createVulkan()
@@ -128,7 +130,12 @@ namespace boitatah
 
         vk->waitForFrame(buffers);
         SubmitCommand command{.bufferData = buffers, .submitType = PRESENT};
-        vk->presentFrame(image, command);
+        auto swapchainImage = swapchain->getNext(buffers.schainAcqSem);
+        vk->presentFrame(image,
+                         swapchainImage.image,
+                         swapchainImage.sc,
+                         swapchainImage.index,
+                         command);
     }
 
 #pragma endregion Rendering
@@ -136,20 +143,21 @@ namespace boitatah
 #pragma region CleanUp/Destructor
     void Renderer::cleanup()
     {
-        cleanupSwapchainBuffers();
+        delete swapchain;
+        window->destroySurface(vk->getInstance());
         delete backBufferManager;
         delete vk;
         delete window;
     }
 
-    void Renderer::cleanupSwapchainBuffers()
-    {
-        for (auto &bufferhandle : swapchainBuffers)
-        {
-            destroyRenderTarget(bufferhandle);
-        }
-        swapchainBuffers.resize(0);
-    }
+    // void Renderer::cleanupSwapchainBuffers()
+    // {
+    //     for (auto &bufferhandle : swapchainBuffers)
+    //     {
+    //         destroyRenderTarget(bufferhandle);
+    //     }
+    //     swapchainBuffers.resize(0);
+    // }
 
     Renderer::~Renderer(void)
     {
@@ -213,7 +221,7 @@ namespace boitatah
         if (!imagePool.get(srcBuffer.attachments[0], srcImage))
             throw std::runtime_error("failed to transfer buffers");
 
-        vk->CmdCopyImage({.buffer = transferBuffer.buffer,
+        vk->CmdCopyImage({.buffer = command.buffer.buffer,
                           .srcImage = srcImage.image,
                           .srcImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                           .dstImage = dstImage.image,
@@ -225,41 +233,41 @@ namespace boitatah
 
 #pragma region Window Functions
 
-    void Renderer::buildSwapchain()
-    {
-        // Clear old swapchain and get new images.
-        cleanupSwapchainBuffers();
-        vk->buildSwapchain(options.swapchainFormat, USAGE::COLOR_ATT_TRANSFER_DST);
-        std::vector<Image> swapchainImages = vk->getSwapchainImages();
+    // void Renderer::buildSwapchain()
+    // {
+    //     // Clear old swapchain and get new images.
+    //     cleanupSwapchainBuffers();
+    //     vk->buildSwapchain(options.swapchainFormat, USAGE::COLOR_ATT_TRANSFER_DST);
+    //     std::vector<Image> swapchainImages = vk->getSwapchainImages();
 
-        // Create new swapchain framebuffers
-        std::vector<AttachmentDesc> attachments;
-        attachments.push_back({.index = 0,
-                               .format = BGRA_8_SRGB,
-                               .layout = COLOR_ATT_OPTIMAL,
-                               .samples = SAMPLES_1,
-                               .initialLayout = UNDEFINED,
-                               .finalLayout = PRESENT_SRC});
+    //     // Create new swapchain framebuffers
+    //     std::vector<AttachmentDesc> attachments;
+    //     attachments.push_back({.index = 0,
+    //                            .format = BGRA_8_SRGB,
+    //                            .layout = COLOR_ATT_OPTIMAL,
+    //                            .samples = SAMPLES_1,
+    //                            .initialLayout = UNDEFINED,
+    //                            .finalLayout = PRESENT_SRC});
 
-        for (const auto &image : swapchainImages)
-        {
-            std::vector<Handle<Image>> imageAttachments;
-            imageAttachments.push_back(imagePool.set(image));
-            RenderTargetDesc desc{
-                .renderpassDesc = {
-                    .format = BGRA_8_SRGB,
-                    .attachments = attachments,
-                },
-                .attachments = attachments,
-                .attachmentImages = imageAttachments,
-                .dimensions = image.dimensions,
-            };
+    //     for (const auto &image : swapchainImages)
+    //     {
+    //         std::vector<Handle<Image>> imageAttachments;
+    //         imageAttachments.push_back(imagePool.set(image));
+    //         RenderTargetDesc desc{
+    //             .renderpassDesc = {
+    //                 .format = BGRA_8_SRGB,
+    //                 .attachments = attachments,
+    //             },
+    //             .attachments = attachments,
+    //             .attachmentImages = imageAttachments,
+    //             .dimensions = image.dimensions,
+    //         };
 
-            Handle<RenderTarget> framebuffer = createRenderTarget(desc);
+    //         Handle<RenderTarget> framebuffer = createRenderTarget(desc);
 
-            swapchainBuffers.push_back(framebuffer);
-        }
-    }
+    //         swapchainBuffers.push_back(framebuffer);
+    //     }
+    // }
 
 #pragma endregion Window Functions
 
@@ -351,6 +359,11 @@ namespace boitatah
         return renderpassPool.set(pass);
     }
 
+    Handle<Image> Renderer::addImage(Image image)
+    {
+        return imagePool.set(image);
+    }
+
     Handle<Image> Renderer::createImage(const ImageDesc &desc)
     {
         // TODO seperate responsabilities
@@ -382,7 +395,7 @@ namespace boitatah
             .transferBuffer = allocateCommandBuffer({.count = 1,
                                                      .level = PRIMARY,
                                                      .type = TRANSFER}),
-            .acquireSem = vk->createSemaphore(),
+            .schainAcqSem = vk->createSemaphore(),
             .transferSem = vk->createSemaphore(),
             .inFlightFen = vk->createFence(true),
         };

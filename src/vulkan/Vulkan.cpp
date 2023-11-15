@@ -28,162 +28,6 @@ using boitatah::Shader;
 using boitatah::ShaderDesc;
 using boitatah::USAGE;
 
-#pragma region Enum Specializations
-
-template <>
-inline VkFormat boitatah::vk::Vulkan::castEnum(FORMAT format)
-{
-    switch (format)
-    {
-    case RGBA_8_SRGB:
-        return VK_FORMAT_R8G8B8A8_SRGB;
-    case BGRA_8_SRGB:
-        return VK_FORMAT_B8G8R8A8_SRGB;
-    case RGBA_8_UNORM:
-        return VK_FORMAT_R8G8B8A8_UNORM;
-    case BGRA_8_UNORM:
-        return VK_FORMAT_B8G8R8A8_UNORM;
-    default:
-        return VK_FORMAT_UNDEFINED;
-    }
-}
-template VkFormat boitatah::vk::Vulkan::castEnum<FORMAT, VkFormat>(FORMAT);
-
-template <>
-inline VkColorSpaceKHR boitatah::vk::Vulkan::castEnum(COLOR_SPACE colorSpace)
-{
-    switch (colorSpace)
-    {
-    case SRGB_NON_LINEAR:
-        return VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-    default:
-        return VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-    }
-}
-template VkColorSpaceKHR boitatah::vk::Vulkan::castEnum<COLOR_SPACE, VkColorSpaceKHR>(COLOR_SPACE);
-
-template <>
-inline VkPresentModeKHR boitatah::vk::Vulkan::castEnum(FRAME_BUFFERING buffering_mode)
-{
-    switch (buffering_mode)
-    {
-    case NO_BUFFER:
-        return VK_PRESENT_MODE_IMMEDIATE_KHR;
-    case VSYNC:
-        return VK_PRESENT_MODE_FIFO_KHR;
-    case TRIPLE_BUFFER:
-        return VK_PRESENT_MODE_MAILBOX_KHR;
-    default:
-        return VK_PRESENT_MODE_FIFO_KHR;
-    }
-}
-template VkPresentModeKHR boitatah::vk::Vulkan::castEnum<FRAME_BUFFERING, VkPresentModeKHR>(FRAME_BUFFERING);
-
-template <>
-inline VkImageLayout boitatah::vk::Vulkan::castEnum(IMAGE_LAYOUT imageLayout)
-{
-    switch (imageLayout)
-    {
-    case COLOR_ATT_OPTIMAL:
-        return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    case PRESENT_SRC:
-        return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    case UNDEFINED:
-        return VK_IMAGE_LAYOUT_UNDEFINED;
-    default:
-        return VK_IMAGE_LAYOUT_UNDEFINED;
-    }
-}
-template VkImageLayout boitatah::vk::Vulkan::castEnum<IMAGE_LAYOUT, VkImageLayout>(IMAGE_LAYOUT);
-
-template <>
-inline VkSampleCountFlagBits boitatah::vk::Vulkan::castEnum(SAMPLES samples)
-{
-    switch (samples)
-    {
-    case SAMPLES_1:
-        return VK_SAMPLE_COUNT_1_BIT;
-    case SAMPLES_2:
-        return VK_SAMPLE_COUNT_2_BIT;
-    case SAMPLES_4:
-        return VK_SAMPLE_COUNT_4_BIT;
-    case SAMPLES_8:
-        return VK_SAMPLE_COUNT_8_BIT;
-    case SAMPLES_16:
-        return VK_SAMPLE_COUNT_16_BIT;
-    default:
-        return VK_SAMPLE_COUNT_1_BIT;
-    }
-}
-template VkSampleCountFlagBits boitatah::vk::Vulkan::castEnum<SAMPLES, VkSampleCountFlagBits>(SAMPLES);
-
-template <>
-inline VkImageUsageFlagBits boitatah::vk::Vulkan::castEnum(USAGE samples)
-{
-    switch (samples)
-    {
-    case TRANSFER_SRC:
-        return VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    case TRANSFER_DST:
-        return VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    case COLOR_ATT:
-        return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    case TRANSFER_DST_SAMPLED:
-        return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-    case SAMPLED:
-        return VK_IMAGE_USAGE_SAMPLED_BIT;
-    case COLOR_ATT_TRANSFER_DST:
-        return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-    case COLOR_ATT_TRANSFER_SRC:
-        return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-    default:
-        return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    }
-}
-template VkImageUsageFlagBits boitatah::vk::Vulkan::castEnum<USAGE, VkImageUsageFlagBits>(USAGE);
-
-template <>
-inline VkMemoryPropertyFlagBits boitatah::vk::Vulkan::castEnum(MEMORY_PROPERTY properties)
-{
-    switch (properties)
-    {
-    case DEVICE_LOCAL:
-        return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    case HOST_VISIBLE:
-        return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-    case HOST_COHERENT:
-        return VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    case HOST_CACHED:
-        return VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
-    case LAZY_ALLOCATE:
-        return VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
-    case HOST_VISIBLE_COHERENT:
-        return (VkMemoryPropertyFlagBits)(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    default:
-        return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-    }
-}
-template VkMemoryPropertyFlagBits boitatah::vk::Vulkan::castEnum<MEMORY_PROPERTY, VkMemoryPropertyFlagBits>(MEMORY_PROPERTY);
-
-template <>
-inline VkCommandBufferLevel boitatah::vk::Vulkan::castEnum(COMMAND_BUFFER_LEVEL properties)
-{
-    switch (properties)
-    {
-    case PRIMARY:
-        return VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    case SECONDARY:
-        return VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-
-    default:
-        return VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    }
-}
-template VkCommandBufferLevel boitatah::vk::Vulkan::castEnum<COMMAND_BUFFER_LEVEL, VkCommandBufferLevel>(COMMAND_BUFFER_LEVEL);
-
-#pragma endregion Enum Specializations
-
 #pragma region Validationsupportjank
 /// Validation Support Jank.
 VkResult createDebugUtilsMessengerEXT(VkInstance instance,
@@ -251,14 +95,6 @@ bvk::Vulkan::Vulkan(VulkanOptions opts)
     deviceExtensions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
     initInstance();
-    createSurface(opts.window);
-    initializeDebugMessenger();
-
-    initPhysicalDevice();
-    initLogicalDeviceNQueues();
-    setQueues();
-    createCommandPools();
-    createSyncObjects();
 }
 
 bvk::Vulkan::~Vulkan(void)
@@ -266,9 +102,9 @@ bvk::Vulkan::~Vulkan(void)
 
     cleanupSyncObjects();
 
-    clearSwapchainViews();
+    // clearSwapchainViews(); //done
 
-    vkDestroySwapchainKHR(device, swapchain, nullptr);
+    // vkDestroySwapchainKHR(device, swapchain, nullptr); //done
 
     vkDestroyCommandPool(device, commandPools.graphicsPool, nullptr);
     vkDestroyCommandPool(device, commandPools.transferPool, nullptr);
@@ -279,8 +115,28 @@ bvk::Vulkan::~Vulkan(void)
     if (options.useValidationLayers)
         destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
 
-    vkDestroySurfaceKHR(instance, surface, nullptr);
+    // vkDestroySurfaceKHR(instance, surface, nullptr); //done
     vkDestroyInstance(instance, nullptr);
+}
+
+VkInstance boitatah::vk::Vulkan::getInstance()
+{
+    return instance;
+}
+
+VkDevice boitatah::vk::Vulkan::getDevice()
+{
+    return device;
+}
+
+VkPhysicalDevice boitatah::vk::Vulkan::getPhysicalDevice()
+{
+    return physicalDevice;
+}
+
+void boitatah::vk::Vulkan::attachWindow(window::WindowManager *window)
+{
+    this->window = window;
 }
 
 void boitatah::vk::Vulkan::initInstance()
@@ -343,6 +199,17 @@ void boitatah::vk::Vulkan::initInstance()
         throw std::runtime_error("Failed to create Vulkan Instance.");
 }
 
+void boitatah::vk::Vulkan::completeInit()
+{
+    initializeDebugMessenger();
+
+    initPhysicalDevice();
+    initLogicalDeviceNQueues();
+    setQueues();
+    createCommandPools();
+    createSyncObjects();
+}
+
 #pragma endregion Initialization
 
 #pragma region Synchronization
@@ -359,13 +226,13 @@ void boitatah::vk::Vulkan::waitIdle()
     vkDeviceWaitIdle(device);
 }
 
-Image boitatah::vk::Vulkan::acquireSwapChainImage()
-{
-    uint32_t index;
-    vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, SemImageAvailable, VK_NULL_HANDLE, &index);
+// Image boitatah::vk::Vulkan::acquireSwapChainImage()
+// {
+//     uint32_t index;
+//     vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, SemImageAvailable, VK_NULL_HANDLE, &index);
 
-    return getSwapchainImages()[index];
-}
+//     return getSwapchainImages()[index];
+// }
 
 #pragma endregion Synchronization
 
@@ -624,13 +491,12 @@ void boitatah::vk::Vulkan::submitDrawCmdBuffer(const SubmitCommand &command)
     }
 }
 
-void boitatah::vk::Vulkan::presentFrame(Image image, SubmitCommand &command)
+void boitatah::vk::Vulkan::presentFrame(Image &image,
+ Image &swapchainImage,
+  VkSwapchainKHR &swapchain,
+  uint32_t &scIndex,
+   SubmitCommand &command)
 {
-    // Get a swapchain image.
-    uint32_t index;
-    vkAcquireNextImageKHR(device, swapchain, UINT64_MAX,
-                          command.bufferData.acquireSem, VK_NULL_HANDLE, &index);
-
     auto transferBuffer = command.bufferData.transferBuffer.buffer;
 
     // // Finished Transfer
@@ -639,14 +505,14 @@ void boitatah::vk::Vulkan::presentFrame(Image image, SubmitCommand &command)
         .buffer = transferBuffer,
         .srcImage = image.image,
         .srcImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        .dstImage = swapchainImages[index],
+        .dstImage = swapchainImage.image,
         .dstImgLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
         .extent = image.dimensions,
     });
 
     endCommands(transferBuffer,
                 queues.transferQueue,
-                command.bufferData.acquireSem,
+                command.bufferData.schainAcqSem,
                 command.bufferData.transferSem,
                 command.bufferData.inFlightFen);
 
@@ -657,7 +523,7 @@ void boitatah::vk::Vulkan::presentFrame(Image image, SubmitCommand &command)
         .pWaitSemaphores = &command.bufferData.transferSem,
         .swapchainCount = 1,
         .pSwapchains = &swapchain,
-        .pImageIndices = &index,
+        .pImageIndices = &scIndex,
         .pResults = nullptr};
 
     vkQueuePresentKHR(queues.presentQueue, &presentInfo);
@@ -988,7 +854,7 @@ void boitatah::vk::Vulkan::destroyRenderTargetCmdData(const RTCmdBuffers &sync)
     vkFreeCommandBuffers(device, commandPools.transferPool, 1, &(sync.transferBuffer.buffer));
 
     vkDestroyFence(device, sync.inFlightFen, nullptr);
-    vkDestroySemaphore(device, sync.acquireSem, nullptr);
+    vkDestroySemaphore(device, sync.schainAcqSem, nullptr);
     vkDestroySemaphore(device, sync.transferSem, nullptr);
 }
 
@@ -1076,43 +942,43 @@ void boitatah::vk::Vulkan::destroyPipelineLayout(PipelineLayout &layout)
 
 #pragma region SWAPCHAIN
 
-std::vector<Image> boitatah::vk::Vulkan::getSwapchainImages()
-{
-    if (swapchainImageCache.size() == 0)
-    {
-        std::vector<Image> swapimages(swapchainImages.size());
+// std::vector<Image> boitatah::vk::Vulkan::getSwapchainImages()
+// {
+//     if (swapchainImageCache.size() == 0)
+//     {
+//         std::vector<Image> swapimages(swapchainImages.size());
 
-        for (int i = 0; i < swapimages.size(); i++)
-        {
-            swapimages[i] = {
-                .image = swapchainImages[i],
-                .view = swapchainViews[i],
-                .dimensions = {swapchainExtent.width, swapchainExtent.height},
-                .swapchain = true};
-        }
-        swapchainImageCache = swapimages;
-    }
+//         for (int i = 0; i < swapimages.size(); i++)
+//         {
+//             swapimages[i] = {
+//                 .image = swapchainImages[i],
+//                 .view = swapchainViews[i],
+//                 .dimensions = {swapchainExtent.width, swapchainExtent.height},
+//                 .swapchain = true};
+//         }
+//         swapchainImageCache = swapimages;
+//     }
 
-    return swapchainImageCache;
-}
+//     return swapchainImageCache;
+// }
 
-void boitatah::vk::Vulkan::clearSwapchainViews()
-{
-    for (auto view : swapchainViews)
-    {
-        vkDestroyImageView(device, view, nullptr);
-    }
-}
+// void boitatah::vk::Vulkan::clearSwapchainViews()
+// {
+//     for (auto view : swapchainViews)
+//     {
+//         vkDestroyImageView(device, view, nullptr);
+//     }
+// }
 
 // does 3 main things.
 // chooses, format (e.g. rgba8 srgb), present mode (e.g. vsync) and extent(i.e. resolution
 // buildSwapchain();
-void boitatah::vk::Vulkan::buildSwapchain(FORMAT scFormat, USAGE usage)
-{
-    clearSwapchainViews();
-    createSwapchain(scFormat, usage);
-    createSwapchainViews(scFormat);
-}
+// void boitatah::vk::Vulkan::buildSwapchain(FORMAT scFormat, USAGE usage)
+// {
+//     clearSwapchainViews();
+//     createSwapchain(scFormat, usage);
+//     createSwapchainViews(scFormat);
+// }
 
 void boitatah::vk::Vulkan::createSyncObjects()
 {
@@ -1142,204 +1008,204 @@ void boitatah::vk::Vulkan::cleanupSyncObjects()
     vkDestroyFence(device, FenTransferSwapchain, nullptr);
 }
 
-boitatah::vk::SwapchainSupport boitatah::vk::Vulkan::getSwapchainSupport(VkPhysicalDevice device)
-{
-    SwapchainSupport support;
+// boitatah::vk::SwapchainSupport boitatah::vk::Vulkan::getSwapchainSupport(VkPhysicalDevice device)
+// {
+//     SwapchainSupport support;
 
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &support.capabilities);
+//     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &support.capabilities);
 
-    uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+//     uint32_t formatCount;
+//     vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
 
-    if (options.useValidationLayers)
-        std::cout << " AVAILABLE SURFACE FORMATS " << std::endl;
+//     if (options.useValidationLayers)
+//         std::cout << " AVAILABLE SURFACE FORMATS " << std::endl;
 
-    if (formatCount != 0)
-    {
-        support.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device,
-                                             surface,
-                                             &formatCount,
-                                             support.formats.data());
+//     if (formatCount != 0)
+//     {
+//         support.formats.resize(formatCount);
+//         vkGetPhysicalDeviceSurfaceFormatsKHR(device,
+//                                              surface,
+//                                              &formatCount,
+//                                              support.formats.data());
 
-        for (const auto &format : support.formats)
-        {
-            std::cout << " \tFORMAT :: " << format.format << std::endl;
-        }
-    }
+//         for (const auto &format : support.formats)
+//         {
+//             std::cout << " \tFORMAT :: " << format.format << std::endl;
+//         }
+//     }
 
-    uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
-    if (presentModeCount != 0)
-    {
-        support.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device,
-                                                  surface,
-                                                  &presentModeCount,
-                                                  support.presentModes.data());
-    }
+//     uint32_t presentModeCount;
+//     vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+//     if (presentModeCount != 0)
+//     {
+//         support.presentModes.resize(presentModeCount);
+//         vkGetPhysicalDeviceSurfacePresentModesKHR(device,
+//                                                   surface,
+//                                                   &presentModeCount,
+//                                                   support.presentModes.data());
+//     }
 
-    return support;
-}
+//     return support;
+// }
 
-VkSurfaceFormatKHR boitatah::vk::Vulkan::chooseSwapSurfaceFormat(
-    const std::vector<VkSurfaceFormatKHR> &availableFormats,
-    FORMAT scFormat,
-    COLOR_SPACE scColorSpace)
-{
-    for (const auto &surfaceFormat : availableFormats)
-    {
-        // GPUs usually display in BGRA [citation needed]
-        if (surfaceFormat.format == castEnum<FORMAT, VkFormat>(scFormat) &&
-            surfaceFormat.colorSpace == castEnum<COLOR_SPACE, VkColorSpaceKHR>(scColorSpace))
-        {
-            return surfaceFormat;
-        }
-    }
-    throw std::runtime_error("Unable to select Swapchain format");
-}
+// VkSurfaceFormatKHR boitatah::vk::Vulkan::chooseSwapSurfaceFormat(
+//     const std::vector<VkSurfaceFormatKHR> &availableFormats,
+//     FORMAT scFormat,
+//     COLOR_SPACE scColorSpace)
+// {
+//     for (const auto &surfaceFormat : availableFormats)
+//     {
+//         // GPUs usually display in BGRA [citation needed]
+//         if (surfaceFormat.format == castEnum<FORMAT, VkFormat>(scFormat) &&
+//             surfaceFormat.colorSpace == castEnum<COLOR_SPACE, VkColorSpaceKHR>(scColorSpace))
+//         {
+//             return surfaceFormat;
+//         }
+//     }
+//     throw std::runtime_error("Unable to select Swapchain format");
+// }
 
-VkPresentModeKHR boitatah::vk::Vulkan::chooseSwapPresentMode(
-    const std::vector<VkPresentModeKHR> &availableModes)
-{
-    for (const auto &mode : availableModes)
-    {
-        if (mode == castEnum<FRAME_BUFFERING, VkPresentModeKHR>(FRAME_BUFFERING::TRIPLE_BUFFER))
-        {
-            return mode;
-        }
-    }
+// VkPresentModeKHR boitatah::vk::Vulkan::chooseSwapPresentMode(
+//     const std::vector<VkPresentModeKHR> &availableModes)
+// {
+//     for (const auto &mode : availableModes)
+//     {
+//         if (mode == castEnum<FRAME_BUFFERING, VkPresentModeKHR>(FRAME_BUFFERING::TRIPLE_BUFFER))
+//         {
+//             return mode;
+//         }
+//     }
 
-    return castEnum<FRAME_BUFFERING, VkPresentModeKHR>(FRAME_BUFFERING::VSYNC);
-}
+//     return castEnum<FRAME_BUFFERING, VkPresentModeKHR>(FRAME_BUFFERING::VSYNC);
+// }
 
-VkExtent2D boitatah::vk::Vulkan::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities)
-{
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-    {
-        return capabilities.currentExtent;
-    }
-    else
-    {
-        int width, height;
-        glfwGetFramebufferSize(options.window, &width, &height);
+// VkExtent2D boitatah::vk::Vulkan::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities)
+// {
+//     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+//     {
+//         return capabilities.currentExtent;
+//     }
+//     else
+//     {
+//         int width, height;
+//         glfwGetFramebufferSize(options.window, &width, &height);
 
-        VkExtent2D extent{
-            .width = static_cast<uint32_t>(width),
-            .height = static_cast<uint32_t>(height)};
+//         VkExtent2D extent{
+//             .width = static_cast<uint32_t>(width),
+//             .height = static_cast<uint32_t>(height)};
 
-        extent.width = std::clamp(extent.width,
-                                  capabilities.minImageExtent.width,
-                                  capabilities.maxImageExtent.width);
-        extent.height = std::clamp(extent.height,
-                                   capabilities.minImageExtent.height,
-                                   capabilities.maxImageExtent.height);
-        return extent;
-    }
-}
+//         extent.width = std::clamp(extent.width,
+//                                   capabilities.minImageExtent.width,
+//                                   capabilities.maxImageExtent.width);
+//         extent.height = std::clamp(extent.height,
+//                                    capabilities.minImageExtent.height,
+//                                    capabilities.maxImageExtent.height);
+//         return extent;
+//     }
+// }
 
-void boitatah::vk::Vulkan::createSwapchain(FORMAT scFormat, USAGE usage)
-{
-    SwapchainSupport support = getSwapchainSupport(physicalDevice);
+// void boitatah::vk::Vulkan::createSwapchain(FORMAT scFormat, USAGE usage)
+// {
+//     SwapchainSupport support = getSwapchainSupport(physicalDevice);
 
-    VkSurfaceFormatKHR format = chooseSwapSurfaceFormat(support.formats,
-                                                        FORMAT::BGRA_8_SRGB,
-                                                        COLOR_SPACE::SRGB_NON_LINEAR);
-    VkPresentModeKHR mode = chooseSwapPresentMode(support.presentModes);
-    VkExtent2D extent = chooseSwapExtent(support.capabilities);
+//     VkSurfaceFormatKHR format = chooseSwapSurfaceFormat(support.formats,
+//                                                         FORMAT::BGRA_8_SRGB,
+//                                                         COLOR_SPACE::SRGB_NON_LINEAR);
+//     VkPresentModeKHR mode = chooseSwapPresentMode(support.presentModes);
+//     VkExtent2D extent = chooseSwapExtent(support.capabilities);
 
-    uint32_t imageCount = support.capabilities.minImageCount;
-    imageCount += 1;
+//     uint32_t imageCount = support.capabilities.minImageCount;
+//     imageCount += 1;
 
-    // 0 is a special value that mean no limit
-    if (support.capabilities.maxImageCount > 0 &&
-        imageCount > support.capabilities.maxImageCount)
-    {
-        imageCount = support.capabilities.maxImageCount;
-    }
+//     // 0 is a special value that mean no limit
+//     if (support.capabilities.maxImageCount > 0 &&
+//         imageCount > support.capabilities.maxImageCount)
+//     {
+//         imageCount = support.capabilities.maxImageCount;
+//     }
 
-    VkSwapchainCreateInfoKHR createInfo{
-        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        .surface = surface,
-        .minImageCount = imageCount,
-        .imageFormat = format.format,
-        .imageColorSpace = format.colorSpace,
-        .imageExtent = extent,
-        .imageArrayLayers = 1, // 2 for stereoscopic aplications (nothing to do with deffered rendering)
-        .imageUsage = castEnum<USAGE, VkImageUsageFlagBits>(usage)};
+//     VkSwapchainCreateInfoKHR createInfo{
+//         .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+//         .surface = surface,
+//         .minImageCount = imageCount,
+//         .imageFormat = format.format,
+//         .imageColorSpace = format.colorSpace,
+//         .imageExtent = extent,
+//         .imageArrayLayers = 1, // 2 for stereoscopic aplications (nothing to do with deffered rendering)
+//         .imageUsage = castEnum<USAGE, VkImageUsageFlagBits>(usage)};
 
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-    uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+//     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+//     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
-    // if queues are going to share burrers or not
-    if (indices.graphicsFamily != indices.presentFamily)
-    {
-        if (options.useValidationLayers)
-            std::cout << "FAMILIES :: USING TWO QUEUE FAMILIES: " << indices.graphicsFamily.value() << " and " << indices.presentFamily.value() << std::endl;
-        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        createInfo.queueFamilyIndexCount = 2;
-        createInfo.pQueueFamilyIndices = queueFamilyIndices;
-    }
-    else
-    {
-        if (options.useValidationLayers)
-            std::cout << "FAMILIES :: USING ONE QUEUE FAMILIES" << std::endl;
-        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        createInfo.queueFamilyIndexCount = 0;
-        createInfo.pQueueFamilyIndices = nullptr;
-    }
+//     // if queues are going to share burrers or not
+//     if (indices.graphicsFamily != indices.presentFamily)
+//     {
+//         if (options.useValidationLayers)
+//             std::cout << "FAMILIES :: USING TWO QUEUE FAMILIES: " << indices.graphicsFamily.value() << " and " << indices.presentFamily.value() << std::endl;
+//         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+//         createInfo.queueFamilyIndexCount = 2;
+//         createInfo.pQueueFamilyIndices = queueFamilyIndices;
+//     }
+//     else
+//     {
+//         if (options.useValidationLayers)
+//             std::cout << "FAMILIES :: USING ONE QUEUE FAMILIES" << std::endl;
+//         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+//         createInfo.queueFamilyIndexCount = 0;
+//         createInfo.pQueueFamilyIndices = nullptr;
+//     }
 
-    // for pre-transformations, e.g. rotating 90o
-    // current transform is no tranform.
-    createInfo.preTransform = support.capabilities.currentTransform;
+//     // for pre-transformations, e.g. rotating 90o
+//     // current transform is no tranform.
+//     createInfo.preTransform = support.capabilities.currentTransform;
 
-    // use alpha to blend with other windows.
-    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+//     // use alpha to blend with other windows.
+//     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
-    createInfo.presentMode = mode;
-    createInfo.clipped = VK_TRUE; // for obscured pixels in the window system.
+//     createInfo.presentMode = mode;
+//     createInfo.clipped = VK_TRUE; // for obscured pixels in the window system.
 
-    // for replacing the swap chain when resizing windows.
-    createInfo.oldSwapchain = swapchain;
+//     // for replacing the swap chain when resizing windows.
+//     createInfo.oldSwapchain = swapchain;
 
-    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to Build a Swapchain");
-    }
+//     if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) != VK_SUCCESS)
+//     {
+//         throw std::runtime_error("Failed to Build a Swapchain");
+//     }
 
-    swapchainFormat = format.format;
-    swapchainExtent = extent;
+//     swapchainFormat = format.format;
+//     swapchainExtent = extent;
 
-    vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
-    swapchainImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(device, swapchain, &imageCount, swapchainImages.data());
-}
+//     vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
+//     swapchainImages.resize(imageCount);
+//     vkGetSwapchainImagesKHR(device, swapchain, &imageCount, swapchainImages.data());
+// }
 
-void boitatah::vk::Vulkan::createSwapchainViews(FORMAT scFormat)
-{
-    swapchainViews.resize(swapchainImages.size());
+// void boitatah::vk::Vulkan::createSwapchainViews(FORMAT scFormat)
+// {
+//     swapchainViews.resize(swapchainImages.size());
 
-    for (size_t i = 0; i < swapchainViews.size(); i++)
-    {
-        VkImageViewCreateInfo createInfo{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .image = swapchainImages[i],
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = castEnum<FORMAT, VkFormat>(scFormat),
-            .components = {
-                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .a = VK_COMPONENT_SWIZZLE_IDENTITY},
-            .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .baseMipLevel = 0, .levelCount = 1, .baseArrayLayer = 0, .layerCount = 1},
-        };
+//     for (size_t i = 0; i < swapchainViews.size(); i++)
+//     {
+//         VkImageViewCreateInfo createInfo{
+//             .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+//             .image = swapchainImages[i],
+//             .viewType = VK_IMAGE_VIEW_TYPE_2D,
+//             .format = castEnum<FORMAT, VkFormat>(scFormat),
+//             .components = {
+//                 .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+//                 .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+//                 .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+//                 .a = VK_COMPONENT_SWIZZLE_IDENTITY},
+//             .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .baseMipLevel = 0, .levelCount = 1, .baseArrayLayer = 0, .layerCount = 1},
+//         };
 
-        if (vkCreateImageView(device, &createInfo, nullptr, &swapchainViews[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("Failed to create Swapchain image view");
-        }
-    }
-}
+//         if (vkCreateImageView(device, &createInfo, nullptr, &swapchainViews[i]) != VK_SUCCESS)
+//         {
+//             throw std::runtime_error("Failed to create Swapchain image view");
+//         }
+//     }
+// }
 
 #pragma endregion SWAPCHAIN
 
@@ -1455,12 +1321,12 @@ void boitatah::vk::Vulkan::createCommandPools()
 #pragma endregion QUEUE_SETUP
 
 #pragma region DEVICE_SETUP
-void boitatah::vk::Vulkan::createSurface(GLFWwindow *window)
-{
-    // TODO not ideal
-    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
-        throw std::runtime_error("Failed to create Window Surface");
-}
+// void boitatah::vk::Vulkan::createSurface(GLFWwindow *window)
+// {
+//     // TODO not ideal
+//     if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
+//         throw std::runtime_error("Failed to create Window Surface");
+// }
 
 void boitatah::vk::Vulkan::initPhysicalDevice()
 {
@@ -1516,7 +1382,7 @@ boitatah::vk::QueueFamilyIndices boitatah::vk::Vulkan::findQueueFamilies(VkPhysi
     for (const auto &family : families)
     {
         VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, window->getSurface(), &presentSupport);
 
         if (family.queueFlags & VK_QUEUE_TRANSFER_BIT)
         {
@@ -1554,6 +1420,46 @@ std::vector<VkExtensionProperties> bvk::Vulkan::retrieveInstanceAvailableExtensi
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
     return extensions;
+}
+
+boitatah::vk::SwapchainSupport boitatah::vk::Vulkan::getSwapchainSupport(VkPhysicalDevice physicalDevice)
+{
+    SwapchainSupport support;
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, window->getSurface(), &support.capabilities);
+
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, window->getSurface(), &formatCount, nullptr);
+
+    if (options.useValidationLayers)
+        std::cout << " AVAILABLE SURFACE FORMATS " << std::endl;
+
+    if (formatCount != 0)
+    {
+        support.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice,
+                                             window->getSurface(),
+                                             &formatCount,
+                                             support.formats.data());
+
+        for (const auto &format : support.formats)
+        {
+            std::cout << " \tFORMAT :: " << format.format << std::endl;
+        }
+    }
+
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, window->getSurface(), &presentModeCount, nullptr);
+    if (presentModeCount != 0)
+    {
+        support.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice,
+                                                  window->getSurface(),
+                                                  &presentModeCount,
+                                                  support.presentModes.data());
+    }
+
+    return support;
 }
 
 bool bvk::Vulkan::checkRequiredExtensions(const std::vector<VkExtensionProperties> &available,
@@ -1645,7 +1551,7 @@ int boitatah::vk::Vulkan::evaluatePhysicalDevice(VkPhysicalDevice device)
     VkPhysicalDeviceFeatures deviceFeats;
     vkGetPhysicalDeviceFeatures(device, &deviceFeats);
 
-    bool swapChainSupported = false;
+    bool swapChainSupported = true;
     if (checkDeviceExtensionSupport(device))
     {
         SwapchainSupport support = getSwapchainSupport(device);

@@ -21,12 +21,16 @@ namespace boitatah::window{
         public:
             WindowManager(WindowDesc& desc);
             ~WindowManager(void);
+            void initSurface(VkInstance instance);
+            void destroySurface(VkInstance instance);
+            VkSurfaceKHR getSurface();
             bool isWindowClosed();
             void windowEvents();
             const std::vector<const char *> requiredWindowExtensions();
             GLFWwindow *window;
 
         private:
+            VkSurfaceKHR surface;
     };
 
 }
