@@ -26,13 +26,28 @@ namespace boitatah
         vk->attachWindow(window);
         vk->completeInit();
 
+        createSwapchain();
+
+        backBufferManager = new BackBufferManager(this);
+        backBufferManager->setup(options.backBufferDesc);
+    }
+
+    void Renderer::windowResizeCallback(){
+        
+    }
+
+
+    void Renderer::recreateSwapchain(){
+        vk->waitIdle();
+        delete swapchain;
+        createSwapchain();
+    }
+
+    void Renderer::createSwapchain(){
         swapchain = new Swapchain({.format = options.swapchainFormat,
                                    .useValidationLayers = options.debug});
         swapchain->attach(vk, this, window);
         swapchain->createSwapchain(options.windowDimensions, false, false);
-
-        backBufferManager = new BackBufferManager(this);
-        backBufferManager->setup(options.backBufferDesc);
     }
 
     void Renderer::createVulkan()
@@ -150,15 +165,6 @@ namespace boitatah
         delete window;
     }
 
-    // void Renderer::cleanupSwapchainBuffers()
-    // {
-    //     for (auto &bufferhandle : swapchainBuffers)
-    //     {
-    //         destroyRenderTarget(bufferhandle);
-    //     }
-    //     swapchainBuffers.resize(0);
-    // }
-
     Renderer::~Renderer(void)
     {
         cleanup();
@@ -230,46 +236,6 @@ namespace boitatah
     }
 
 #pragma endregion Command Buffers
-
-#pragma region Window Functions
-
-    // void Renderer::buildSwapchain()
-    // {
-    //     // Clear old swapchain and get new images.
-    //     cleanupSwapchainBuffers();
-    //     vk->buildSwapchain(options.swapchainFormat, USAGE::COLOR_ATT_TRANSFER_DST);
-    //     std::vector<Image> swapchainImages = vk->getSwapchainImages();
-
-    //     // Create new swapchain framebuffers
-    //     std::vector<AttachmentDesc> attachments;
-    //     attachments.push_back({.index = 0,
-    //                            .format = BGRA_8_SRGB,
-    //                            .layout = COLOR_ATT_OPTIMAL,
-    //                            .samples = SAMPLES_1,
-    //                            .initialLayout = UNDEFINED,
-    //                            .finalLayout = PRESENT_SRC});
-
-    //     for (const auto &image : swapchainImages)
-    //     {
-    //         std::vector<Handle<Image>> imageAttachments;
-    //         imageAttachments.push_back(imagePool.set(image));
-    //         RenderTargetDesc desc{
-    //             .renderpassDesc = {
-    //                 .format = BGRA_8_SRGB,
-    //                 .attachments = attachments,
-    //             },
-    //             .attachments = attachments,
-    //             .attachmentImages = imageAttachments,
-    //             .dimensions = image.dimensions,
-    //         };
-
-    //         Handle<RenderTarget> framebuffer = createRenderTarget(desc);
-
-    //         swapchainBuffers.push_back(framebuffer);
-    //     }
-    // }
-
-#pragma endregion Window Functions
 
 #pragma region Create Vulkan Objects
 

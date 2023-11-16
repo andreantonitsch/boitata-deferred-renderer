@@ -41,7 +41,7 @@ namespace boitatah
 
         // A compatible framebuffer.
         // sets the RenderPass for this PSO.
-        Handle<RenderTarget> framebuffer;
+        Handle<RenderTarget> framebuffer; //optional
         Handle<PipelineLayout> layout;
     };
 
@@ -64,7 +64,8 @@ namespace boitatah
         ShaderModule frag;
 
         VkPipeline pipeline;
-        //ShaderCompatibility compat;
+        //Handle<PipelineLayout> layout; <--- for shader recreation
+        //Handle<Swapchain*> compatibleSwapchain <-- for comparisoon of swapchain compatibility
         //for shader recreation
         //Handle<ShaderDesc> description;
         //Handle<ShaderModules> modules;

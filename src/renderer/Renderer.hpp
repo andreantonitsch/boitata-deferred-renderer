@@ -50,6 +50,9 @@ namespace boitatah
     public:
         // Constructors / Destructors
         Renderer(RendererOptions options);
+
+
+
         ~Renderer(void);
 
         //Window methods
@@ -98,6 +101,10 @@ namespace boitatah
         BackBufferManager* backBufferManager;
         Swapchain* swapchain;
 
+        void recreateSwapchain();
+        void createSwapchain();
+        void windowResizeCallback();
+        
         // Pools
         Pool<Shader> shaderPool = Pool<Shader>({.size = 100});
         Pool<RenderTarget> renderTargetPool = Pool<RenderTarget>({.size = 50});

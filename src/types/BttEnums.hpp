@@ -228,6 +228,7 @@ inline VkCommandBufferLevel boitatah::castEnum(COMMAND_BUFFER_LEVEL properties)
 }
 template VkCommandBufferLevel boitatah::castEnum<COMMAND_BUFFER_LEVEL, VkCommandBufferLevel>(COMMAND_BUFFER_LEVEL);
 
+#pragma endregion Enum Specializations
 
 }
 

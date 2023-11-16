@@ -34,13 +34,6 @@ namespace boitatah
         VkSwapchainKHR sc;
     };
 
-    // struct SwapchainSupport
-    // {
-    //     VkSurfaceCapabilitiesKHR capabilities;
-    //     std::vector<VkSurfaceFormatKHR> formats;
-    //     std::vector<VkPresentModeKHR> presentModes;
-    // };
-
     class Swapchain
     {
     public:
