@@ -26,11 +26,14 @@ namespace boitatah::window{
             VkSurfaceKHR getSurface();
             bool isWindowClosed();
             void windowEvents();
+            Vector2<int> getWindowDimensions();
             const std::vector<const char *> requiredWindowExtensions();
             GLFWwindow *window;
 
         private:
             VkSurfaceKHR surface;
+            Vector2<int> windowDimensions;
+            static void framebufferResizeCallback(GLFWwindow* window, int width, int heigth);
     };
 
 }

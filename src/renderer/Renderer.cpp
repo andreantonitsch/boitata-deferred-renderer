@@ -32,22 +32,34 @@ namespace boitatah
         backBufferManager->setup(options.backBufferDesc);
     }
 
-    void Renderer::windowResizeCallback(){
-        
-    }
 
-
-    void Renderer::recreateSwapchain(){
+    void Renderer::recreateSwapchain()
+    {
         vk->waitIdle();
-        delete swapchain;
-        createSwapchain();
+
+        swapchain->createSwapchain();
+        auto newWindowSize = window->getWindowDimensions();
+
+        options.backBufferDesc.dimensions = {
+            static_cast<uint32_t>(newWindowSize.x),
+            static_cast<uint32_t>(newWindowSize.y),
+        };
+        options.backBufferDesc.imageDesc[0].dimensions= {
+            static_cast<uint32_t>(newWindowSize.x),
+            static_cast<uint32_t>(newWindowSize.y),
+        };
+        
+        backBufferManager->setup(options.backBufferDesc);
+        //vk->waitIdle();
+
     }
 
-    void Renderer::createSwapchain(){
+    void Renderer::createSwapchain()
+    {
         swapchain = new Swapchain({.format = options.swapchainFormat,
                                    .useValidationLayers = options.debug});
         swapchain->attach(vk, this, window);
-        swapchain->createSwapchain(options.windowDimensions, false, false);
+        swapchain->createSwapchain(); // options.windowDimensions, false, false);
     }
 
     void Renderer::createVulkan()
@@ -146,11 +158,26 @@ namespace boitatah
         vk->waitForFrame(buffers);
         SubmitCommand command{.bufferData = buffers, .submitType = PRESENT};
         auto swapchainImage = swapchain->getNext(buffers.schainAcqSem);
-        vk->presentFrame(image,
-                         swapchainImage.image,
-                         swapchainImage.sc,
-                         swapchainImage.index,
-                         command);
+
+        // failed to find swapchain image.
+        if (swapchainImage.index == UINT32_MAX) // Fail case.
+        {
+            recreateSwapchain();
+            return;
+        }
+
+        bool successfullyPresent = vk->presentFrame(image,
+                                                    swapchainImage.image,
+                                                    swapchainImage.sc,
+                                                    swapchainImage.index,
+                                                    command);
+
+        // If present was unsucessful we must remake the swapchain
+        // and recreate our backbuffer.
+        if (!successfullyPresent)
+        {
+            recreateSwapchain();
+        }
     }
 
 #pragma endregion Rendering
@@ -194,8 +221,8 @@ namespace boitatah
             .pass = command.renderPass.renderPass,
             .frameBuffer = command.renderTarget.buffer,
             .pipeline = command.shader.pipeline,
-            .areaDims = {.x = static_cast<int>(options.windowDimensions.x),
-                         .y = static_cast<int>(options.windowDimensions.y)},
+            .areaDims = {.x = static_cast<int>(command.dimensions.x),
+                         .y = static_cast<int>(command.dimensions.y)},
             .areaOffset = {.x = 0, .y = 0},
             .vertexCount = 3,
             .instaceCount = 1,
@@ -274,7 +301,6 @@ namespace boitatah
         std::vector<Handle<Image>> images(data.attachmentImages);
         if (images.empty())
         {
-
             // Create images.
             for (const auto &imageDesc : data.imageDesc)
             {
@@ -311,9 +337,6 @@ namespace boitatah
             .renderpass = passhandle,
             .cmdBuffers = createRenderTargetCmdData()};
 
-        auto bufferHandle = renderTargetPool.set(framebuffer);
-        if (bufferHandle.gen == 0)
-            throw std::runtime_error("failed to set a rendertarget");
         return renderTargetPool.set(framebuffer);
     }
 
@@ -402,10 +425,12 @@ namespace boitatah
             destroyRenderPass(framebuffer.renderpass);
 
             RTCmdBuffers data;
-            if (rtCmdPool.get(framebuffer.cmdBuffers, data))
+            if (rtCmdPool.clear(framebuffer.cmdBuffers, data))
                 vk->destroyRenderTargetCmdData(data);
 
             vk->destroyFramebuffer(framebuffer);
+        }else {
+            std::cout << "failed delete" << std::endl;
         }
     }
 

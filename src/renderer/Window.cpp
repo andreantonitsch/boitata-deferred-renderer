@@ -1,19 +1,22 @@
 #include "Window.hpp"
 #include <stdexcept>
 #include "../vulkan/Vulkan.hpp"
-
+#include <iostream>
 namespace boitatah::window
 {
     WindowManager::WindowManager(WindowDesc &desc)
     {
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // TODO temp
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
         window = glfwCreateWindow(desc.dimensions.x,
                                   desc.dimensions.y,
                                   desc.windowName,
                                   nullptr,
                                   nullptr);
+
+        glfwSetWindowUserPointer(window, this);
+        glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
     }
     WindowManager::~WindowManager(void)
     {
@@ -51,9 +54,18 @@ namespace boitatah::window
         }
         return requiredExtensions;
     }
+    void WindowManager::framebufferResizeCallback(GLFWwindow *window, int width, int height)
+    {
+        auto windowManager = reinterpret_cast<WindowManager*>(glfwGetWindowUserPointer(window));
+        windowManager->windowDimensions = {width, height};
+    }
     void WindowManager::windowEvents()
     {
         glfwPollEvents();
     }
 
+    Vector2<int> WindowManager::getWindowDimensions()
+    {
+        return windowDimensions;
+    }
 }

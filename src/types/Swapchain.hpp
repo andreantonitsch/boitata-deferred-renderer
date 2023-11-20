@@ -42,7 +42,7 @@ namespace boitatah
         SwapchainImage getNext(VkSemaphore &semaphore);
         SwapchainImage getCurrent();
         void attach(vk::Vulkan *vulkan, Renderer *renderer, window::WindowManager *window);
-        void createSwapchain(Vector2<uint32_t> dimensions, bool vsync, bool fullscreen);
+        void createSwapchain();//Vector2<uint32_t> dimensions, bool vsync, bool fullscreen);
         // void populateBuffers();
 
     private:

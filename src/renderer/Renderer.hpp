@@ -103,15 +103,14 @@ namespace boitatah
 
         void recreateSwapchain();
         void createSwapchain();
-        void windowResizeCallback();
         
         // Pools
-        Pool<Shader> shaderPool = Pool<Shader>({.size = 100});
-        Pool<RenderTarget> renderTargetPool = Pool<RenderTarget>({.size = 50});
-        Pool<RenderPass> renderpassPool = Pool<RenderPass>({.size = 50});
-        Pool<Image> imagePool = Pool<Image>({.size = 500});
-        Pool<PipelineLayout> pipelineLayoutPool = Pool<PipelineLayout>({.size = 50});
-        Pool<RTCmdBuffers> rtCmdPool = Pool<RTCmdBuffers>({.size = 50});
+        Pool<Shader> shaderPool = Pool<Shader>({.size = 100, .name = "shader pool"});
+        Pool<RenderTarget> renderTargetPool = Pool<RenderTarget>({.size = 500, .name = "render target pool"});
+        Pool<RenderPass> renderpassPool = Pool<RenderPass>({.size = 50, .name = "render pass pool"});
+        Pool<Image> imagePool = Pool<Image>({.size = 500, .name = "image pool"});
+        Pool<PipelineLayout> pipelineLayoutPool = Pool<PipelineLayout>({.size = 50, .name = "pipeline layour pool"});
+        Pool<RTCmdBuffers> rtCmdPool = Pool<RTCmdBuffers>({.size = 50, .name = "rtcmd buffers pool"});
 
 
         // Options Members

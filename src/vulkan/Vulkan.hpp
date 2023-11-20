@@ -80,10 +80,6 @@ namespace boitatah::vk
         VkPhysicalDevice getPhysicalDevice();
         void attachWindow(boitatah::window::WindowManager *window);
 
-        // Swapchain Methos
-        // void buildSwapchain(FORMAT scFormat, USAGE usage);
-        // std::vector<Image> getSwapchainImages();
-        // Image acquireSwapChainImage();
 
         QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
@@ -110,7 +106,9 @@ namespace boitatah::vk
         // Render Commands
         void recordCommand(const DrawCommandVk &command);
         void submitDrawCmdBuffer(const SubmitCommand &command);
-        void presentFrame(Image &image,
+
+        //returns if frame was successfully presented;
+        bool presentFrame(Image &image,
                           Image &swapchainImage,
                           VkSwapchainKHR &swapchain,
                           uint32_t &scIndex,

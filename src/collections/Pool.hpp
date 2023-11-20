@@ -4,7 +4,8 @@
 #include <cstdint>
 // #include <array>
 #include <vector>
-
+#include <iostream>
+#include <string>
 namespace boitatah
 {
     template <typename T>
@@ -13,13 +14,14 @@ namespace boitatah
         uint32_t i = 0;
         uint32_t gen = 0;
 
-        bool isValid() { return gen != 0; }
+        bool isNull() { return gen != 0; }
     };
 
     struct PoolOptions
     {
         uint32_t size = 100;
         uint32_t dynamic = true;
+        std::string name;
     };
 
     template <typename T>
@@ -34,14 +36,17 @@ namespace boitatah
         bool clear(Handle<T> handle, T& item);
 
     private:
+        PoolOptions options;
         std::vector<uint32_t> generations;
         std::vector<T> pool;
 
         std::vector<uint32_t> freeStack; // stack of free ids?
-        uint32_t stackTop;
-        uint32_t quantity;
+        uint32_t stackTop = 0;
+        uint32_t quantity = 0;
         uint32_t popStack();
         void pushStack(uint32_t id);
+        int created = 0;
+        int destroyed = 0;
     };
 
 }
@@ -53,6 +58,7 @@ namespace boitatah
 template <typename T>
 boitatah::Pool<T>::Pool(PoolOptions options)
 {
+    this->options = options;
     generations.resize(options.size, 1);
     // std::fill(generations.begin(), generations.end(), 0);
 
@@ -81,12 +87,16 @@ bool boitatah::Pool<T>::get(Handle<T> handle, T& item)
 template <typename T>
 boitatah::Handle<T> boitatah::Pool<T>::set(T elem)
 {
-    if (stackTop == pool.size())
+    if (stackTop == pool.size()){
+        std::cout << options.name << " is full " << std::endl;
         return Handle<T>{.gen = 0};
+    }
 
     uint32_t i = popStack();
     pool[i] = elem;
     Handle<T> handle{.i = i, .gen = generations[i]};
+    created+=1;
+    quantity += 1;
     return handle;
 }
 
@@ -103,12 +113,15 @@ bool boitatah::Pool<T>::clear(Handle<T> handle, T& item)
     generations[handle.i] = generations[handle.i] + 1;
     pushStack(handle.i);
     item = pool[handle.i];
+    quantity -=1;
+    destroyed += 1;
     return true;
 }
 
 template <typename T>
 uint32_t boitatah::Pool<T>::popStack()
 {
+    //std::cout << options.name << " popped " << quantity << " " << created << " " << destroyed << std::endl;
     int i = freeStack[stackTop];
     stackTop++;
     return i;
@@ -117,6 +130,7 @@ uint32_t boitatah::Pool<T>::popStack()
 template <typename T>
 void boitatah::Pool<T>::pushStack(uint32_t id)
 {
+    //std::cout << options.name << " pushed " << quantity << " " << created << " " << destroyed << std::endl;
     stackTop--;
     freeStack[stackTop] = id;
 }

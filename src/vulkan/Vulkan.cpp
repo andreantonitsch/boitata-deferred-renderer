@@ -483,7 +483,7 @@ void boitatah::vk::Vulkan::submitDrawCmdBuffer(const SubmitCommand &command)
     }
 }
 
-void boitatah::vk::Vulkan::presentFrame(Image &image,
+bool boitatah::vk::Vulkan::presentFrame(Image &image,
  Image &swapchainImage,
   VkSwapchainKHR &swapchain,
   uint32_t &scIndex,
@@ -518,7 +518,17 @@ void boitatah::vk::Vulkan::presentFrame(Image &image,
         .pImageIndices = &scIndex,
         .pResults = nullptr};
 
-    vkQueuePresentKHR(queues.presentQueue, &presentInfo);
+    VkResult result = vkQueuePresentKHR(queues.presentQueue, &presentInfo);
+
+    // swapchain is too small or too large
+    if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR){
+        return false;
+    }
+    
+    if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+        throw std::runtime_error("Failed to present image to swapchain");
+
+    return true;
 }
 
 void boitatah::vk::Vulkan::CmdCopyImage(const CopyImageCommandVk &command)

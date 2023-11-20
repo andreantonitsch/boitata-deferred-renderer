@@ -22,7 +22,20 @@ namespace boitatah
     SwapchainImage Swapchain::getNext(VkSemaphore &semaphore)
     {
         uint32_t index;
-        vkAcquireNextImageKHR(vulkan->getDevice(), swapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE, &index);
+
+        VkResult result = vkAcquireNextImageKHR(vulkan->getDevice(),
+                                                swapchain, UINT64_MAX,
+                                                semaphore, VK_NULL_HANDLE,
+                                                &index);
+
+        if(result == VK_ERROR_OUT_OF_DATE_KHR){
+            //createSwapchain();
+            return { .index = UINT32_MAX, .sc = swapchain};
+        }
+        
+        if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+            throw std::runtime_error("Failed to acquire swapchain image");
+
         currentIndex = index;
         return {.image = getSwapchainImages()[index],
                 .index = currentIndex,
@@ -43,12 +56,11 @@ namespace boitatah
         this->window = window;
     }
 
-    void Swapchain::createSwapchain(
-        Vector2<uint32_t> dimensions,
-        bool vsync,
-        bool fullscreen)
+    void Swapchain::createSwapchain()
     {
         clearSwapchainViews();
+        swapchainImageCache.clear();
+        vkDestroySwapchainKHR(vulkan->getDevice(), swapchain, nullptr);
         createVkSwapchain();
         createViews();
     }
@@ -82,7 +94,9 @@ namespace boitatah
             .imageColorSpace = format.colorSpace,
             .imageExtent = extent,
             .imageArrayLayers = 1, // 2 for stereoscopic aplications (nothing to do with deffered rendering)
-            .imageUsage = boitatah::castEnum<USAGE, VkImageUsageFlagBits>(USAGE::COLOR_ATT_TRANSFER_DST)};
+            .imageUsage = boitatah::castEnum<USAGE, VkImageUsageFlagBits>(USAGE::COLOR_ATT_TRANSFER_DST),
+            .oldSwapchain = VK_NULL_HANDLE
+            };
 
         QueueFamilyIndices indices = vulkan->findQueueFamilies(vulkan->getPhysicalDevice());
         uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
@@ -90,16 +104,16 @@ namespace boitatah
         // if queues are going to share burrers or not
         if (indices.graphicsFamily != indices.presentFamily)
         {
-            if (options.useValidationLayers)
-                std::cout << "FAMILIES :: USING TWO QUEUE FAMILIES: " << indices.graphicsFamily.value() << " and " << indices.presentFamily.value() << std::endl;
+ //           if (options.useValidationLayers)
+//               std::cout << "FAMILIES :: USING TWO QUEUE FAMILIES: " << indices.graphicsFamily.value() << " and " << indices.presentFamily.value() << std::endl;
             createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             createInfo.queueFamilyIndexCount = 2;
             createInfo.pQueueFamilyIndices = queueFamilyIndices;
         }
         else
         {
-            if (options.useValidationLayers)
-                std::cout << "FAMILIES :: USING ONE QUEUE FAMILIES" << std::endl;
+//            if (options.useValidationLayers)
+ //               std::cout << "FAMILIES :: USING ONE QUEUE FAMILIES" << std::endl;
             createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
             createInfo.queueFamilyIndexCount = 0;
             createInfo.pQueueFamilyIndices = nullptr;
@@ -116,7 +130,7 @@ namespace boitatah
         createInfo.clipped = VK_TRUE; // for obscured pixels in the window system.
 
         // for replacing the swap chain when resizing windows.
-        createInfo.oldSwapchain = swapchain;
+        //createInfo.oldSwapchain = swapchain;
 
         if (vkCreateSwapchainKHR(vulkan->getDevice(), &createInfo, nullptr, &swapchain) != VK_SUCCESS)
         {
@@ -194,8 +208,8 @@ namespace boitatah
         uint32_t formatCount;
         vkGetPhysicalDeviceSurfaceFormatsKHR(vulkan->getPhysicalDevice(), window->getSurface(), &formatCount, nullptr);
 
-        if (options.useValidationLayers)
-            std::cout << " AVAILABLE SURFACE FORMATS " << std::endl;
+//        if (options.useValidationLayers)
+//           std::cout << " AVAILABLE SURFACE FORMATS " << std::endl;
 
         if (formatCount != 0)
         {
@@ -205,10 +219,10 @@ namespace boitatah
                                                  &formatCount,
                                                  support.formats.data());
 
-            for (const auto &format : support.formats)
-            {
-                std::cout << " \tFORMAT :: " << format.format << std::endl;
-            }
+ //           for (const auto &format : support.formats)
+   //         {
+ //               std::cout << " \tFORMAT :: " << format.format << std::endl;
+ //           }
         }
 
         uint32_t presentModeCount;

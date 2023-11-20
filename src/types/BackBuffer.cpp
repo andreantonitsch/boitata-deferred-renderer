@@ -39,5 +39,6 @@ namespace boitatah
         {
             renderer->destroyRenderTarget(attach);
         }
+        buffers.clear();
     }
 }
