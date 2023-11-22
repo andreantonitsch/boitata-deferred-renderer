@@ -65,10 +65,11 @@ namespace boitatah
         void waitIdle();
 
         // Render Methods
-        void renderToRenderTarget(SceneNode &scene, Handle<RenderTarget> &rendertarget);
+        void renderToRenderTarget(const SceneNode &scene, const Handle<RenderTarget> &rendertarget);
         void render(SceneNode &scene);
         void presentRenderTarget(Handle<RenderTarget> &rendertarget);
-
+        void renderSceneNode(SceneNode &scene, Handle<RenderTarget> &rendertarget);
+        
         //Command Buffers
         CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
         void recordCommand(const DrawCommand& command);

@@ -37,17 +37,21 @@ int main()
         .layout = layout,
     });
 
-    // Scene Description.
-    SceneNode scene{.children = {},
-                    .shader = shader,
-                    .vertexInfo = {3, 0},
-                    .instanceInfo = {1, 0}};
+    SceneNode triangle = {
+        .name = "triangle",
+        .shader = shader,
+        .vertexInfo = {3, 0},
+        .instanceInfo = {1, 0}
+    };
 
-    boitatah::utils::Timewatch timewatch(100);
+    
+    // Scene Description.
+    SceneNode scene{.name = "root scene", .children = {triangle}};
+
+    boitatah::utils::Timewatch timewatch(1000);
 
     while (!r.isWindowClosed())
     {
-
         r.render(scene);
 
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;

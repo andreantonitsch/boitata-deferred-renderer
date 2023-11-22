@@ -76,7 +76,7 @@ namespace boitatah
         vk->waitIdle();
     }
 
-    void Renderer::renderToRenderTarget(SceneNode &scene, Handle<RenderTarget> &rendertarget)
+    void Renderer::renderToRenderTarget(const SceneNode &scene, const Handle<RenderTarget> &rendertarget)
     {
         RenderTarget target;
         if (!renderTargetPool.get(rendertarget, target))
@@ -129,7 +129,7 @@ namespace boitatah
     void Renderer::render(SceneNode &scene)
     {
         auto backbuffer = backBufferManager->getNext();
-        renderToRenderTarget(scene, backbuffer);
+        renderSceneNode(scene, backbuffer);
         presentRenderTarget(backbuffer);
     }
 
@@ -171,6 +171,23 @@ namespace boitatah
         if (!successfullyPresent)
         {
             handleWindowResize();
+        }
+    }
+
+    void Renderer::renderSceneNode(SceneNode &scene, Handle<RenderTarget> &rendertarget)
+    {
+        std::vector<SceneNode> nodes;
+        scene.sceneAsList(nodes);
+        
+        // TODO cullings and whatever
+        // TRANSFORM UPDATES
+        // ETC
+
+        for(const auto& node : nodes){
+            //std::cout << node.name << std::endl;
+            if(node.shader.isNull())
+                continue;
+            renderToRenderTarget(node, rendertarget);
         }
     }
 
