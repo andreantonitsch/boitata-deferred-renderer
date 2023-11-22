@@ -12,8 +12,8 @@ namespace boitatah{
         //Mat4x4 transform matrix
         //Mesh
         //Material
-        Vector2<int> vertexInfo;
-        Vector2<int> instanceInfo;
+        glm::ivec2 vertexInfo;
+        glm::ivec2 instanceInfo;
     };
 }
 

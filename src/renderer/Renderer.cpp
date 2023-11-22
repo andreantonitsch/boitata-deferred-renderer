@@ -32,26 +32,20 @@ namespace boitatah
         backBufferManager->setup(options.backBufferDesc);
     }
 
-
-    void Renderer::recreateSwapchain()
+    void Renderer::handleWindowResize()
     {
         vk->waitIdle();
 
         swapchain->createSwapchain();
+
         auto newWindowSize = window->getWindowDimensions();
 
         options.backBufferDesc.dimensions = {
             static_cast<uint32_t>(newWindowSize.x),
             static_cast<uint32_t>(newWindowSize.y),
         };
-        options.backBufferDesc.imageDesc[0].dimensions= {
-            static_cast<uint32_t>(newWindowSize.x),
-            static_cast<uint32_t>(newWindowSize.y),
-        };
-        
-        backBufferManager->setup(options.backBufferDesc);
-        //vk->waitIdle();
 
+        backBufferManager->setup(options.backBufferDesc);
     }
 
     void Renderer::createSwapchain()
@@ -122,14 +116,14 @@ namespace boitatah
                        .renderPass = pass,
                        .shader = shader,
                        .dimensions = {
-                           .x = static_cast<int>(image.dimensions.x),
-                           .y = static_cast<int>(image.dimensions.y),
+                           static_cast<int>(image.dimensions.x),
+                           static_cast<int>(image.dimensions.y),
                        },
                        .vertexInfo = scene.vertexInfo,
                        .instanceInfo = scene.instanceInfo});
 
         vk->submitDrawCmdBuffer({.bufferData = buffers,
-                                 .submitType = GRAPHICS});
+                                 .submitType = COMMAND_BUFFER_TYPE::GRAPHICS});
     }
 
     void Renderer::render(SceneNode &scene)
@@ -156,13 +150,13 @@ namespace boitatah
             throw std::runtime_error("failed to framebuffer for Presentation");
 
         vk->waitForFrame(buffers);
-        SubmitCommand command{.bufferData = buffers, .submitType = PRESENT};
+        SubmitCommand command{.bufferData = buffers, .submitType = COMMAND_BUFFER_TYPE::PRESENT};
         auto swapchainImage = swapchain->getNext(buffers.schainAcqSem);
 
         // failed to find swapchain image.
         if (swapchainImage.index == UINT32_MAX) // Fail case.
         {
-            recreateSwapchain();
+            handleWindowResize();
             return;
         }
 
@@ -176,7 +170,7 @@ namespace boitatah
         // and recreate our backbuffer.
         if (!successfullyPresent)
         {
-            recreateSwapchain();
+            handleWindowResize();
         }
     }
 
@@ -221,9 +215,9 @@ namespace boitatah
             .pass = command.renderPass.renderPass,
             .frameBuffer = command.renderTarget.buffer,
             .pipeline = command.shader.pipeline,
-            .areaDims = {.x = static_cast<int>(command.dimensions.x),
-                         .y = static_cast<int>(command.dimensions.y)},
-            .areaOffset = {.x = 0, .y = 0},
+            .areaDims = {static_cast<int>(command.dimensions.x),
+                         static_cast<int>(command.dimensions.y)},
+            .areaOffset = {0, 0},
             .vertexCount = 3,
             .instaceCount = 1,
             .firstVertex = 0,
@@ -278,12 +272,23 @@ namespace boitatah
         PipelineLayout layout;
         if (!pipelineLayoutPool.get(data.layout, layout))
             throw std::runtime_error("failed to get pipeline layout");
+
+        // Get rendertarget and renderpass
+        // from backbuffer
+        // or from description
         RenderTarget buffer;
         RenderPass pass;
-        if (!renderTargetPool.get(data.framebuffer, buffer))
-            throw std::runtime_error("failed to get framebuffer");
-        if (!renderpassPool.get(buffer.renderpass, pass))
-            throw std::runtime_error("failed to get renderpass");
+        if(data.framebuffer.isNull())
+        {
+            if(!renderpassPool.get(backBufferManager->getRenderPass(), pass))
+                throw std::runtime_error("failed to back buffer render pass");
+        }
+        else{
+            if (!renderTargetPool.get(data.framebuffer, buffer))
+                throw std::runtime_error("failed to get framebuffer");
+            if (!renderpassPool.get(buffer.renderpass, pass))
+                throw std::runtime_error("failed to get renderpass");
+        }
 
         vk->buildShader(
             {.name = shader.name,
@@ -309,11 +314,22 @@ namespace boitatah
             }
         }
 
-        Handle<RenderPass> passhandle = createRenderPass(data.renderpassDesc);
+        Handle<RenderPass> passhandle = data.renderpass;
         RenderPass pass;
-        if (!renderpassPool.get(passhandle, pass))
+        if (passhandle.isNull())
         {
-            throw std::runtime_error("Failed to create renderpass.");
+            passhandle = createRenderPass(data.renderpassDesc);
+            if (!renderpassPool.get(passhandle, pass))
+            {
+                throw std::runtime_error("Failed to create renderpass.");
+            }
+        }
+        else
+        {
+            if (!renderpassPool.get(passhandle, pass))
+            {
+                throw std::runtime_error("Failed to create renderpass.");
+            }
         }
 
         std::vector<VkImageView> imageViews;
@@ -375,15 +391,20 @@ namespace boitatah
         return pipelineLayoutPool.set(layout);
     }
 
+    Handle<RenderPass> Renderer::getBackBufferRenderPass()
+    {
+        return backBufferManager->getRenderPass();
+    }
+
     Handle<RTCmdBuffers> Renderer::createRenderTargetCmdData()
     {
         RTCmdBuffers sync{
             .drawBuffer = allocateCommandBuffer({.count = 1,
-                                                 .level = PRIMARY,
-                                                 .type = GRAPHICS}),
+                                                 .level = COMMAND_BUFFER_LEVEL::PRIMARY,
+                                                 .type = COMMAND_BUFFER_TYPE::GRAPHICS}),
             .transferBuffer = allocateCommandBuffer({.count = 1,
-                                                     .level = PRIMARY,
-                                                     .type = TRANSFER}),
+                                                     .level = COMMAND_BUFFER_LEVEL::PRIMARY,
+                                                     .type = COMMAND_BUFFER_TYPE::TRANSFER}),
             .schainAcqSem = vk->createSemaphore(),
             .transferSem = vk->createSemaphore(),
             .inFlightFen = vk->createFence(true),
@@ -429,7 +450,9 @@ namespace boitatah
                 vk->destroyRenderTargetCmdData(data);
 
             vk->destroyFramebuffer(framebuffer);
-        }else {
+        }
+        else
+        {
             std::cout << "failed delete" << std::endl;
         }
     }

@@ -30,7 +30,7 @@ namespace boitatah
         VkImageLayout srcImgLayout;
         VkImage dstImage;
         VkImageLayout dstImgLayout;
-        Vector2<uint32_t> extent;
+        glm::u32vec2 extent;
     };
 
     struct TransferCommand{
@@ -46,8 +46,8 @@ namespace boitatah
         VkRenderPass pass;
         VkFramebuffer frameBuffer;
         VkPipeline pipeline;
-        Vector2<int> areaDims;
-        Vector2<int> areaOffset;
+        glm::ivec2 areaDims;
+        glm::ivec2 areaOffset;
         uint32_t vertexCount;
         uint32_t instaceCount;
         uint32_t firstVertex;
@@ -61,11 +61,11 @@ namespace boitatah
         RenderTarget renderTarget;
         RenderPass renderPass;
         Shader shader;
-        Vector2<int> dimensions;
+        glm::ivec2 dimensions;
 
         // count, first
-        Vector2<int> vertexInfo;
-        Vector2<int> instanceInfo;
+        glm::ivec2 vertexInfo;
+        glm::ivec2 instanceInfo;
     };
 
     struct SubmitCommand{

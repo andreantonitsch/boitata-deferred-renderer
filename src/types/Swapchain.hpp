@@ -5,11 +5,12 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <glm/vec2.hpp>
+
 #include <vulkan/vulkan.h>
 #include "../vulkan/Vulkan.hpp"
 #include "../renderer/Renderer.hpp"
 #include "../renderer/Window.hpp"
-#include "../types/Vector.hpp"
 #include "../collections/Pool.hpp"
 #include <vector>
 #include <string>

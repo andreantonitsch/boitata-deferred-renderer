@@ -14,7 +14,7 @@ namespace boitatah
         uint32_t i = 0;
         uint32_t gen = 0;
 
-        bool isNull() { return gen != 0; }
+        bool isNull() const { return gen == 0; }
     };
 
     struct PoolOptions

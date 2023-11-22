@@ -64,7 +64,7 @@ namespace boitatah::window
         glfwPollEvents();
     }
 
-    Vector2<int> WindowManager::getWindowDimensions()
+    glm::ivec2 WindowManager::getWindowDimensions()
     {
         return windowDimensions;
     }

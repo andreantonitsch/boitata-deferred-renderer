@@ -7,8 +7,11 @@
 
 #include <vector>
 #include <string>
+#include <glm/vec2.hpp>
 
-#include "../types/Vector.hpp"
+#include "../types/BackBufferDesc.hpp"
+#include "../types/BackBuffer.hpp"
+
 #include "../vulkan/Vulkan.hpp"
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
@@ -16,9 +19,9 @@
 #include "../collections/Pool.hpp"
 #include "../types/CommandBuffer.hpp"
 #include "../types/Scene.hpp"
-#include "../types/BackBuffer.hpp"
 #include "Window.hpp"
 #include "../types/Swapchain.hpp"
+
 // Objective here is to have expose no lone vulkan types.
 // so that we can manage them. Thats what the vulkan class is for.
 // Renderer manages and exposes them
@@ -38,11 +41,11 @@ namespace boitatah
 
     struct RendererOptions
     {
-        Vector2<uint32_t> windowDimensions = {800, 600};
+        glm::u32vec2 windowDimensions = {800, 600};
         const char *appName = "Window";
         bool debug = false;
         FORMAT swapchainFormat = FORMAT::BGRA_8_SRGB;
-        RenderTargetDesc backBufferDesc;
+        BackBufferDesc backBufferDesc;
     };
 
     class Renderer
@@ -83,6 +86,8 @@ namespace boitatah
         Handle<Image> createImage(const ImageDesc &desc);
         Handle<PipelineLayout> createPipelineLayout(const PipelineLayoutDesc &desc);
         
+        Handle<RenderPass> getBackBufferRenderPass();
+
 
         Handle<RTCmdBuffers> createRenderTargetCmdData();
 
@@ -101,14 +106,14 @@ namespace boitatah
         BackBufferManager* backBufferManager;
         Swapchain* swapchain;
 
-        void recreateSwapchain();
+        void handleWindowResize();
         void createSwapchain();
         
         // Pools
-        Pool<Shader> shaderPool = Pool<Shader>({.size = 100, .name = "shader pool"});
-        Pool<RenderTarget> renderTargetPool = Pool<RenderTarget>({.size = 500, .name = "render target pool"});
+        Pool<Shader> shaderPool = Pool<Shader>({.size = 10, .name = "shader pool"});
+        Pool<RenderTarget> renderTargetPool = Pool<RenderTarget>({.size = 50, .name = "render target pool"});
         Pool<RenderPass> renderpassPool = Pool<RenderPass>({.size = 50, .name = "render pass pool"});
-        Pool<Image> imagePool = Pool<Image>({.size = 500, .name = "image pool"});
+        Pool<Image> imagePool = Pool<Image>({.size = 50, .name = "image pool"});
         Pool<PipelineLayout> pipelineLayoutPool = Pool<PipelineLayout>({.size = 50, .name = "pipeline layour pool"});
         Pool<RTCmdBuffers> rtCmdPool = Pool<RTCmdBuffers>({.size = 50, .name = "rtcmd buffers pool"});
 

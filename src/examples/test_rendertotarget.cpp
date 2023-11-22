@@ -15,6 +15,29 @@ int main()
     const uint32_t windowWidth = 1024;
     const uint32_t windowHeight = 768;
 
+    std::vector<AttachmentDesc> attachments{
+        {.index = 0,
+         .format = FORMAT::RGBA_8_SRGB,
+         .layout = IMAGE_LAYOUT::COLOR_ATT_OPTIMAL,
+         .initialLayout = IMAGE_LAYOUT::UNDEFINED,
+         .finalLayout = IMAGE_LAYOUT::COLOR_ATT_OPTIMAL},
+    };
+
+    std::vector<ImageDesc> fbAttImageDesc = {
+        {
+            .format = FORMAT::RGBA_8_SRGB,
+            .dimensions = {windowWidth, windowHeight},
+            .initialLayout = IMAGE_LAYOUT::UNDEFINED,
+            .usage = USAGE::COLOR_ATT_TRANSFER_SRC,
+        }};
+
+    RenderTargetDesc targetDesc{
+        .renderpassDesc = {.attachments = attachments},
+        .attachments = attachments,
+        .imageDesc = fbAttImageDesc,
+        .dimensions = {windowWidth, windowHeight},
+    };
+
     Renderer r({.windowDimensions = {windowWidth, windowHeight},
                 .appName = "Test Frame Buffer",
                 .debug = true,
@@ -24,38 +47,48 @@ int main()
                                    .dimensions = {windowWidth, windowHeight}}
                 });
 
-    // Pipeline Layout for the Shader.
+    Handle<RenderTarget> rendertarget = r.createRenderTarget(targetDesc);
+
     Handle<PipelineLayout> layout = r.createPipelineLayout({});
 
-    // Shader Description
     Handle<Shader> shader = r.createShader({
         .name = "test",
         .vert = {
             .byteCode = utils::readFile("./src/09_shader_base_vert.spv"),
             .entryFunction = "main"},
         .frag = {.byteCode = utils::readFile("./src/09_shader_base_frag.spv"), .entryFunction = "main"},
+        .framebuffer = rendertarget,
         .layout = layout,
     });
 
-    // Scene Description.
     SceneNode scene{.children = {},
                     .shader = shader,
                     .vertexInfo = {3, 0},
                     .instanceInfo = {1, 0}};
 
-    boitatah::utils::Timewatch timewatch(100);
+    boitatah::utils::Timewatch timewatch(1000);
 
     while (!r.isWindowClosed())
     {
-
-        r.render(scene);
+        // wait for frame to finish
+        //  record command buffer to render scene into image
+        //  submit command buffer
+        r.renderToRenderTarget(scene, rendertarget);
+        // std::cout << "rendered scene" << std::endl;
+        //  present the rendered frame to swapchain
+        //       acquire image from swapchain.
+        //       transfer rendertarget to swapchain.
+        //       present image to screen, return to swapchain
+        r.presentRenderTarget(rendertarget);
 
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
-
+        // i++;
+        // if(i > 1) break;
     }
     r.waitIdle();
 
     r.destroyLayout(layout);
+    r.destroyRenderTarget(rendertarget);
     r.destroyShader(shader);
 
     return EXIT_SUCCESS;

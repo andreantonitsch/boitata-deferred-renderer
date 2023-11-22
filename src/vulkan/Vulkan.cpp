@@ -315,7 +315,7 @@ Image boitatah::vk::Vulkan::createImage(const ImageDesc &desc)
 
     image.memory = allocateMemory({
         .size = reqs.size,
-        .type = DEVICE_LOCAL,
+        .type = MEMORY_PROPERTY::DEVICE_LOCAL,
         .typeBits = reqs.memoryTypeBits,
     });
 
@@ -379,13 +379,13 @@ VkCommandBuffer boitatah::vk::Vulkan::allocateCommandBuffer(const CommandBufferD
 
     switch (desc.type)
     {
-    case GRAPHICS:
+    case COMMAND_BUFFER_TYPE::GRAPHICS:
         allocateInfo.commandPool = commandPools.graphicsPool;
         break;
-    case TRANSFER:
+    case COMMAND_BUFFER_TYPE::TRANSFER:
         allocateInfo.commandPool = commandPools.transferPool;
         break;
-    case PRESENT:
+    case COMMAND_BUFFER_TYPE::PRESENT:
         allocateInfo.commandPool = commandPools.presentPool;
         break;
     }
@@ -484,10 +484,10 @@ void boitatah::vk::Vulkan::submitDrawCmdBuffer(const SubmitCommand &command)
 }
 
 bool boitatah::vk::Vulkan::presentFrame(Image &image,
- Image &swapchainImage,
-  VkSwapchainKHR &swapchain,
-  uint32_t &scIndex,
-   SubmitCommand &command)
+                                        Image &swapchainImage,
+                                        VkSwapchainKHR &swapchain,
+                                        uint32_t &scIndex,
+                                        SubmitCommand &command)
 {
     auto transferBuffer = command.bufferData.transferBuffer.buffer;
 
@@ -521,11 +521,12 @@ bool boitatah::vk::Vulkan::presentFrame(Image &image,
     VkResult result = vkQueuePresentKHR(queues.presentQueue, &presentInfo);
 
     // swapchain is too small or too large
-    if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR){
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+    {
         return false;
     }
-    
-    if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
         throw std::runtime_error("Failed to present image to swapchain");
 
     return true;
@@ -888,8 +889,10 @@ VkFramebuffer boitatah::vk::Vulkan::createFramebuffer(const FramebufferDescVk &d
         .height = desc.dimensions.y,
         .layers = 1};
 
-    if (vkCreateFramebuffer(device, &createInfo, nullptr, &buffer) != VK_SUCCESS)
-    {
+    VkResult r = vkCreateFramebuffer(device, &createInfo, nullptr, &buffer);
+    if (r != VK_SUCCESS)
+    {   
+        std::cout << "\n#### " << r << "\n " <<std::endl; 
         throw std::runtime_error("failed to create framebuffer");
     }
 
@@ -969,7 +972,6 @@ void boitatah::vk::Vulkan::cleanupSyncObjects()
     vkDestroyFence(device, FenInFlight, nullptr);
     vkDestroyFence(device, FenTransferSwapchain, nullptr);
 }
-
 
 #pragma region QUEUE_SETUP
 

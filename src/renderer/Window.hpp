@@ -7,13 +7,14 @@
 
 #include <vulkan/vulkan.h>
 #include <vector>
-#include "../types/Vector.hpp"
 #include <string>
+
+#include <glm/vec2.hpp>
 
 namespace boitatah::window{
 
     struct WindowDesc{
-        Vector2<uint32_t> dimensions;
+        glm::u32vec2 dimensions;
         const char* windowName;
     };
 
@@ -26,13 +27,13 @@ namespace boitatah::window{
             VkSurfaceKHR getSurface();
             bool isWindowClosed();
             void windowEvents();
-            Vector2<int> getWindowDimensions();
+            glm::ivec2 getWindowDimensions();
             const std::vector<const char *> requiredWindowExtensions();
             GLFWwindow *window;
 
         private:
             VkSurfaceKHR surface;
-            Vector2<int> windowDimensions;
+            glm::ivec2 windowDimensions;
             static void framebufferResizeCallback(GLFWwindow* window, int width, int heigth);
     };
 
