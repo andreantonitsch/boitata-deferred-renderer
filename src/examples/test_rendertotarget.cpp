@@ -28,7 +28,7 @@ int main()
             .format = FORMAT::RGBA_8_SRGB,
             .dimensions = {windowWidth, windowHeight},
             .initialLayout = IMAGE_LAYOUT::UNDEFINED,
-            .usage = USAGE::COLOR_ATT_TRANSFER_SRC,
+            .usage = IMAGE_USAGE::COLOR_ATT_TRANSFER_SRC,
         }};
 
     RenderTargetDesc targetDesc{
@@ -59,12 +59,18 @@ int main()
         .frag = {.byteCode = utils::readFile("./src/09_shader_base_frag.spv"), .entryFunction = "main"},
         .framebuffer = rendertarget,
         .layout = layout,
+        .bindings={}
     });
 
-    SceneNode scene{.children = {},
-                    .shader = shader,
-                    .vertexInfo = {3, 0},
-                    .instanceInfo = {1, 0}};
+    Handle<Geometry> geometry = r.createGeometry({.vertexInfo = {3, 0}});
+
+    SceneNode triangle = {
+        .name = "triangle",
+        .shader = shader,
+        .geometry = geometry,
+        //.instanceInfo = {1, 0},
+        };
+
 
     boitatah::utils::Timewatch timewatch(100);
 
@@ -73,7 +79,7 @@ int main()
         // wait for frame to finish
         //  record command buffer to render scene into image
         //  submit command buffer
-        r.renderToRenderTarget(scene, rendertarget);
+        r.renderToRenderTarget(triangle, rendertarget);
         // std::cout << "rendered scene" << std::endl;
         //  present the rendered frame to swapchain
         //       acquire image from swapchain.

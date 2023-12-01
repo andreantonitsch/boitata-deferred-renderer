@@ -10,12 +10,13 @@ namespace boitatah{
         uint64_t size;
         MEMORY_PROPERTY type;
         uint32_t typeBits;
-        uint32_t index;
     };
 
     struct Memory{
         VkDeviceMemory memory;
     };
+
+
 
 }
 

@@ -5,6 +5,7 @@
 #include "Shader.hpp"
 #include <optional>
 #include <string>
+#include "Geometry.hpp"
 
 namespace boitatah{
 
@@ -15,9 +16,9 @@ namespace boitatah{
         Handle<Shader> shader;
         //Mat4x4 transform matrix
         //Mesh
+        Handle<Geometry> geometry;
         //Material
-        glm::ivec2 vertexInfo;
-        glm::ivec2 instanceInfo;
+        //glm::ivec2 instanceInfo;
 
         void sceneAsList(std::vector<SceneNode> &sceneList) const{
 

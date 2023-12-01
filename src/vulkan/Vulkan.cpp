@@ -22,11 +22,11 @@ using boitatah::FORMAT;
 using boitatah::FRAME_BUFFERING;
 using boitatah::Image;
 using boitatah::IMAGE_LAYOUT;
+using boitatah::IMAGE_USAGE;
 using boitatah::MEMORY_PROPERTY;
 using boitatah::SAMPLES;
 using boitatah::Shader;
 using boitatah::ShaderDesc;
-using boitatah::USAGE;
 
 #pragma region Validationsupportjank
 /// Validation Support Jank.
@@ -99,12 +99,6 @@ bvk::Vulkan::Vulkan(VulkanOptions opts)
 
 bvk::Vulkan::~Vulkan(void)
 {
-
-    cleanupSyncObjects();
-
-    // clearSwapchainViews(); //done
-
-    // vkDestroySwapchainKHR(device, swapchain, nullptr); //done
 
     vkDestroyCommandPool(device, commandPools.graphicsPool, nullptr);
     vkDestroyCommandPool(device, commandPools.transferPool, nullptr);
@@ -207,7 +201,6 @@ void boitatah::vk::Vulkan::completeInit()
     initLogicalDeviceNQueues();
     setQueues();
     createCommandPools();
-    createSyncObjects();
 }
 
 #pragma endregion Initialization
@@ -295,7 +288,7 @@ Image boitatah::vk::Vulkan::createImage(const ImageDesc &desc)
         .arrayLayers = 1,
         .samples = castEnum<SAMPLES, VkSampleCountFlagBits>(desc.samples),
         .tiling = VK_IMAGE_TILING_OPTIMAL,
-        .usage = castEnum<USAGE, VkImageUsageFlagBits>(desc.usage),
+        .usage = castEnum<IMAGE_USAGE, VkImageUsageFlagBits>(desc.usage),
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE, // TODO SHARING MODE change later.
         .initialLayout = castEnum<IMAGE_LAYOUT, VkImageLayout>(desc.initialLayout),
     };
@@ -350,7 +343,7 @@ VkImageView boitatah::vk::Vulkan::createImageView(VkImage image, const ImageDesc
     return view;
 }
 
-uint32_t boitatah::vk::Vulkan::findMemoryIndex(const MemoryDesc &props)
+uint32_t boitatah::vk::Vulkan::findMemoryIndex(const MemoryDesc &props) const
 {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
@@ -369,6 +362,14 @@ uint32_t boitatah::vk::Vulkan::findMemoryIndex(const MemoryDesc &props)
     throw std::runtime_error("Failed to find memory");
     return 0;
 }
+
+uint32_t boitatah::vk::Vulkan::getAlignmentForBuffer(const VkBuffer buffer) const
+{
+    VkMemoryRequirements memReqs;
+    vkGetBufferMemoryRequirements(device, buffer, &memReqs);
+    return memReqs.alignment;
+}
+
 
 VkCommandBuffer boitatah::vk::Vulkan::allocateCommandBuffer(const CommandBufferDesc &desc)
 {
@@ -443,10 +444,15 @@ void boitatah::vk::Vulkan::recordCommand(const DrawCommandVk &command)
     vkCmdSetViewport(command.drawBuffer, 0, 1, &viewport);
     vkCmdSetScissor(command.drawBuffer, 0, 1, &scissor);
 
+    VkBuffer vertexBuffers[] = {command.vertexBuffer};
+    VkDeviceSize offsets[] = {command.vertexBufferOffset};
+    vkCmdBindVertexBuffers(command.drawBuffer, 0, 1, vertexBuffers, offsets);
+
     vkCmdDraw(command.drawBuffer,
               command.vertexCount,
               command.instaceCount,
-              command.firstVertex, command.firstInstance);
+              command.firstVertex, 
+              command.firstInstance);
 
     vkCmdEndRenderPass(command.drawBuffer);
     if (vkEndCommandBuffer(command.drawBuffer) != VK_SUCCESS)
@@ -465,7 +471,7 @@ void boitatah::vk::Vulkan::submitDrawCmdBuffer(const SubmitCommand &command)
     // TODO buffer available.
     // std::vector<VkSemaphore> semaphores{SemImageAvailable};
     std::vector<VkPipelineStageFlags> stageFlags{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    std::vector<VkSemaphore> signals{SemRenderFinished};
+    //std::vector<VkSemaphore> signals{SemRenderFinished};
     VkSubmitInfo submitInfo{
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         //        .waitSemaphoreCount = 1,
@@ -680,6 +686,16 @@ void boitatah::vk::Vulkan::bindImageMemory(VkDeviceMemory memory, VkImage image)
     vkBindImageMemory(device, image, memory, 0);
 }
 
+void boitatah::vk::Vulkan::copyDataToBuffer(CopyToBufferOp op)
+{
+    void* mappedTarget;
+    vkMapMemory(device, op.memory, op.offset, op.size, 0,  &mappedTarget);
+
+    memcpy(mappedTarget, op.data, (size_t) op.size);
+
+    vkUnmapMemory(device, op.memory);
+}
+
 VkPipelineLayout boitatah::vk::Vulkan::createPipelineLayout(const PipelineLayoutDesc &desc)
 {
     VkPipelineLayout layout;
@@ -730,6 +746,45 @@ VkSemaphore boitatah::vk::Vulkan::createSemaphore()
     return semaphore;
 }
 
+boitatah::BufferObjects boitatah::vk::Vulkan::createBuffer(const BufferDescVk & desc) const
+{
+    VkBufferCreateInfo bufferInfo{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = desc.size,
+        .usage = castEnum<BUFFER_USAGE, VkBufferUsageFlags>(desc.usage),
+        .sharingMode = castEnum<SHARING_MODE, VkSharingMode>(desc.sharing),
+    };
+
+    VkBuffer buffer;
+    if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create a buffer");
+        ;
+    }
+
+    VkMemoryRequirements memReqs;
+    vkGetBufferMemoryRequirements(device, buffer, &memReqs);
+
+    VkDeviceMemory memory;
+    VkMemoryAllocateInfo memInfo{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        .allocationSize = memReqs.size,
+        .memoryTypeIndex = findMemoryIndex({
+                                            .size = memReqs.size,
+                                            .type = MEMORY_PROPERTY::HOST_VISIBLE_COHERENT,
+                                            .typeBits = memReqs.memoryTypeBits,
+                                            })};
+
+    if(vkAllocateMemory(device, &memInfo, nullptr, &memory) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to  allocate buffer memory");
+    }
+
+    vkBindBufferMemory(device, buffer, memory, 0);
+
+    return {.buffer = buffer, .memory = memory, .alignment = memReqs.alignment};
+}
+
 void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
 {
     std::vector<VkDynamicState> dynamicStates = {
@@ -742,14 +797,17 @@ void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
         .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
         .pDynamicStates = dynamicStates.data()};
 
+    // TOOD add to shader description.
+
+    uint32_t bindingCount = static_cast<uint32_t>(desc.bindings.size());
+    uint32_t attributeCount = static_cast<uint32_t>(desc.attributes.size());
+
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        .vertexBindingDescriptionCount = 0,
-        .pVertexBindingDescriptions = nullptr,
-        .vertexAttributeDescriptionCount = 0,
-        .pVertexAttributeDescriptions = nullptr
-
-    };
+        .vertexBindingDescriptionCount = bindingCount,
+        .pVertexBindingDescriptions = bindingCount != 0 ? desc.bindings.data() : nullptr,
+        .vertexAttributeDescriptionCount = attributeCount,
+        .pVertexAttributeDescriptions = attributeCount != 0 ? desc.attributes.data() : nullptr};
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -851,15 +909,6 @@ void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
     }
 }
 
-void boitatah::vk::Vulkan::destroyRenderTargetCmdData(const RTCmdBuffers &sync)
-{
-    vkFreeCommandBuffers(device, commandPools.graphicsPool, 1, &(sync.drawBuffer.buffer));
-    vkFreeCommandBuffers(device, commandPools.transferPool, 1, &(sync.transferBuffer.buffer));
-
-    vkDestroyFence(device, sync.inFlightFen, nullptr);
-    vkDestroySemaphore(device, sync.schainAcqSem, nullptr);
-    vkDestroySemaphore(device, sync.transferSem, nullptr);
-}
 
 VkShaderModule boitatah::vk::Vulkan::createShaderModule(const std::vector<char> &bytecode)
 {
@@ -891,8 +940,8 @@ VkFramebuffer boitatah::vk::Vulkan::createFramebuffer(const FramebufferDescVk &d
 
     VkResult r = vkCreateFramebuffer(device, &createInfo, nullptr, &buffer);
     if (r != VK_SUCCESS)
-    {   
-        std::cout << "\n#### " << r << "\n " <<std::endl; 
+    {
+        std::cout << "\n#### " << r << "\n " << std::endl;
         throw std::runtime_error("failed to create framebuffer");
     }
 
@@ -910,6 +959,9 @@ VkAttachmentDescription boitatah::vk::Vulkan::createAttachmentDescription(const 
                                    .initialLayout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.initialLayout),
                                    .finalLayout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.finalLayout)};
 }
+#pragma endregion PSO Building
+
+#pragma region Object Destructions
 
 void boitatah::vk::Vulkan::destroyShader(Shader &shader)
 {
@@ -943,35 +995,25 @@ void boitatah::vk::Vulkan::destroyPipelineLayout(PipelineLayout &layout)
     vkDestroyPipelineLayout(device, layout.layout, nullptr);
 }
 
-#pragma endregion PSO Building
-
-void boitatah::vk::Vulkan::createSyncObjects()
+void boitatah::vk::Vulkan::destroyRenderTargetCmdData(const RTCmdBuffers &sync)
 {
-    VkSemaphoreCreateInfo semaphoreInfo{
-        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-    };
+    vkFreeCommandBuffers(device, commandPools.graphicsPool, 1, &(sync.drawBuffer.buffer));
+    vkFreeCommandBuffers(device, commandPools.transferPool, 1, &(sync.transferBuffer.buffer));
 
-    VkFenceCreateInfo fenceInfo{
-        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-        //.flags = VK_FENCE_CREATE_SIGNALED_BIT,
-    };
-
-    if ((vkCreateSemaphore(device, &semaphoreInfo, nullptr, &SemImageAvailable) != VK_SUCCESS) ||
-        (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &SemRenderFinished) != VK_SUCCESS) ||
-        (vkCreateFence(device, &fenceInfo, nullptr, &FenInFlight) != VK_SUCCESS) ||
-        (vkCreateFence(device, &fenceInfo, nullptr, &FenTransferSwapchain) != VK_SUCCESS))
-    {
-        throw std::runtime_error("Failed to create Synchronization Objects");
-    }
+    vkDestroyFence(device, sync.inFlightFen, nullptr);
+    vkDestroySemaphore(device, sync.schainAcqSem, nullptr);
+    vkDestroySemaphore(device, sync.transferSem, nullptr);
 }
 
-void boitatah::vk::Vulkan::cleanupSyncObjects()
+void boitatah::vk::Vulkan::destroyBuffer(BufferObjects buffer) const
 {
-    vkDestroySemaphore(device, SemImageAvailable, nullptr);
-    vkDestroySemaphore(device, SemRenderFinished, nullptr);
-    vkDestroyFence(device, FenInFlight, nullptr);
-    vkDestroyFence(device, FenTransferSwapchain, nullptr);
+    vkDestroyBuffer(device, buffer.buffer, nullptr);
+    vkFreeMemory(device, buffer.memory, nullptr);
 }
+
+
+#pragma endregion Object Destructions
+
 
 #pragma region QUEUE_SETUP
 

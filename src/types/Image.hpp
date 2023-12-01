@@ -14,7 +14,7 @@ namespace boitatah
         glm::u32vec2 dimensions;
         uint32_t mipLevels = 1;
         IMAGE_LAYOUT initialLayout;
-        USAGE usage;
+        IMAGE_USAGE usage;
         SAMPLES samples = SAMPLES::SAMPLES_1;
     };
 

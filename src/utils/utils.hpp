@@ -64,6 +64,12 @@ namespace boitatah::utils
             return  total / static_cast<double>(roll_size);
         }
     };
+
+    template<typename T>
+    std::string printList(std::vector<T>){
+        return "";
+    }
+
 }
 
 #endif // BOITATAH_UTILS_HPP

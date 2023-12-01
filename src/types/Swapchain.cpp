@@ -94,7 +94,7 @@ namespace boitatah
             .imageColorSpace = format.colorSpace,
             .imageExtent = extent,
             .imageArrayLayers = 1, // 2 for stereoscopic aplications (nothing to do with deffered rendering)
-            .imageUsage = boitatah::castEnum<USAGE, VkImageUsageFlagBits>(USAGE::COLOR_ATT_TRANSFER_DST),
+            .imageUsage = boitatah::castEnum<IMAGE_USAGE, VkImageUsageFlagBits>(IMAGE_USAGE::COLOR_ATT_TRANSFER_DST),
             .oldSwapchain = VK_NULL_HANDLE
             };
 

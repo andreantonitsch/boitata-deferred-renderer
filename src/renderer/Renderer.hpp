@@ -19,6 +19,7 @@
 #include "../collections/Pool.hpp"
 #include "../types/CommandBuffer.hpp"
 #include "../types/Scene.hpp"
+#include "../types/Buffer.hpp"
 #include "Window.hpp"
 #include "../types/Swapchain.hpp"
 
@@ -54,14 +55,12 @@ namespace boitatah
         // Constructors / Destructors
         Renderer(RendererOptions options);
 
-
-
         ~Renderer(void);
 
-        //Window methods
+        // Window methods
         bool isWindowClosed();
 
-        //Sync Methods
+        // Sync Methods
         void waitIdle();
 
         // Render Methods
@@ -69,12 +68,12 @@ namespace boitatah
         void render(SceneNode &scene);
         void presentRenderTarget(Handle<RenderTarget> &rendertarget);
         void renderSceneNode(SceneNode &scene, Handle<RenderTarget> &rendertarget);
-        
-        //Command Buffers
+
+        // Command Buffers
         CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
-        void recordCommand(const DrawCommand& command);
-        void clearCommandBuffer(const CommandBuffer &buffer); 
-        void transferImage(const TransferCommand& command);
+        void recordCommand(const DrawCommand &command);
+        void clearCommandBuffer(const CommandBuffer &buffer);
+        void transferImage(const TransferCommand &command);
 
         // Object Creation
         // Creates PSO object, shader + pipeline.
@@ -86,9 +85,12 @@ namespace boitatah
         Handle<Image> addImage(Image image);
         Handle<Image> createImage(const ImageDesc &desc);
         Handle<PipelineLayout> createPipelineLayout(const PipelineLayoutDesc &desc);
-        
-        Handle<RenderPass> getBackBufferRenderPass();
+        Handle<Geometry> createGeometry(const GeometryDesc &desc);
 
+        Buffer *createBuffer(const BufferDesc &desc);
+        Handle<BufferReservation> reserveBuffer(const BufferReservationRequest &request);
+
+        Handle<RenderPass> getBackBufferRenderPass();
 
         Handle<RTCmdBuffers> createRenderTargetCmdData();
 
@@ -104,12 +106,17 @@ namespace boitatah
         // this however is not ideal
         Vulkan *vk;
         WindowManager *window;
-        BackBufferManager* backBufferManager;
-        Swapchain* swapchain;
+        BackBufferManager *backBufferManager;
+        Swapchain *swapchain;
 
         void handleWindowResize();
         void createSwapchain();
-        
+
+        // Buffers
+        Buffer *findOrCreateCompatibleBuffer(const BufferCompatibility &compatibility);
+        uint32_t findCompatibleBuffer(const BufferCompatibility &compatibility);
+        uint32_t estimateNewBufferSize(const BufferCompatibility &compatibility);
+
         // Pools
         Pool<Shader> shaderPool = Pool<Shader>({.size = 10, .name = "shader pool"});
         Pool<RenderTarget> renderTargetPool = Pool<RenderTarget>({.size = 50, .name = "render target pool"});
@@ -117,7 +124,10 @@ namespace boitatah
         Pool<Image> imagePool = Pool<Image>({.size = 50, .name = "image pool"});
         Pool<PipelineLayout> pipelineLayoutPool = Pool<PipelineLayout>({.size = 50, .name = "pipeline layour pool"});
         Pool<RTCmdBuffers> rtCmdPool = Pool<RTCmdBuffers>({.size = 50, .name = "rtcmd buffers pool"});
+        Pool<Geometry> geometryPool = Pool<Geometry>({.size = 50, .name = "geometry pool"});
+        Pool<BufferReservation> bufferReservPool = Pool<BufferReservation>({.size = 100, .name = "reservation pool"});
 
+        std::vector<Buffer *> buffers;
 
         // Options Members
         RendererOptions options;

@@ -1,5 +1,3 @@
-#pragma once
-
 #include <iostream>
 #include <stdexcept>
 
@@ -13,6 +11,8 @@
 namespace boitatah
 {
 #pragma region Initialization
+
+
     Renderer::Renderer(RendererOptions opts)
     {
         options = opts;
@@ -106,21 +106,38 @@ namespace boitatah
             throw std::runtime_error("Failed to retrieve material");
         }
 
+        // vertex and mesh data
+        Geometry geom;
+        if (!geometryPool.get(scene.geometry, geom))
+        {
+            throw std::runtime_error("Failed to retrieve geometry");
+        }
+
+        BufferReservation vertexBufferReservation;
+        Handle<BufferReservation> vertexBufferHandle = geom.reservations[0];
+        bufferReservPool.get(vertexBufferHandle, vertexBufferReservation);
+
+
         vk->waitForFrame(buffers);
 
         vk->resetCommandBuffer(buffers.drawBuffer.buffer);
         vk->resetCommandBuffer(buffers.transferBuffer.buffer);
 
-        recordCommand({.drawBuffer = buffers.drawBuffer,
-                       .renderTarget = target,
-                       .renderPass = pass,
-                       .shader = shader,
-                       .dimensions = {
-                           static_cast<int>(image.dimensions.x),
-                           static_cast<int>(image.dimensions.y),
-                       },
-                       .vertexInfo = scene.vertexInfo,
-                       .instanceInfo = scene.instanceInfo});
+        recordCommand({
+            .drawBuffer = buffers.drawBuffer,
+            .renderTarget = target,
+            .renderPass = pass,
+            .shader = shader,
+            .dimensions = {
+                static_cast<int>(image.dimensions.x),
+                static_cast<int>(image.dimensions.y),
+            },
+            .vertexBuffer = vertexBufferReservation.buffer->getBuffer(),
+            .vertexBufferOffset = vertexBufferReservation.offset,
+            .vertexInfo = geom.vertexInfo,
+            .instanceInfo = {1, 0}, // scene.instanceInfo
+            
+        });
 
         vk->submitDrawCmdBuffer({.bufferData = buffers,
                                  .submitType = COMMAND_BUFFER_TYPE::GRAPHICS});
@@ -178,14 +195,15 @@ namespace boitatah
     {
         std::vector<SceneNode> nodes;
         scene.sceneAsList(nodes);
-        
+
         // TODO cullings and whatever
         // TRANSFORM UPDATES
         // ETC
 
-        for(const auto& node : nodes){
-            //std::cout << node.name << std::endl;
-            if(node.shader.isNull())
+        for (const auto &node : nodes)
+        {
+            // std::cout << node.name << std::endl;
+            if (node.shader.isNull())
                 continue;
             renderToRenderTarget(node, rendertarget);
         }
@@ -196,6 +214,9 @@ namespace boitatah
 #pragma region CleanUp/Destructor
     void Renderer::cleanup()
     {
+        for (auto &buffer : buffers)
+            delete buffer;
+
         delete swapchain;
         window->destroySurface(vk->getInstance());
         delete backBufferManager;
@@ -232,6 +253,8 @@ namespace boitatah
             .pass = command.renderPass.renderPass,
             .frameBuffer = command.renderTarget.buffer,
             .pipeline = command.shader.pipeline,
+            .vertexBuffer = command.vertexBuffer,
+            .vertexBufferOffset = command.vertexBufferOffset,
             .areaDims = {static_cast<int>(command.dimensions.x),
                          static_cast<int>(command.dimensions.y)},
             .areaOffset = {0, 0},
@@ -295,24 +318,55 @@ namespace boitatah
         // or from description
         RenderTarget buffer;
         RenderPass pass;
-        if(data.framebuffer.isNull())
+        if (data.framebuffer.isNull())
         {
-            if(!renderpassPool.get(backBufferManager->getRenderPass(), pass))
+            if (!renderpassPool.get(backBufferManager->getRenderPass(), pass))
                 throw std::runtime_error("failed to back buffer render pass");
         }
-        else{
+        else
+        {
             if (!renderTargetPool.get(data.framebuffer, buffer))
                 throw std::runtime_error("failed to get framebuffer");
             if (!renderpassPool.get(buffer.renderpass, pass))
                 throw std::runtime_error("failed to get renderpass");
         }
 
+        // TODO Convert bindings in vulkan class?
+        std::vector<VkVertexInputAttributeDescription> vkattributes;
+        std::vector<VkVertexInputBindingDescription> vkbindings;
+
+        for (int i = 0; i < data.bindings.size(); i++)
+        {
+            auto binding = data.bindings[i];
+            VkVertexInputBindingDescription bindingDesc{};
+            bindingDesc.stride = binding.stride;
+            bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+            bindingDesc.binding = i;
+
+            vkbindings.push_back(bindingDesc);
+            uint32_t runningOffset = 0;
+            for (int j = 0; j < binding.attributes.size(); j++)
+            {
+                auto attribute = binding.attributes[j];
+                VkVertexInputAttributeDescription attributeDesc;
+                attributeDesc.binding = i;
+                attributeDesc.format = castEnum<FORMAT, VkFormat>(attribute.format);
+                runningOffset = runningOffset + formatSize(attribute.format);
+                attributeDesc.offset = runningOffset;
+                attributeDesc.location = j;
+            }
+        }
+
         vk->buildShader(
-            {.name = shader.name,
-             .vert = shader.vert,
-             .frag = shader.frag,
-             .renderpass = pass.renderPass,
-             .layout = layout.layout},
+            {
+                .name = shader.name,
+                .vert = shader.vert,
+                .frag = shader.frag,
+                .renderpass = pass.renderPass,
+                .layout = layout.layout,
+                .bindings = vkbindings,
+                .attributes = vkattributes,
+            },
             shader);
 
         return shaderPool.set(shader);
@@ -408,6 +462,24 @@ namespace boitatah
         return pipelineLayoutPool.set(layout);
     }
 
+    Handle<Geometry> Renderer::createGeometry(const GeometryDesc &desc)
+    {
+
+        Handle<BufferReservation> reservation = reserveBuffer({.request = desc.dataSize,
+                                                               .usage = BUFFER_USAGE::VERTEX,
+                                                               .sharing = SHARING_MODE::EXCLUSIVE});
+        
+        std::vector<Handle<BufferReservation>> reservations{reservation};
+        
+        Geometry geo = {
+            .reservationCount = reservations.size(),
+            .reservations = reservations.data(),
+            .vertexInfo = desc.vertexInfo,
+        };
+
+        return geometryPool.set(geo);
+    }
+
     Handle<RenderPass> Renderer::getBackBufferRenderPass()
     {
         return backBufferManager->getRenderPass();
@@ -431,6 +503,77 @@ namespace boitatah
     }
 
 #pragma endregion Create Vulkan Objects
+
+#pragma region Buffers
+
+    Buffer *Renderer::createBuffer(const BufferDesc &desc)
+    {
+        buffers.push_back(new Buffer(desc, vk));
+
+        return buffers.back();
+    }
+
+    Handle<BufferReservation> Renderer::reserveBuffer(const BufferReservationRequest &request)
+    {
+        // Find Compatible Buffer
+        Buffer *buffer = findOrCreateCompatibleBuffer({.requestSize = request.request,
+                                                       .usage = request.usage,
+                                                       .sharing = request.sharing});
+
+        // allocate in buffer
+        BufferReservation reservation = buffer->reserve(request.request);
+
+        return bufferReservPool.set(reservation);
+    }
+
+    Buffer *Renderer::findOrCreateCompatibleBuffer(const BufferCompatibility &compatibility)
+    {
+        // Find buffer
+        uint32_t bufferIndex = findCompatibleBuffer(compatibility);
+        if (bufferIndex != UINT32_MAX)
+        {
+            // return reference
+            return buffers[bufferIndex];
+        }
+        else
+        {
+            // if buffer NOT found
+            // compute new buffer size
+            uint32_t newBufferSize = estimateNewBufferSize(compatibility);
+            //      create new buffer
+            Buffer *buffer = createBuffer({
+                .size = newBufferSize,
+                .partitions = 1 << 10,
+                .usage = compatibility.usage,
+                .sharing = compatibility.sharing,
+            });
+            //      return reference
+            return buffer;
+        }
+    }
+
+    uint32_t Renderer::findCompatibleBuffer(const BufferCompatibility &compatibility)
+    {
+        for (int i = 0; i < buffers.size(); i++)
+        {
+            if (buffers[i]->checkCompatibility(compatibility))
+                return i;
+        }
+        return UINT32_MAX;
+    }
+
+    uint32_t Renderer::estimateNewBufferSize(const BufferCompatibility &compatibility)
+    {
+
+        if (compatibility.usage == BUFFER_USAGE::VERTEX)
+        {
+            return compatibility.requestSize * (1 << 5);
+        }
+
+        return 0;
+    }
+
+#pragma endregion Buffers
 
 #pragma region Destroy Vulkan Objects
 

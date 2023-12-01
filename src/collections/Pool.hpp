@@ -32,7 +32,7 @@ namespace boitatah
         //~Pool(void);
 
         bool get(Handle<T> handle, T& item);
-        Handle<T> set(T elem);
+        Handle<T> set(T &elem);
         bool clear(Handle<T> handle, T& item);
 
     private:
@@ -85,7 +85,7 @@ bool boitatah::Pool<T>::get(Handle<T> handle, T& item)
 }
 
 template <typename T>
-boitatah::Handle<T> boitatah::Pool<T>::set(T elem)
+boitatah::Handle<T> boitatah::Pool<T>::set(T &elem)
 {
     if (stackTop == pool.size()){
         std::cout << options.name << " is full " << std::endl;

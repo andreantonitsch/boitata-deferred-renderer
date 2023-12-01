@@ -5,11 +5,11 @@
 #include "RenderTarget.hpp"
 #include "../collections/Pool.hpp"
 #include "BttEnums.hpp"
+//#include "BufferStructs.hpp"
+
 
 namespace boitatah
 {
-
-
     struct TransitionLayoutCmdVk{
         VkCommandBuffer buffer;
         VkImageLayout src;
@@ -46,13 +46,16 @@ namespace boitatah
         VkRenderPass pass;
         VkFramebuffer frameBuffer;
         VkPipeline pipeline;
+
+        VkBuffer vertexBuffer;
+        uint32_t vertexBufferOffset;
+
         glm::ivec2 areaDims;
         glm::ivec2 areaOffset;
         uint32_t vertexCount;
         uint32_t instaceCount;
         uint32_t firstVertex;
         uint32_t firstInstance;
-
     };
 
     struct DrawCommand
@@ -62,6 +65,9 @@ namespace boitatah
         RenderPass renderPass;
         Shader shader;
         glm::ivec2 dimensions;
+
+        VkBuffer vertexBuffer;
+        uint32_t vertexBufferOffset;
 
         // count, first
         glm::ivec2 vertexInfo;
@@ -80,6 +86,12 @@ namespace boitatah
         COMMAND_BUFFER_TYPE type;
     };
 
+    struct CopyToBufferOp{
+        VkDeviceMemory memory;
+        uint32_t offset;
+        uint32_t size;
+        void* data;
+    };
 
 }
 

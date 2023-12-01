@@ -33,7 +33,7 @@ namespace boitatah
 
             if (desc.attachments[i] == ATTACHMENT_TYPE::COLOR)
             {
-                imageDesc.usage = USAGE::COLOR_ATT_TRANSFER_SRC;
+                imageDesc.usage = IMAGE_USAGE::COLOR_ATT_TRANSFER_SRC;
                 imageDesc.initialLayout = IMAGE_LAYOUT::UNDEFINED;
                 imageDesc.samples = desc.samples;
                 imageDesc.mipLevels = 1;

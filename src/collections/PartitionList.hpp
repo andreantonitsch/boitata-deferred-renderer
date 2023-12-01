@@ -3,52 +3,80 @@
 
 #include <cstdint>
 #include <vector>
+#include <string>
+#include "Pool.hpp"
 /// List for free space in a buffer.
 
 
 
 namespace boitatah{
 
-    struct PartitionHandle{
-        uint32_t i;
-        uint32_t gen;
-    };
-
+    struct Partition;
+    
     struct FreeListDesc{
         uint32_t size;
         uint32_t minPartitionSize;
-        uint32_t maxPartition;
         uint32_t maxPartitions;
+        bool dynamic;
     };
     
     struct PartitionNode {
         PartitionNode* next;
         PartitionNode* previous;
-        Partition* partition;
+        Handle<Partition> partition;
+        bool free;
+    };
+
+    struct FreeNode{
+        PartitionNode* node;
+        FreeNode* next;
+        FreeNode* previous;
     };
 
     struct Partition {
-        uint32_t size;
-        uint32_t address;
-        bool free;
+        uint32_t size; //in bytes
+        uint32_t address; //in bytes
+
+        // TODO Change this to Handle for safety
+        PartitionNode* m_Node;
+
+        // TODO add isNull() method
     };
 
     class PartitionList{
         public:
-            PartitionList(FreeListDesc desc);
+            PartitionList(FreeListDesc &desc);
             ~PartitionList(void);
 
-            Partition fetch(PartitionHandle handle);
-            PartitionHandle createPartition(uint32_t partitionSize);
-            bool freePartition(PartitionHandle handle);
+            Partition fetch(Handle<Partition> handle);
+            Handle<Partition> allocate(uint32_t partitionSize);
+            bool release(Handle<Partition> handle);
+
+            uint32_t getOccupiedSpace();
+            std::string coolPrint();
 
         private:
-            PartitionNode* root;
             FreeListDesc options;
 
-            std::vector<Partition> partitions;
-            std::vector<uint32_t> freeIds;
-            std::vector<uint32_t> generations;
+            PartitionNode* root;
+            PartitionNode* last;
+            PartitionNode* current;
+
+            FreeNode* firstFree;
+
+
+            //add arrays with max partitionnodes?
+            //for faster caching - new instantiation
+            
+            uint32_t totalOccupation;
+
+            Pool<Partition> partitionPool;
+
+            PartitionNode* findNodeWithSpace(uint32_t request);
+
+            PartitionNode* partitionize(PartitionNode* targetPartition, uint32_t size);
+    
+            PartitionNode* agglutinateNodes(PartitionNode* targetNode);
 
     };
 

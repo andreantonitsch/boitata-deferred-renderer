@@ -17,6 +17,22 @@ namespace boitatah
         BGRA_8_SRGB = 2,
         RGBA_8_UNORM = 3,
         BGRA_8_UNORM = 4,
+        R_32_SFLOAT = 5,
+        RG_32_SFLOAT = 6,
+        RGB_32_SFLOAT = 7,
+        RGBA_32_SFLOAT = 8,
+        R_32_SINT = 9,
+        RG_32_SINT = 10,
+        RGB_32_SINT = 11,
+        RGBA_32_SINT = 12,
+        R_32_UINT = 13,
+        RG_32_UINT = 14,
+        RGB_32_UINT = 15,
+        RGBA_32_UINT = 16,
+        R_64_SFLOAT = 17,
+        RG_64_SFLOAT = 18,
+        RGB_64_SFLOAT = 19,
+        RGBA_64_SFLOAT = 20,
     };
 
     enum class FRAME_BUFFERING
@@ -42,7 +58,7 @@ namespace boitatah
         PRESENT_SRC = 2,
     };
 
-    enum class USAGE
+    enum class IMAGE_USAGE
     {
         TRANSFER_SRC = 1,
         TRANSFER_DST = 2,
@@ -52,6 +68,12 @@ namespace boitatah
         TRANSFER_DST_SAMPLED = 6,
         COLOR_ATT_TRANSFER_DST = 7,
         COLOR_ATT_TRANSFER_SRC = 8
+    };
+
+    enum class BUFFER_USAGE
+    {
+        VERTEX = 1,
+        
     };
 
     enum class MEMORY_PROPERTY
@@ -85,6 +107,12 @@ namespace boitatah
         NORMAL,
     };
 
+    enum class SHARING_MODE
+    {
+        EXCLUSIVE = 1,
+        SHARED = 2,
+    };
+
     template <typename From, typename To>
     static To castEnum(From from);
 
@@ -103,6 +131,38 @@ namespace boitatah
             return VK_FORMAT_R8G8B8A8_UNORM;
         case FORMAT::BGRA_8_UNORM:
             return VK_FORMAT_B8G8R8A8_UNORM;
+        case FORMAT::R_32_SFLOAT:
+            return VK_FORMAT_R32_SFLOAT;
+        case FORMAT::RG_32_SFLOAT:
+            return VK_FORMAT_R32G32_SFLOAT;
+        case FORMAT::RGB_32_SFLOAT:
+            return VK_FORMAT_R32G32B32_SFLOAT;
+        case FORMAT::RGBA_32_SFLOAT:
+            return VK_FORMAT_R32G32B32A32_SFLOAT;
+        case FORMAT::R_32_SINT:
+            return VK_FORMAT_R32_SINT;
+        case FORMAT::RG_32_SINT:
+            return VK_FORMAT_R32G32_SINT;
+        case FORMAT::RGB_32_SINT:
+            return VK_FORMAT_R32G32B32_SINT;
+        case FORMAT::RGBA_32_SINT:
+            return VK_FORMAT_R32G32B32A32_SINT;
+        case FORMAT::R_32_UINT:
+            return VK_FORMAT_R32_UINT;
+        case FORMAT::RG_32_UINT:
+            return VK_FORMAT_R32G32_UINT;
+        case FORMAT::RGB_32_UINT:
+            return VK_FORMAT_R32G32B32_UINT;
+        case FORMAT::RGBA_32_UINT:
+            return VK_FORMAT_R32G32B32A32_UINT;
+        case FORMAT::R_64_SFLOAT:
+            return VK_FORMAT_R64_SFLOAT;
+        case FORMAT::RG_64_SFLOAT:
+            return VK_FORMAT_R64G64_SFLOAT;
+        case FORMAT::RGB_64_SFLOAT:
+            return VK_FORMAT_R64G64B64_SFLOAT;
+        case FORMAT::RGBA_64_SFLOAT:
+            return VK_FORMAT_R64G64B64A64_SFLOAT;
         default:
             return VK_FORMAT_UNDEFINED;
         }
@@ -178,29 +238,29 @@ namespace boitatah
     template VkSampleCountFlagBits boitatah::castEnum<SAMPLES, VkSampleCountFlagBits>(SAMPLES);
 
     template <>
-    inline VkImageUsageFlagBits boitatah::castEnum(USAGE samples)
+    inline VkImageUsageFlagBits boitatah::castEnum(IMAGE_USAGE samples)
     {
         switch (samples)
         {
-        case USAGE::TRANSFER_SRC:
+        case IMAGE_USAGE::TRANSFER_SRC:
             return VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        case USAGE::TRANSFER_DST:
+        case IMAGE_USAGE::TRANSFER_DST:
             return VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-        case USAGE::COLOR_ATT:
+        case IMAGE_USAGE::COLOR_ATT:
             return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        case USAGE::TRANSFER_DST_SAMPLED:
+        case IMAGE_USAGE::TRANSFER_DST_SAMPLED:
             return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-        case USAGE::SAMPLED:
+        case IMAGE_USAGE::SAMPLED:
             return VK_IMAGE_USAGE_SAMPLED_BIT;
-        case USAGE::COLOR_ATT_TRANSFER_DST:
+        case IMAGE_USAGE::COLOR_ATT_TRANSFER_DST:
             return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-        case USAGE::COLOR_ATT_TRANSFER_SRC:
+        case IMAGE_USAGE::COLOR_ATT_TRANSFER_SRC:
             return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
         default:
             return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         }
     }
-    template VkImageUsageFlagBits boitatah::castEnum<USAGE, VkImageUsageFlagBits>(USAGE);
+    template VkImageUsageFlagBits boitatah::castEnum<IMAGE_USAGE, VkImageUsageFlagBits>(IMAGE_USAGE);
 
     template <>
     inline VkMemoryPropertyFlagBits boitatah::castEnum(MEMORY_PROPERTY properties)
@@ -244,6 +304,55 @@ namespace boitatah
 
 #pragma endregion Enum Specializations
 
+    static uint32_t formatSize(FORMAT format);
+    inline uint32_t formatSize(FORMAT format)
+    {
+        switch (format)
+        {
+        case FORMAT::RGBA_8_SRGB:
+            return 4;
+        case FORMAT::BGRA_8_SRGB:
+            return 4;
+        case FORMAT::RGBA_8_UNORM:
+            return 4;
+        case FORMAT::BGRA_8_UNORM:
+            return 4;
+        case FORMAT::R_32_SFLOAT:
+            return 4;
+        case FORMAT::RG_32_SFLOAT:
+            return 8;
+        case FORMAT::RGB_32_SFLOAT:
+            return 12;
+        case FORMAT::RGBA_32_SFLOAT:
+            return 16;
+        case FORMAT::R_32_SINT:
+            return 4;
+        case FORMAT::RG_32_SINT:
+            return 8;
+        case FORMAT::RGB_32_SINT:
+            return 12;
+        case FORMAT::RGBA_32_SINT:
+            return 16;
+        case FORMAT::R_32_UINT:
+            return 4;
+        case FORMAT::RG_32_UINT:
+            return 8;
+        case FORMAT::RGB_32_UINT:
+            return 12;
+        case FORMAT::RGBA_32_UINT:
+            return 16;
+        case FORMAT::R_64_SFLOAT:
+            return 8;
+        case FORMAT::RG_64_SFLOAT:
+            return 16;
+        case FORMAT::RGB_64_SFLOAT:
+            return 24;
+        case FORMAT::RGBA_64_SFLOAT:
+            return 32;
+        default:
+            return 0;
+        }
+    }
 }
 
 #endif // BOITATAH_BTT_ENUMS_HPP

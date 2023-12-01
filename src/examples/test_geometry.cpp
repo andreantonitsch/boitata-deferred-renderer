@@ -1,5 +1,4 @@
 #include "../renderer/Renderer.hpp"
-// #pragma once
 #include <iostream>
 // #include <unistd.h>
 #include "../types/BttEnums.hpp"
@@ -21,8 +20,7 @@ int main()
                 .swapchainFormat = FORMAT::BGRA_8_SRGB,
                 .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR},
                                    .attachmentFormats = {FORMAT::RGBA_8_SRGB},
-                                   .dimensions = {windowWidth, windowHeight}}
-                });
+                                   .dimensions = {windowWidth, windowHeight}}});
 
     // Pipeline Layout for the Shader.
     Handle<PipelineLayout> layout = r.createPipelineLayout({});
@@ -31,33 +29,43 @@ int main()
     Handle<Shader> shader = r.createShader({
         .name = "test",
         .vert = {
-            .byteCode = utils::readFile("./src/09_shader_base_vert.spv"),
+            .byteCode = utils::readFile("./src/18_vert.spv"),
             .entryFunction = "main"},
-        .frag = {.byteCode = utils::readFile("./src/09_shader_base_frag.spv"), .entryFunction = "main"},
+        .frag = {.byteCode = utils::readFile("./src/18_frag.spv"), .entryFunction = "main"},
         .layout = layout,
-        .bindings={}
+        .bindings={{
+            .stride = 20,
+            .attributes = {{.format = FORMAT::RG_32_SFLOAT,
+                           .offset = 0},
+                           {.format = FORMAT::RGB_32_SFLOAT,
+                            .offset = 8}}}}
     });
-    Handle<Geometry> geometry = r.createGeometry({.vertexInfo = {3, 0}});
+
+    std::vector<Vertex> triVerts = triangleVertices();
+
+    Handle<Geometry> geometry = r.createGeometry({
+        .vertexInfo = {triVerts.size(), 0},
+        .vertexSize = sizeof(Vertex),
+        .dataSize = sizeof(Vertex) * triVerts.size(),
+        .data = triVerts.data(),
+    });
 
     SceneNode triangle = {
         .name = "triangle",
         .shader = shader,
         .geometry = geometry,
-        //.instanceInfo = {1, 0},
         };
 
-    
     // Scene Description.
     SceneNode scene{.name = "root scene", .children = {triangle}};
 
-    boitatah::utils::Timewatch timewatch(1000);
+    boitatah::utils::Timewatch timewatch(100);
 
     while (!r.isWindowClosed())
     {
         r.render(scene);
 
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
-
     }
     r.waitIdle();
 
