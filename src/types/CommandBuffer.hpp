@@ -5,7 +5,6 @@
 #include "RenderTarget.hpp"
 #include "../collections/Pool.hpp"
 #include "BttEnums.hpp"
-//#include "BufferStructs.hpp"
 
 
 namespace boitatah

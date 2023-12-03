@@ -302,6 +302,38 @@ namespace boitatah
     }
     template VkCommandBufferLevel boitatah::castEnum<COMMAND_BUFFER_LEVEL, VkCommandBufferLevel>(COMMAND_BUFFER_LEVEL);
 
+
+    template <>
+    inline VkSharingMode boitatah::castEnum(SHARING_MODE properties)
+    {
+        switch (properties)
+        {
+        case SHARING_MODE::EXCLUSIVE:
+            return VK_SHARING_MODE_EXCLUSIVE;
+        case SHARING_MODE::SHARED:
+            return VK_SHARING_MODE_CONCURRENT;
+
+        default:
+            return VK_SHARING_MODE_EXCLUSIVE;
+        }
+    }
+    template VkSharingMode boitatah::castEnum<SHARING_MODE, VkSharingMode>(SHARING_MODE);
+
+
+    template <>
+    inline VkBufferUsageFlags boitatah::castEnum(BUFFER_USAGE usage)
+    {
+        switch (usage)
+        {
+        case BUFFER_USAGE::VERTEX :
+            return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        default:
+            return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        }
+    }
+    template VkBufferUsageFlags boitatah::castEnum<BUFFER_USAGE, VkBufferUsageFlags>(BUFFER_USAGE MODE);
+
+
 #pragma endregion Enum Specializations
 
     static uint32_t formatSize(FORMAT format);

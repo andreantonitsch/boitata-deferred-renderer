@@ -537,6 +537,7 @@ namespace boitatah
         }
         else
         {
+            std::cout << "creating buffer" << std::endl;
             // if buffer NOT found
             // compute new buffer size
             uint32_t newBufferSize = estimateNewBufferSize(compatibility);

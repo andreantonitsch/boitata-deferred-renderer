@@ -23,7 +23,11 @@ int main()
                                    .dimensions = {windowWidth, windowHeight}}});
 
     // Pipeline Layout for the Shader.
-    Handle<PipelineLayout> layout = r.createPipelineLayout({});
+    Handle<PipelineLayout> layout = r.createPipelineLayout(
+        {
+        
+        }
+    );
 
     // Shader Description
     Handle<Shader> shader = r.createShader({

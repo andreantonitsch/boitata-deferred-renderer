@@ -50,6 +50,7 @@ namespace boitatah {
             Handle<Block> allocate(uint32_t request);
             bool release(Handle<Block> &handle);
 
+            uint32_t freeSpace();
             uint32_t getOccupiedSpace();
             std::string coolPrint();
 

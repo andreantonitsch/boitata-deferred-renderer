@@ -9,7 +9,6 @@
 #include <vector>
 #include <optional>
 #include "../types/BttEnums.hpp"
-#include "../types/BufferVkStructs.hpp"
 #include "../types/Shader.hpp"
 #include "../types/RenderTarget.hpp"
 #include "../types/Memory.hpp"
@@ -21,6 +20,21 @@
 
 namespace boitatah::vk
 {
+
+    struct BufferDescVk
+    {
+        // uint32_t alignment;
+        uint32_t size;
+        BUFFER_USAGE usage;
+        SHARING_MODE sharing;
+    };
+
+    struct BufferVkObjects{
+        VkBuffer buffer;
+        VkDeviceMemory memory;
+        uint32_t alignment;
+        uint32_t actualSize;
+    };
 
     struct CommandPools
     {
@@ -95,7 +109,7 @@ namespace boitatah::vk
         VkPipelineLayout createPipelineLayout(const PipelineLayoutDesc &desc);
         VkFence createFence(bool signaled);
         VkSemaphore createSemaphore();
-        BufferObjects createBuffer(const BufferDescVk & desc) const;
+        BufferVkObjects createBuffer(const BufferDescVk & desc) const;
         void buildShader(const ShaderDescVk &desc, Shader &shader);
 
         // Manage Memory
@@ -134,7 +148,7 @@ namespace boitatah::vk
         void destroyImage(Image image);
         void destroyPipelineLayout(PipelineLayout &layout);
         void destroyRenderTargetCmdData(const RTCmdBuffers &sync);
-        void destroyBuffer(BufferObjects buffer) const;
+        void destroyBuffer(BufferVkObjects buffer) const;
         // Copy assignment?
         // Vulkan& operator= (const Vulkan &v);//copy assignment
 

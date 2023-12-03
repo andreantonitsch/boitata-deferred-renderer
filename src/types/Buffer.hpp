@@ -2,7 +2,6 @@
 #define BOITATAH_BUFFER_HPP
 
 #include "../vulkan/Vulkan.hpp"
-#include "BufferStructs.hpp"
 #include "../collections/Pool.hpp"
 #include "../collections/BufferAllocator.hpp"
 //#include "../renderer/Renderer.hpp"
@@ -12,6 +11,30 @@
 
 namespace boitatah
 {
+
+    class Buffer;
+
+    struct BufferCompatibility
+    {
+        uint32_t requestSize;
+        BUFFER_USAGE usage;
+        SHARING_MODE sharing;
+    };
+
+    struct BufferReservationRequest
+    {
+        uint32_t request;
+        BUFFER_USAGE usage;
+        SHARING_MODE sharing;
+    };
+
+    struct BufferReservation
+    {
+        Buffer* buffer;
+        uint32_t size;
+        uint32_t offset;
+        Handle<Block> reservedBlock;
+    };
 
     struct BufferDesc
     {
@@ -41,6 +64,9 @@ namespace boitatah
     private:
         VkBuffer buffer;
         VkDeviceMemory memory;
+        const vk::Vulkan *vulkan;
+
+        BufferDesc description;
 
         BUFFER_USAGE usage;
         SHARING_MODE sharing;
@@ -48,13 +74,13 @@ namespace boitatah
         uint32_t alignment;
         uint32_t actualSize;
 
-        const vk::Vulkan *vulkan;
 
         Pool<BufferReservation> reservationPool{{.size = 50, .name = "buffer pool"}};
 
         BufferAllocator *allocator;
 
-        //VkDeviceMemory getMemory();
+
+        uint32_t findMemoryIndex(const MemoryDesc &props) const;
 
     };
 

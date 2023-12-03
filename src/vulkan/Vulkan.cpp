@@ -746,7 +746,7 @@ VkSemaphore boitatah::vk::Vulkan::createSemaphore()
     return semaphore;
 }
 
-boitatah::BufferObjects boitatah::vk::Vulkan::createBuffer(const BufferDescVk & desc) const
+boitatah::vk::BufferVkObjects boitatah::vk::Vulkan::createBuffer(const BufferDescVk & desc) const
 {
     VkBufferCreateInfo bufferInfo{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -1005,7 +1005,7 @@ void boitatah::vk::Vulkan::destroyRenderTargetCmdData(const RTCmdBuffers &sync)
     vkDestroySemaphore(device, sync.transferSem, nullptr);
 }
 
-void boitatah::vk::Vulkan::destroyBuffer(BufferObjects buffer) const
+void boitatah::vk::Vulkan::destroyBuffer(BufferVkObjects buffer) const
 {
     vkDestroyBuffer(device, buffer.buffer, nullptr);
     vkFreeMemory(device, buffer.memory, nullptr);

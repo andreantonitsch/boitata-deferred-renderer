@@ -179,6 +179,11 @@ namespace boitatah
         return true;
     }
 
+    uint32_t BufferAllocator::freeSpace()
+    {
+        return size - occupiedSpace;
+    }
+
     uint32_t BufferAllocator::getOccupiedSpace()
     {
         return occupiedSpace;
