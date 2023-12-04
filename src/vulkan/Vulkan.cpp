@@ -746,7 +746,7 @@ VkSemaphore boitatah::vk::Vulkan::createSemaphore()
     return semaphore;
 }
 
-boitatah::vk::BufferVkObjects boitatah::vk::Vulkan::createBuffer(const BufferDescVk & desc) const
+boitatah::vk::BufferVkData boitatah::vk::Vulkan::createBuffer(const BufferDescVk & desc) const
 {
     VkBufferCreateInfo bufferInfo{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -783,6 +783,35 @@ boitatah::vk::BufferVkObjects boitatah::vk::Vulkan::createBuffer(const BufferDes
     vkBindBufferMemory(device, buffer, memory, 0);
 
     return {.buffer = buffer, .memory = memory, .alignment = memReqs.alignment};
+}
+
+boitatah::vk::BufferVkData boitatah::vk::Vulkan::getBufferAlignmentMemoryType(const BufferDescVk &desc) const
+{
+    VkBufferCreateInfo dummyCreate{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = desc.size,
+        .usage = castEnum<BUFFER_USAGE, VkBufferUsageFlags>(desc.usage),
+        .sharingMode = castEnum<SHARING_MODE, VkSharingMode>(desc.sharing),
+    };
+
+    VkBuffer dummyBuffer;
+    if (vkCreateBuffer(device, &dummyCreate, nullptr, &dummyBuffer) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create a buffer");
+        ;
+    }
+
+    VkMemoryRequirements memReqs;
+    vkGetBufferMemoryRequirements(device, dummyBuffer, &memReqs);
+
+
+    vkDestroyBuffer(device, dummyBuffer, nullptr);
+
+
+    return BufferVkData{
+        .alignment = memReqs.alignment,
+        .memoryTypeBits = memReqs.memoryTypeBits
+    };
 }
 
 void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
@@ -1005,7 +1034,7 @@ void boitatah::vk::Vulkan::destroyRenderTargetCmdData(const RTCmdBuffers &sync)
     vkDestroySemaphore(device, sync.transferSem, nullptr);
 }
 
-void boitatah::vk::Vulkan::destroyBuffer(BufferVkObjects buffer) const
+void boitatah::vk::Vulkan::destroyBuffer(BufferVkData buffer) const
 {
     vkDestroyBuffer(device, buffer.buffer, nullptr);
     vkFreeMemory(device, buffer.memory, nullptr);

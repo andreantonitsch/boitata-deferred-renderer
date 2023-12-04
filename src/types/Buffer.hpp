@@ -39,7 +39,7 @@ namespace boitatah
     struct BufferDesc
     {
         // uint32_t alignment;
-        uint32_t size;
+        uint32_t estimatedElementSize;
         // power of 2.
         uint32_t partitions;
         BUFFER_USAGE usage;

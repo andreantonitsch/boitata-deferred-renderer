@@ -11,20 +11,39 @@ namespace boitatah
 
         // get the vulkan buffer
         // allocate the device memory
-        auto objs = this->vulkan->createBuffer({
-            .size = desc.size,
+        auto reqs = this->vulkan->getBufferAlignmentMemoryType({
+            .size = desc.estimatedElementSize,
             .usage = desc.usage,
             .sharing = desc.sharing,
         });
-        buffer = objs.buffer;
-        memory = objs.memory;
-        actualSize = objs.actualSize;
-        alignment = objs.alignment;
+        alignment = reqs.alignment;
+        
+
+        std::cout << "got requirements " << reqs.alignment << std::endl;
 
         // initialize the allocator
-        allocator = new BufferAllocator({.alignment = objs.alignment,
-                                         .partitionSize = actualSize / desc.partitions,
-                                         .height = static_cast<uint32_t>(std::bit_width(actualSize / desc.partitions)) - 1u});
+        allocator = new BufferAllocator({.alignment = alignment,
+                                         .partitionSize = desc.estimatedElementSize,
+                                         .height = static_cast<uint32_t>(std::bit_width(desc.partitions)) - 1u,
+                                         });
+
+        std::cout << "created allocator " << allocator->getSize() << std::endl;
+
+
+        auto objs = this->vulkan->createBuffer({
+            .size = allocator->getSize(),
+            .usage = desc.usage,
+            .sharing = desc.sharing,
+        });
+
+        std::cout << "created final buffer " << std::endl;
+
+
+
+        actualSize = objs.actualSize;
+        buffer = objs.buffer;
+        memory = objs.memory;
+    
     }
 
     Buffer::~Buffer(void)

@@ -20,7 +20,6 @@
 
 namespace boitatah::vk
 {
-
     struct BufferDescVk
     {
         // uint32_t alignment;
@@ -29,11 +28,14 @@ namespace boitatah::vk
         SHARING_MODE sharing;
     };
 
-    struct BufferVkObjects{
+    struct BufferVkData{
         VkBuffer buffer;
         VkDeviceMemory memory;
-        uint32_t alignment;
-        uint32_t actualSize;
+        uint64_t alignment;
+        uint64_t actualSize;
+
+        uint32_t memoryTypeBits;
+
     };
 
     struct CommandPools
@@ -109,7 +111,9 @@ namespace boitatah::vk
         VkPipelineLayout createPipelineLayout(const PipelineLayoutDesc &desc);
         VkFence createFence(bool signaled);
         VkSemaphore createSemaphore();
-        BufferVkObjects createBuffer(const BufferDescVk & desc) const;
+        BufferVkData createBuffer(const BufferDescVk & desc) const;
+        BufferVkData getBufferAlignmentMemoryType(const BufferDescVk & desc) const;
+
         void buildShader(const ShaderDescVk &desc, Shader &shader);
 
         // Manage Memory
@@ -148,7 +152,7 @@ namespace boitatah::vk
         void destroyImage(Image image);
         void destroyPipelineLayout(PipelineLayout &layout);
         void destroyRenderTargetCmdData(const RTCmdBuffers &sync);
-        void destroyBuffer(BufferVkObjects buffer) const;
+        void destroyBuffer(BufferVkData buffer) const;
         // Copy assignment?
         // Vulkan& operator= (const Vulkan &v);//copy assignment
 

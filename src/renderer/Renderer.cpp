@@ -117,7 +117,6 @@ namespace boitatah
         Handle<BufferReservation> vertexBufferHandle = geom.reservations[0];
         bufferReservPool.get(vertexBufferHandle, vertexBufferReservation);
 
-
         vk->waitForFrame(buffers);
 
         vk->resetCommandBuffer(buffers.drawBuffer.buffer);
@@ -138,6 +137,7 @@ namespace boitatah
             .instanceInfo = {1, 0}, // scene.instanceInfo
             
         });
+        
 
         vk->submitDrawCmdBuffer({.bufferData = buffers,
                                  .submitType = COMMAND_BUFFER_TYPE::GRAPHICS});
@@ -342,9 +342,10 @@ namespace boitatah
             bindingDesc.stride = binding.stride;
             bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
             bindingDesc.binding = i;
-
+            std::cout << data.bindings[i].stride;
             vkbindings.push_back(bindingDesc);
             uint32_t runningOffset = 0;
+
             for (int j = 0; j < binding.attributes.size(); j++)
             {
                 auto attribute = binding.attributes[j];
@@ -354,6 +355,7 @@ namespace boitatah
                 runningOffset = runningOffset + formatSize(attribute.format);
                 attributeDesc.offset = runningOffset;
                 attributeDesc.location = j;
+                vkattributes.push_back(attributeDesc);
             }
         }
 
@@ -472,8 +474,7 @@ namespace boitatah
         std::vector<Handle<BufferReservation>> reservations{reservation};
         
         Geometry geo = {
-            .reservationCount = reservations.size(),
-            .reservations = reservations.data(),
+            .reservations = reservations,
             .vertexInfo = desc.vertexInfo,
         };
 
@@ -537,18 +538,14 @@ namespace boitatah
         }
         else
         {
-            std::cout << "creating buffer" << std::endl;
-            // if buffer NOT found
-            // compute new buffer size
-            uint32_t newBufferSize = estimateNewBufferSize(compatibility);
-            //      create new buffer
             Buffer *buffer = createBuffer({
-                .size = newBufferSize,
+                .estimatedElementSize = compatibility.requestSize,
                 .partitions = 1 << 10,
                 .usage = compatibility.usage,
                 .sharing = compatibility.sharing,
             });
-            //      return reference
+
+            //return reference
             return buffer;
         }
     }
@@ -568,7 +565,7 @@ namespace boitatah
 
         if (compatibility.usage == BUFFER_USAGE::VERTEX)
         {
-            return compatibility.requestSize * (1 << 5);
+            return compatibility.requestSize * (1 << 10);
         }
 
         return 0;

@@ -8,7 +8,7 @@ namespace boitatah
     BufferAllocator::BufferAllocator(const BufferAllocatorDesc &desc) : blockPool({.size = ((desc.partitionSize * (1u << desc.height)) / desc.partitionSize) * 2u - 1u})
     {
         alignment = desc.alignment;
-        partitionSize = desc.partitionSize;
+        partitionSize = desc.partitionSize + (desc.partitionSize % alignment);
         height = desc.height;
 
         size = desc.partitionSize * (1u << height);
