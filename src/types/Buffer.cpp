@@ -67,6 +67,10 @@ namespace boitatah
         allocator->getBlockData(blockHandle, reservation.offset, reservation.size);
 
         reservation.reservedBlock = blockHandle;
+        reservation.requestSize = request;
+        
+        std::cout << "RESERVATION " << reservation.offset << " " <<
+        reservation.size << " " <<reservation.requestSize <<std::endl; 
 
         return reservation;
     }
@@ -79,5 +83,9 @@ namespace boitatah
     {
         return buffer;
         ;
+    }
+    VkDeviceMemory Buffer::getMemory()
+    {
+        return memory;
     }
 }

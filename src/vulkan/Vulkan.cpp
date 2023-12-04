@@ -694,6 +694,9 @@ void boitatah::vk::Vulkan::copyDataToBuffer(CopyToBufferOp op)
     memcpy(mappedTarget, op.data, (size_t) op.size);
 
     vkUnmapMemory(device, op.memory);
+
+    std::cout << " copied memory " << std::endl;
+
 }
 
 VkPipelineLayout boitatah::vk::Vulkan::createPipelineLayout(const PipelineLayoutDesc &desc)

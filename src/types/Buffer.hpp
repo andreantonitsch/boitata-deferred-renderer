@@ -32,6 +32,7 @@ namespace boitatah
     {
         Buffer* buffer;
         uint32_t size;
+        uint32_t requestSize;
         uint32_t offset;
         Handle<Block> reservedBlock;
     };
@@ -60,6 +61,7 @@ namespace boitatah
         bool checkCompatibility(const BufferCompatibility &compatibility);
 
         VkBuffer getBuffer();
+        VkDeviceMemory getMemory();
 
     private:
         VkBuffer buffer;

@@ -135,7 +135,6 @@ namespace boitatah
             .vertexBufferOffset = vertexBufferReservation.offset,
             .vertexInfo = geom.vertexInfo,
             .instanceInfo = {1, 0}, // scene.instanceInfo
-            
         });
         
 
@@ -247,7 +246,6 @@ namespace boitatah
 
     void Renderer::recordCommand(const DrawCommand &command)
     {
-
         vk->recordCommand({
             .drawBuffer = command.drawBuffer.buffer,
             .pass = command.renderPass.renderPass,
@@ -258,9 +256,9 @@ namespace boitatah
             .areaDims = {static_cast<int>(command.dimensions.x),
                          static_cast<int>(command.dimensions.y)},
             .areaOffset = {0, 0},
-            .vertexCount = 3,
+            .vertexCount = command.vertexInfo.x,
             .instaceCount = 1,
-            .firstVertex = 0,
+            .firstVertex = command.vertexInfo.y,
             .firstInstance = 0,
         });
     }
@@ -352,8 +350,8 @@ namespace boitatah
                 VkVertexInputAttributeDescription attributeDesc;
                 attributeDesc.binding = i;
                 attributeDesc.format = castEnum<FORMAT, VkFormat>(attribute.format);
-                runningOffset = runningOffset + formatSize(attribute.format);
                 attributeDesc.offset = runningOffset;
+                runningOffset = runningOffset + formatSize(attribute.format);
                 attributeDesc.location = j;
                 vkattributes.push_back(attributeDesc);
             }
@@ -467,15 +465,37 @@ namespace boitatah
     Handle<Geometry> Renderer::createGeometry(const GeometryDesc &desc)
     {
 
-        Handle<BufferReservation> reservation = reserveBuffer({.request = desc.dataSize,
+
+        Handle<BufferReservation> resHandle = reserveBuffer({.request = desc.dataSize,
                                                                .usage = BUFFER_USAGE::VERTEX,
                                                                .sharing = SHARING_MODE::EXCLUSIVE});
         
-        std::vector<Handle<BufferReservation>> reservations{reservation};
-        
+        if(resHandle.isNull())
+            return Handle<Geometry>();
+
+        BufferReservation reservation;
+        bufferReservPool.get(resHandle, reservation);
+
+        std::cout << "\nRequest " << desc.dataSize <<
+                     "\nReservation " << reservation.size <<
+                     "\nOffset " << reservation.offset << std::endl;
+
+        for(int i = 0 ; i < 3; i++){
+            auto pos = static_cast<Vertex*>(desc.data)[i].pos;
+            std::cout << pos.x << " "  << pos.y << std::endl;
+        }
+
+        vk->copyDataToBuffer({
+            .memory = reservation.buffer->getMemory(),
+            .offset = reservation.offset,
+            .size = desc.dataSize,
+            .data = desc.data,
+        });
+
         Geometry geo = {
-            .reservations = reservations,
+            .reservations = {resHandle},
             .vertexInfo = desc.vertexInfo,
+            .vertexSize = desc.vertexSize
         };
 
         return geometryPool.set(geo);

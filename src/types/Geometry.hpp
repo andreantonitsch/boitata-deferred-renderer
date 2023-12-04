@@ -19,6 +19,7 @@ namespace boitatah{
     struct Geometry{
         std::vector<Handle<BufferReservation>> reservations;
         glm::ivec2 vertexInfo;
+        uint64_t vertexSize;
     };
 
     struct Vertex{

@@ -69,8 +69,8 @@ namespace boitatah
         uint32_t vertexBufferOffset;
 
         // count, first
-        glm::ivec2 vertexInfo;
-        glm::ivec2 instanceInfo;
+        glm::uvec2 vertexInfo;
+        glm::uvec2 instanceInfo;
     };
 
     struct SubmitCommand{
@@ -88,7 +88,7 @@ namespace boitatah
     struct CopyToBufferOp{
         VkDeviceMemory memory;
         uint32_t offset;
-        uint32_t size;
+        uint64_t size;
         void* data;
     };
 
