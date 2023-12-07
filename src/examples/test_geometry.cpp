@@ -49,8 +49,8 @@ int main()
 
     Handle<Geometry> geometry = r.createGeometry({
         .vertexInfo = {triVerts.size(), 0},
-        .vertexSize = sizeof(Vertex),
-        .dataSize = sizeof(Vertex) * triVerts.size(),
+        .vertexSize = static_cast<uint32_t>(sizeof(Vertex)),
+        .dataSize = static_cast<uint32_t>(sizeof(Vertex)) * triVerts.size(),
         .data = triVerts.data(),
     });
 
@@ -63,7 +63,7 @@ int main()
     // Scene Description.
     SceneNode scene{.name = "root scene", .children = {triangle}};
 
-    boitatah::utils::Timewatch timewatch(100);
+    boitatah::utils::Timewatch timewatch(1000);
 
     while (!r.isWindowClosed())
     {

@@ -79,12 +79,6 @@ namespace boitatah
         ShaderModule frag;
         
         VkPipeline pipeline;
-        //Handle<PipelineLayout> layout; <--- for shader recreation
-        //Handle<ShaderModules> modules; <--- for shader recreation
-        //Handle<Swapchain*> compatibleSwapchain <-- for comparisoon of swapchain compatibility
-        //for shader recreation
-        //Handle<ShaderDesc> description;
-        //int Swapchain swapchain;
 
     };
 

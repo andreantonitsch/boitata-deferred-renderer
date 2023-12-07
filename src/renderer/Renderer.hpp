@@ -15,9 +15,10 @@
 #include "../vulkan/Vulkan.hpp"
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
+#include "../types/CommandBuffer.hpp"
 #include "../types/RenderTarget.hpp"
 #include "../collections/Pool.hpp"
-#include "../types/CommandBuffer.hpp"
+#include "../types/Commands.hpp"
 #include "../types/Scene.hpp"
 #include "../types/Buffer.hpp"
 #include "Window.hpp"
@@ -71,9 +72,13 @@ namespace boitatah
 
         // Command Buffers
         CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
-        void recordCommand(const DrawCommand &command);
+        void recordDrawCommand(const DrawCommand &command);
         void clearCommandBuffer(const CommandBuffer &buffer);
-        void transferImage(const TransferCommand &command);
+        void transferImage(const TransferImageCommand &command);
+        void copyBuffer(const CopyBufferCommand &command);
+
+        void beginBuffer(const BeginBufferCmmand &command);
+        void submitBuffer(const SubmitBufferCommand &command);
 
         // Object Creation
         // Creates PSO object, shader + pipeline.
@@ -89,10 +94,11 @@ namespace boitatah
 
         Buffer *createBuffer(const BufferDesc &desc);
         Handle<BufferReservation> reserveBuffer(const BufferReservationRequest &request);
-
+        void unreserveBuffer(Handle<BufferReservation> &reservation);
+        
         Handle<RenderPass> getBackBufferRenderPass();
 
-        Handle<RTCmdBuffers> createRenderTargetCmdData();
+        Handle<RenderTargetCmdBuffers> createRenderTargetCmdData();
 
         void destroyShader(Handle<Shader> shader);
         void destroyRenderTarget(Handle<RenderTarget> buffer);
@@ -109,6 +115,9 @@ namespace boitatah
         BackBufferManager *backBufferManager;
         Swapchain *swapchain;
 
+        CommandBuffer transferCommandBuffer;
+        VkFence transferFence;
+        
         void handleWindowResize();
         void createSwapchain();
 
@@ -117,13 +126,15 @@ namespace boitatah
         uint32_t findCompatibleBuffer(const BufferCompatibility &compatibility);
         uint32_t estimateNewBufferSize(const BufferCompatibility &compatibility);
 
+        Buffer createStagingBuffer(const BufferDesc &desc);
+
         // Pools
         Pool<Shader> shaderPool = Pool<Shader>({.size = 10, .name = "shader pool"});
         Pool<RenderTarget> renderTargetPool = Pool<RenderTarget>({.size = 50, .name = "render target pool"});
         Pool<RenderPass> renderpassPool = Pool<RenderPass>({.size = 50, .name = "render pass pool"});
         Pool<Image> imagePool = Pool<Image>({.size = 50, .name = "image pool"});
         Pool<PipelineLayout> pipelineLayoutPool = Pool<PipelineLayout>({.size = 50, .name = "pipeline layour pool"});
-        Pool<RTCmdBuffers> rtCmdPool = Pool<RTCmdBuffers>({.size = 50, .name = "rtcmd buffers pool"});
+        Pool<RenderTargetCmdBuffers> rtCmdPool = Pool<RenderTargetCmdBuffers>({.size = 50, .name = "rtcmd buffers pool"});
         Pool<Geometry> geometryPool = Pool<Geometry>({.size = 50, .name = "geometry pool"});
         Pool<BufferReservation> bufferReservPool = Pool<BufferReservation>({.size = 100, .name = "reservation pool"});
 

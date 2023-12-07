@@ -4,27 +4,14 @@
 #include <vulkan/vulkan.h>
 #include <glm/vec2.hpp>
 #include "BttEnums.hpp"
+#include "CommandBuffer.hpp"
 #include "../collections/Pool.hpp"
 #include "Image.hpp"
+
 
 #include <glm/vec2.hpp>
 
 namespace boitatah{
-
-    struct CommandBuffer
-    {
-        VkCommandBuffer buffer;
-        COMMAND_BUFFER_TYPE type;
-    };
-    struct RTCmdBuffers{
-
-        CommandBuffer drawBuffer;
-        CommandBuffer transferBuffer;
-
-        VkSemaphore schainAcqSem;
-        VkSemaphore transferSem;
-        VkFence inFlightFen;
-    };
 
     struct AttachmentDesc{
         uint32_t index;
@@ -51,7 +38,6 @@ namespace boitatah{
         glm::u32vec2 dimensions;
     };
 
-    // If VK_NULL_HANDLE a new image is created.
     struct RenderTargetDesc{
         //Either RenderPassDesc or pass need to be non null.
         RenderPassDesc renderpassDesc;
@@ -69,11 +55,8 @@ namespace boitatah{
         VkFramebuffer buffer;
         std::vector<Handle<Image>> attachments;
         Handle<RenderPass> renderpass;
-        Handle<RTCmdBuffers> cmdBuffers;
+        Handle<RenderTargetCmdBuffers> cmdBuffers;
     };
-
-
-
 }
 
 #endif //BOITATAH_RENDERTARGET_HPP

@@ -5,6 +5,9 @@
 namespace boitatah
 {
 
+/// CONVERSION BETWEEN BOITATAH ENUMS AND VK ENUMS
+
+
     enum class COLOR_SPACE
     {
         SRGB_NON_LINEAR = 1,
@@ -73,7 +76,9 @@ namespace boitatah
     enum class BUFFER_USAGE
     {
         VERTEX = 1,
-        
+        TRANSFER_SRC = 2,
+        TRANSFER_DST = 3,
+        TRANSFER_DST_VERTEX = 4,
     };
 
     enum class MEMORY_PROPERTY
@@ -110,7 +115,7 @@ namespace boitatah
     enum class SHARING_MODE
     {
         EXCLUSIVE = 1,
-        SHARED = 2,
+        CONCURRENT = 2,
     };
 
     template <typename From, typename To>
@@ -302,7 +307,6 @@ namespace boitatah
     }
     template VkCommandBufferLevel boitatah::castEnum<COMMAND_BUFFER_LEVEL, VkCommandBufferLevel>(COMMAND_BUFFER_LEVEL);
 
-
     template <>
     inline VkSharingMode boitatah::castEnum(SHARING_MODE properties)
     {
@@ -310,7 +314,7 @@ namespace boitatah
         {
         case SHARING_MODE::EXCLUSIVE:
             return VK_SHARING_MODE_EXCLUSIVE;
-        case SHARING_MODE::SHARED:
+        case SHARING_MODE::CONCURRENT:
             return VK_SHARING_MODE_CONCURRENT;
 
         default:
@@ -319,20 +323,27 @@ namespace boitatah
     }
     template VkSharingMode boitatah::castEnum<SHARING_MODE, VkSharingMode>(SHARING_MODE);
 
-
     template <>
     inline VkBufferUsageFlags boitatah::castEnum(BUFFER_USAGE usage)
     {
         switch (usage)
         {
-        case BUFFER_USAGE::VERTEX :
+        case BUFFER_USAGE::VERTEX:
             return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        case BUFFER_USAGE::TRANSFER_DST:
+            return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+        case BUFFER_USAGE::TRANSFER_SRC:
+            return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+        case BUFFER_USAGE::TRANSFER_DST_VERTEX:
+            return VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         default:
             return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         }
     }
     template VkBufferUsageFlags boitatah::castEnum<BUFFER_USAGE, VkBufferUsageFlags>(BUFFER_USAGE MODE);
-
 
 #pragma endregion Enum Specializations
 

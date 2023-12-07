@@ -82,8 +82,6 @@ namespace boitatah
         BufferAllocator *allocator;
 
 
-        uint32_t findMemoryIndex(const MemoryDesc &props) const;
-
     };
 
 }

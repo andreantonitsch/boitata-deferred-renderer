@@ -11,15 +11,15 @@ namespace boitatah{
 
     struct GeometryDesc{
         glm::ivec2 vertexInfo; 
-        uint64_t vertexSize;
-        uint64_t dataSize;
+        uint32_t vertexSize;
+        uint32_t dataSize;
         void* data;
     };
 
     struct Geometry{
-        std::vector<Handle<BufferReservation>> reservations;
+        std::vector<Handle<BufferReservation>> buffers;
         glm::ivec2 vertexInfo;
-        uint64_t vertexSize;
+        uint32_t vertexSize;
     };
 
     struct Vertex{
@@ -29,9 +29,9 @@ namespace boitatah{
 
     static std::vector<Vertex> triangleVertices() {
         return {
-            {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-            {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-            {{-0.5f, 0.5f}, {1.0f, 0.0f, 1.0f}},
+            {{0.0f, -0.5f}, {1.0f, 1.0f, 0.0f}},
+            {{0.5f, 0.5f}, {1.0f, 0.0f, 1.0f}},
+            {{-0.5f, 0.5f}, {0.0f, 1.0f, 1.0f}},
          };
     }
 }

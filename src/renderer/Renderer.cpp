@@ -12,7 +12,6 @@ namespace boitatah
 {
 #pragma region Initialization
 
-
     Renderer::Renderer(RendererOptions opts)
     {
         options = opts;
@@ -30,6 +29,11 @@ namespace boitatah
 
         backBufferManager = new BackBufferManager(this);
         backBufferManager->setup(options.backBufferDesc);
+
+        transferCommandBuffer = allocateCommandBuffer({.count = 1,
+                                                .level = COMMAND_BUFFER_LEVEL::PRIMARY,
+                                                .type = COMMAND_BUFFER_TYPE::TRANSFER});
+        transferFence = vk->createFence(true);
     }
 
     void Renderer::handleWindowResize()
@@ -95,7 +99,7 @@ namespace boitatah
             throw std::runtime_error("Failed to write command buffer \n\tImage");
         }
 
-        RTCmdBuffers buffers;
+        RenderTargetCmdBuffers buffers;
         if (!rtCmdPool.get(target.cmdBuffers, buffers))
             throw std::runtime_error("Failed to Render to Target");
 
@@ -114,7 +118,8 @@ namespace boitatah
         }
 
         BufferReservation vertexBufferReservation;
-        Handle<BufferReservation> vertexBufferHandle = geom.reservations[0];
+        Handle<BufferReservation> vertexBufferHandle = geom.buffers.size() > 0 ? geom.buffers[0] : Handle<BufferReservation>();
+
         bufferReservPool.get(vertexBufferHandle, vertexBufferReservation);
 
         vk->waitForFrame(buffers);
@@ -122,7 +127,7 @@ namespace boitatah
         vk->resetCommandBuffer(buffers.drawBuffer.buffer);
         vk->resetCommandBuffer(buffers.transferBuffer.buffer);
 
-        recordCommand({
+        recordDrawCommand({
             .drawBuffer = buffers.drawBuffer,
             .renderTarget = target,
             .renderPass = pass,
@@ -131,15 +136,16 @@ namespace boitatah
                 static_cast<int>(image.dimensions.x),
                 static_cast<int>(image.dimensions.y),
             },
-            .vertexBuffer = vertexBufferReservation.buffer->getBuffer(),
+            .vertexBuffer = vertexBufferHandle.isNull() ? VK_NULL_HANDLE : vertexBufferReservation.buffer->getBuffer(),
             .vertexBufferOffset = vertexBufferReservation.offset,
             .vertexInfo = geom.vertexInfo,
             .instanceInfo = {1, 0}, // scene.instanceInfo
         });
-        
 
-        vk->submitDrawCmdBuffer({.bufferData = buffers,
-                                 .submitType = COMMAND_BUFFER_TYPE::GRAPHICS});
+        // vk->submitDrawCmdBuffer({.bufferData = buffers,
+        //                          .submitType = COMMAND_BUFFER_TYPE::GRAPHICS});
+        vk->submitDrawCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer,
+        .fence = buffers.inFlightFen});
     }
 
     void Renderer::render(SceneNode &scene)
@@ -157,7 +163,7 @@ namespace boitatah
         if (!renderTargetPool.get(rendertarget, fb))
             throw std::runtime_error("failed to framebuffer for Presentation");
 
-        RTCmdBuffers buffers;
+        RenderTargetCmdBuffers buffers;
         if (!rtCmdPool.get(fb.cmdBuffers, buffers))
             throw std::runtime_error("failed to framebuffer for Presentation");
 
@@ -166,7 +172,7 @@ namespace boitatah
             throw std::runtime_error("failed to framebuffer for Presentation");
 
         vk->waitForFrame(buffers);
-        SubmitCommand command{.bufferData = buffers, .submitType = COMMAND_BUFFER_TYPE::PRESENT};
+        //SubmitDrawCommand command{.bufferData = buffers, .submitType = COMMAND_BUFFER_TYPE::PRESENT};
         auto swapchainImage = swapchain->getNext(buffers.schainAcqSem);
 
         // failed to find swapchain image.
@@ -180,7 +186,11 @@ namespace boitatah
                                                     swapchainImage.image,
                                                     swapchainImage.sc,
                                                     swapchainImage.index,
-                                                    command);
+                                                    {.commandBuffer = buffers.transferBuffer.buffer,
+                                                    .waitSemaphore = buffers.schainAcqSem,
+                                                    .signalSemaphore = buffers.transferSem,
+                                                    .fence = buffers.inFlightFen,
+                                                    });
 
         // If present was unsucessful we must remake the swapchain
         // and recreate our backbuffer.
@@ -216,6 +226,8 @@ namespace boitatah
         for (auto &buffer : buffers)
             delete buffer;
 
+        vk->destroyFence(transferFence);
+
         delete swapchain;
         window->destroySurface(vk->getInstance());
         delete backBufferManager;
@@ -244,9 +256,9 @@ namespace boitatah
         return buffer;
     }
 
-    void Renderer::recordCommand(const DrawCommand &command)
+    void Renderer::recordDrawCommand(const DrawCommand &command)
     {
-        vk->recordCommand({
+        vk->recordDrawCommand({
             .drawBuffer = command.drawBuffer.buffer,
             .pass = command.renderPass.renderPass,
             .frameBuffer = command.renderTarget.buffer,
@@ -268,7 +280,7 @@ namespace boitatah
         vk->resetCommandBuffer(buffer.buffer);
     }
 
-    void Renderer::transferImage(const TransferCommand &command)
+    void Renderer::transferImage(const TransferImageCommand &command)
     {
         RenderTarget dstBuffer;
         if (!renderTargetPool.get(command.dst, dstBuffer))
@@ -286,12 +298,53 @@ namespace boitatah
         if (!imagePool.get(srcBuffer.attachments[0], srcImage))
             throw std::runtime_error("failed to transfer buffers");
 
+        //begin buffer
+
         vk->CmdCopyImage({.buffer = command.buffer.buffer,
                           .srcImage = srcImage.image,
                           .srcImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                           .dstImage = dstImage.image,
                           .dstImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                           .extent = srcImage.dimensions});
+
+        //submit buffer
+    }
+
+    void Renderer::copyBuffer(const CopyBufferCommand &command)
+    {
+        BufferReservation srcReservation;
+        BufferReservation dstReservation;
+        if(!bufferReservPool.get(command.src, srcReservation))
+            throw std::runtime_error("failed to copy buffer");
+        if(!bufferReservPool.get(command.dst, dstReservation))
+            throw std::runtime_error("failed to copy buffer");
+
+        vk->waitForFence(transferFence);
+        vk->beginCmdBuffer(command.buffer.buffer);
+
+        vk->CmdCopyBuffer({
+            .commandBuffer = command.buffer.buffer,
+            .srcBuffer = srcReservation.buffer->getBuffer(),
+            .srcOffset = srcReservation.offset,
+            .dstBuffer = dstReservation.buffer->getBuffer(),
+            .dstOffset = dstReservation.offset,
+            .size = srcReservation.size,
+        });
+        
+        vk->submitCmdBuffer({
+            .commandBuffer = command.buffer.buffer,
+            .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
+            .fence = transferFence,
+        });
+
+    }
+
+    void Renderer::beginBuffer(const BeginBufferCmmand &command)
+    {
+    }
+
+    void Renderer::submitBuffer(const SubmitBufferCommand &command)
+    {
     }
 
 #pragma endregion Command Buffers
@@ -442,14 +495,7 @@ namespace boitatah
 
     Handle<Image> Renderer::createImage(const ImageDesc &desc)
     {
-        // TODO seperate responsabilities
-        // Create Image
-        // Create Buffer Memory
-        // Bind Buffer Memory
         Image image = vk->createImage(desc);
-
-        // TODO separate view from image?
-        // Create Image View
         image.view = vk->createImageView(image.image, desc);
 
         // Add to Image Pool.
@@ -464,39 +510,42 @@ namespace boitatah
 
     Handle<Geometry> Renderer::createGeometry(const GeometryDesc &desc)
     {
+        Geometry geo{};
+        if (desc.dataSize != 0)
+        {
 
+            Handle<BufferReservation> stagingHandle = reserveBuffer({.request = desc.dataSize,
+                                                                     .usage = BUFFER_USAGE::TRANSFER_SRC,
+                                                                     .sharing = SHARING_MODE::CONCURRENT});
 
-        Handle<BufferReservation> resHandle = reserveBuffer({.request = desc.dataSize,
-                                                               .usage = BUFFER_USAGE::VERTEX,
-                                                               .sharing = SHARING_MODE::EXCLUSIVE});
-        
-        if(resHandle.isNull())
-            return Handle<Geometry>();
+            Handle<BufferReservation> resHandle = reserveBuffer({.request = desc.dataSize,
+                                                                 .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
+                                                                 .sharing = SHARING_MODE::CONCURRENT});
 
-        BufferReservation reservation;
-        bufferReservPool.get(resHandle, reservation);
+            if (resHandle.isNull() || stagingHandle.isNull())
+                return Handle<Geometry>();
 
-        std::cout << "\nRequest " << desc.dataSize <<
-                     "\nReservation " << reservation.size <<
-                     "\nOffset " << reservation.offset << std::endl;
+            BufferReservation stagingReservation;
+            bufferReservPool.get(stagingHandle, stagingReservation);
 
-        for(int i = 0 ; i < 3; i++){
-            auto pos = static_cast<Vertex*>(desc.data)[i].pos;
-            std::cout << pos.x << " "  << pos.y << std::endl;
+            vk->copyDataToBuffer({
+                .memory = stagingReservation.buffer->getMemory(),
+                .offset = stagingReservation.offset,
+                .size = desc.dataSize,
+                .data = desc.data,
+            });
+
+            copyBuffer({
+                .src = stagingHandle,
+                .dst = resHandle,
+                .buffer = transferCommandBuffer
+            });
+
+            geo.buffers = {resHandle};
         }
 
-        vk->copyDataToBuffer({
-            .memory = reservation.buffer->getMemory(),
-            .offset = reservation.offset,
-            .size = desc.dataSize,
-            .data = desc.data,
-        });
-
-        Geometry geo = {
-            .reservations = {resHandle},
-            .vertexInfo = desc.vertexInfo,
-            .vertexSize = desc.vertexSize
-        };
+        geo.vertexInfo = desc.vertexInfo;
+        geo.vertexSize = desc.vertexSize;
 
         return geometryPool.set(geo);
     }
@@ -506,9 +555,9 @@ namespace boitatah
         return backBufferManager->getRenderPass();
     }
 
-    Handle<RTCmdBuffers> Renderer::createRenderTargetCmdData()
+    Handle<RenderTargetCmdBuffers> Renderer::createRenderTargetCmdData()
     {
-        RTCmdBuffers sync{
+        RenderTargetCmdBuffers sync{
             .drawBuffer = allocateCommandBuffer({.count = 1,
                                                  .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                                                  .type = COMMAND_BUFFER_TYPE::GRAPHICS}),
@@ -547,6 +596,10 @@ namespace boitatah
         return bufferReservPool.set(reservation);
     }
 
+    void Renderer::unreserveBuffer(Handle<BufferReservation> &reservation)
+    {
+    }
+
     Buffer *Renderer::findOrCreateCompatibleBuffer(const BufferCompatibility &compatibility)
     {
         // Find buffer
@@ -565,7 +618,7 @@ namespace boitatah
                 .sharing = compatibility.sharing,
             });
 
-            //return reference
+            // return reference
             return buffer;
         }
     }
@@ -623,7 +676,7 @@ namespace boitatah
 
             destroyRenderPass(framebuffer.renderpass);
 
-            RTCmdBuffers data;
+            RenderTargetCmdBuffers data;
             if (rtCmdPool.clear(framebuffer.cmdBuffers, data))
                 vk->destroyRenderTargetCmdData(data);
 

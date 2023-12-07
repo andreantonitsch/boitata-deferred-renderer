@@ -17,9 +17,6 @@ namespace boitatah
             .sharing = desc.sharing,
         });
         alignment = reqs.alignment;
-        
-
-        std::cout << "got requirements " << reqs.alignment << std::endl;
 
         // initialize the allocator
         allocator = new BufferAllocator({.alignment = alignment,
@@ -27,18 +24,11 @@ namespace boitatah
                                          .height = static_cast<uint32_t>(std::bit_width(desc.partitions)) - 1u,
                                          });
 
-        std::cout << "created allocator " << allocator->getSize() << std::endl;
-
-
         auto objs = this->vulkan->createBuffer({
             .size = allocator->getSize(),
             .usage = desc.usage,
             .sharing = desc.sharing,
         });
-
-        std::cout << "created final buffer " << std::endl;
-
-
 
         actualSize = objs.actualSize;
         buffer = objs.buffer;
@@ -68,9 +58,6 @@ namespace boitatah
 
         reservation.reservedBlock = blockHandle;
         reservation.requestSize = request;
-        
-        std::cout << "RESERVATION " << reservation.offset << " " <<
-        reservation.size << " " <<reservation.requestSize <<std::endl; 
 
         return reservation;
     }
