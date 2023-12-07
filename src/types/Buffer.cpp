@@ -30,6 +30,8 @@ namespace boitatah
             .sharing = desc.sharing,
         });
 
+        sharing = desc.sharing;
+        usage = desc.usage;
         actualSize = objs.actualSize;
         buffer = objs.buffer;
         memory = objs.memory;
@@ -63,8 +65,10 @@ namespace boitatah
     }
     bool Buffer::checkCompatibility(const BufferCompatibility &compatibility)
     {
+        std::cout << " testing compatibility " << static_cast<int>(usage) <<
+        " " << static_cast<int>(compatibility.usage) << std::endl;
         return usage == compatibility.usage && 
-        allocator->freeSpace() > compatibility.requestSize;
+        allocator->freeSpace() >= compatibility.requestSize;
     }
     VkBuffer Buffer::getBuffer()
     {

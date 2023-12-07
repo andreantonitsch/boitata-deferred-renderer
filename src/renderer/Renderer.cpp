@@ -319,6 +319,7 @@ namespace boitatah
         if(!bufferReservPool.get(command.dst, dstReservation))
             throw std::runtime_error("failed to copy buffer");
 
+        //vk->waitIdle();
         vk->waitForFence(transferFence);
         vk->beginCmdBuffer(command.buffer.buffer);
 
@@ -519,11 +520,17 @@ namespace boitatah
                 .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
             });
 
-            geo.buffers = {bufferHandle};
+            geo.buffers.push_back(bufferHandle);
         }
-
-        //if (desc.)
-
+        std::cout << "copied vertex buffer " << std::endl;
+        if (desc.indexCount != 0){
+            geo.indexBuffer = uploadBuffer({
+                .dataSize = static_cast<uint32_t>(desc.indexCount * sizeof(uint32_t)),
+                .data = desc.indexData,
+                .usage = BUFFER_USAGE::TRANSFER_DST_INDEX
+            });
+        }
+        std::cout << "copied index buffer " << std::endl;
         geo.vertexInfo = desc.vertexInfo;
         geo.vertexSize = desc.vertexSize;
 
@@ -565,11 +572,12 @@ namespace boitatah
 
     Handle<BufferReservation> Renderer::reserveBuffer(const BufferReservationRequest &request)
     {
+        std::cout << "Reserving buffer " << request.request << " usage "<< static_cast<int>(request.usage) << std::endl;
         // Find Compatible Buffer
         Buffer *buffer = findOrCreateCompatibleBuffer({.requestSize = request.request,
                                                        .usage = request.usage,
                                                        .sharing = request.sharing});
-
+        std::cout << " reserving in chosen / created buffer " << std::endl;
         // allocate in buffer
         BufferReservation reservation = buffer->reserve(request.request);
 
@@ -578,14 +586,17 @@ namespace boitatah
 
     Handle<BufferReservation> Renderer::uploadBuffer(const BufferUploadDesc &desc)
     {
-
+        std::cout << "Uploading buffer " << desc.dataSize << " usage "<< static_cast<int>(desc.usage) <<\
+        " data " << desc.data <<  std::endl;
         Handle<BufferReservation> stagingHandle = reserveBuffer({.request = desc.dataSize,
                                                                     .usage = BUFFER_USAGE::TRANSFER_SRC,
                                                                     .sharing = SHARING_MODE::CONCURRENT});
-
+        std::cout << " reserved staging buffer " << std::endl;
         Handle<BufferReservation> resHandle = reserveBuffer({.request = desc.dataSize,
                                                                 .usage = desc.usage,
                                                                 .sharing = SHARING_MODE::CONCURRENT});
+        
+        std::cout << " reserved destination buffer " << std::endl;
 
         if (resHandle.isNull() || stagingHandle.isNull())
             return Handle<BufferReservation>();
@@ -593,12 +604,16 @@ namespace boitatah
         BufferReservation stagingReservation;
         bufferReservPool.get(stagingHandle, stagingReservation);
 
+        std::cout << " reserved buffers " << std::endl;
+
         vk->copyDataToBuffer({
             .memory = stagingReservation.buffer->getMemory(),
             .offset = stagingReservation.offset,
             .size = desc.dataSize,
             .data = desc.data,
         });
+
+        std::cout << " copied data to buffer " << std::endl;
 
         copyBuffer({
             .src = stagingHandle,
@@ -618,6 +633,7 @@ namespace boitatah
 
     Buffer *Renderer::findOrCreateCompatibleBuffer(const BufferCompatibility &compatibility)
     {
+        std::cout << " finding compatible buffer " << std::endl;
         // Find buffer
         uint32_t bufferIndex = findCompatibleBuffer(compatibility);
         if (bufferIndex != UINT32_MAX)
@@ -627,13 +643,16 @@ namespace boitatah
         }
         else
         {
+            std::cout << "   finding compatible buffer failed " << std::endl;
+            std::cout << "   creating compatible buffer failed " << std::endl;
+            std::cout << "   request " << compatibility.requestSize << " usage " << static_cast<int>(compatibility.usage) << std::endl;
             Buffer *buffer = createBuffer({
                 .estimatedElementSize = compatibility.requestSize,
                 .partitions = 1 << 10,
                 .usage = compatibility.usage,
                 .sharing = compatibility.sharing,
             });
-
+            std::cout << "    buffer created"  << std::endl;
             // return reference
             return buffer;
         }

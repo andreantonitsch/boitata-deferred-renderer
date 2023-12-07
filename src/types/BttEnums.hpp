@@ -76,9 +76,12 @@ namespace boitatah
     enum class BUFFER_USAGE
     {
         VERTEX = 1,
-        TRANSFER_SRC = 2,
-        TRANSFER_DST = 3,
-        TRANSFER_DST_VERTEX = 4,
+        INDEX = 2,
+        TRANSFER_SRC = 3,
+        TRANSFER_DST = 4,
+        TRANSFER_DST_VERTEX = 5,
+        TRANSFER_DST_INDEX = 6,
+
     };
 
     enum class MEMORY_PROPERTY
@@ -330,6 +333,8 @@ namespace boitatah
         {
         case BUFFER_USAGE::VERTEX:
             return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        case BUFFER_USAGE::INDEX:
+            return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         case BUFFER_USAGE::TRANSFER_DST:
             return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
@@ -339,6 +344,9 @@ namespace boitatah
         case BUFFER_USAGE::TRANSFER_DST_VERTEX:
             return VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        case BUFFER_USAGE::TRANSFER_DST_INDEX:
+            return VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                   VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         default:
             return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         }

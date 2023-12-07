@@ -223,9 +223,11 @@ void boitatah::vk::Vulkan::waitIdle()
 
 void boitatah::vk::Vulkan::waitForFence(VkFence &fence)
 {
+    std::cout << " waiting for fence " << std::endl;
     VkResult result = vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
     if (result != VK_SUCCESS)
         std::cout << "wait for fence failed " << result << std::endl;
+    std::cout << " waited for fence " << std::endl;
     vkResetFences(device, 1, &fence);
 }
 

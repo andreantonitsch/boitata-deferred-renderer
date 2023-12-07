@@ -15,8 +15,8 @@ namespace boitatah
 
         leafQuant = size / partitionSize;
 
-        blocks.resize(leafQuant * 2 - 1);
-        nodes.resize(leafQuant * 2 - 1);
+        blocks.resize(leafQuant * 2 );
+        nodes.resize(leafQuant * 2 );
 
         for (uint32_t i = 0; i < blocks.size(); i++)
         {
@@ -58,15 +58,17 @@ namespace boitatah
 
     Handle<Block> BufferAllocator::allocate(uint32_t request)
     {
+        // << "allocating in allocator" << std::endl;
         uint32_t available_index = findFreeNode(request);
         // std::cout << "available node " << available_index << std::endl;
         //  failure case. Full tree
+        //std::cout << "allocated in allocator" << std::endl;
         if (available_index == UINT32_MAX)
             return Handle<Block>();
 
         nodes[available_index].occupation = FULL;
         upstreamOccupationCorrect(available_index);
-
+        //std::cout << "allocator corrected" << std::endl;
         occupiedSpace += blocks[available_index].size;
 
         return blockPool.set(blocks[available_index]);
@@ -105,7 +107,7 @@ namespace boitatah
         uint32_t depth = height; // start at bottom to figure out correct depth
         // (2^level) * partitionSize  < request 2^(level-1) * partitionSize
         uint32_t fitSize = partitionSize << (height - depth);
-        while (fitSize <= request)
+        while (fitSize < request)
         {
             depth--;
             fitSize = partitionSize << (height - depth);
@@ -232,9 +234,10 @@ namespace boitatah
 
     uint32_t BufferAllocator::findFreeNode(uint32_t request)
     {
-        // std::cout << "requested == "<< request << std::endl;
+        //std::cout << "requested == "<< request << std::endl;
         uint32_t fitSize = getMinimunFitSize(request);
-        // std:: cout << "minimum fit size == " << fitSize << std::endl;
+        //std:: cout << "minimum fit size == " << fitSize <<
+        //" partition size == " << partitionSize << std::endl;
 
         std::vector<uint32_t> nodeCandidates{};
         nodeCandidates.push_back(0); // root
@@ -246,7 +249,7 @@ namespace boitatah
 
             uint32_t i = nodeCandidates.back();
             nodeCandidates.pop_back();
-
+            //std::cout << "node : " << i << std::endl;
             // fits but block is full
             if (nodes[i].occupation == FULL)
             {
@@ -263,7 +266,7 @@ namespace boitatah
             if (nodes[i].occupation == FREE &&
                 blocks[i].size == fitSize)
             {
-                // std::cout << "Found a valid index" << std::endl;
+            //    std::cout << "Found a valid index" << std::endl;
                 chosenIndex = i;
                 break;
             }
