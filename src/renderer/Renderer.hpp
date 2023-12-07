@@ -94,6 +94,8 @@ namespace boitatah
 
         Buffer *createBuffer(const BufferDesc &desc);
         Handle<BufferReservation> reserveBuffer(const BufferReservationRequest &request);
+        Handle<BufferReservation> uploadBuffer(const BufferUploadDesc& desc);
+        
         void unreserveBuffer(Handle<BufferReservation> &reservation);
         
         Handle<RenderPass> getBackBufferRenderPass();

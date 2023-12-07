@@ -511,38 +511,18 @@ namespace boitatah
     Handle<Geometry> Renderer::createGeometry(const GeometryDesc &desc)
     {
         Geometry geo{};
-        if (desc.dataSize != 0)
+        if (desc.vertexDataSize != 0)
         {
-
-            Handle<BufferReservation> stagingHandle = reserveBuffer({.request = desc.dataSize,
-                                                                     .usage = BUFFER_USAGE::TRANSFER_SRC,
-                                                                     .sharing = SHARING_MODE::CONCURRENT});
-
-            Handle<BufferReservation> resHandle = reserveBuffer({.request = desc.dataSize,
-                                                                 .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
-                                                                 .sharing = SHARING_MODE::CONCURRENT});
-
-            if (resHandle.isNull() || stagingHandle.isNull())
-                return Handle<Geometry>();
-
-            BufferReservation stagingReservation;
-            bufferReservPool.get(stagingHandle, stagingReservation);
-
-            vk->copyDataToBuffer({
-                .memory = stagingReservation.buffer->getMemory(),
-                .offset = stagingReservation.offset,
-                .size = desc.dataSize,
-                .data = desc.data,
+            Handle<BufferReservation> bufferHandle = uploadBuffer({
+                .dataSize = desc.vertexDataSize,
+                .data = desc.vertexData,
+                .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
             });
 
-            copyBuffer({
-                .src = stagingHandle,
-                .dst = resHandle,
-                .buffer = transferCommandBuffer
-            });
-
-            geo.buffers = {resHandle};
+            geo.buffers = {bufferHandle};
         }
+
+        //if (desc.)
 
         geo.vertexInfo = desc.vertexInfo;
         geo.vertexSize = desc.vertexSize;
@@ -594,6 +574,42 @@ namespace boitatah
         BufferReservation reservation = buffer->reserve(request.request);
 
         return bufferReservPool.set(reservation);
+    }
+
+    Handle<BufferReservation> Renderer::uploadBuffer(const BufferUploadDesc &desc)
+    {
+
+        Handle<BufferReservation> stagingHandle = reserveBuffer({.request = desc.dataSize,
+                                                                    .usage = BUFFER_USAGE::TRANSFER_SRC,
+                                                                    .sharing = SHARING_MODE::CONCURRENT});
+
+        Handle<BufferReservation> resHandle = reserveBuffer({.request = desc.dataSize,
+                                                                .usage = desc.usage,
+                                                                .sharing = SHARING_MODE::CONCURRENT});
+
+        if (resHandle.isNull() || stagingHandle.isNull())
+            return Handle<BufferReservation>();
+
+        BufferReservation stagingReservation;
+        bufferReservPool.get(stagingHandle, stagingReservation);
+
+        vk->copyDataToBuffer({
+            .memory = stagingReservation.buffer->getMemory(),
+            .offset = stagingReservation.offset,
+            .size = desc.dataSize,
+            .data = desc.data,
+        });
+
+        copyBuffer({
+            .src = stagingHandle,
+            .dst = resHandle,
+            .buffer = transferCommandBuffer
+        });
+
+        unreserveBuffer(stagingHandle);
+
+
+        return resHandle;
     }
 
     void Renderer::unreserveBuffer(Handle<BufferReservation> &reservation)

@@ -47,6 +47,12 @@ namespace boitatah
         SHARING_MODE sharing;
     };
 
+    struct BufferUploadDesc{
+        uint32_t dataSize;
+        void* data;
+        BUFFER_USAGE usage;
+    };
+
     class Buffer
     {
     public:

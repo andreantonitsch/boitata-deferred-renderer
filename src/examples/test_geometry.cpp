@@ -23,11 +23,7 @@ int main()
                                    .dimensions = {windowWidth, windowHeight}}});
 
     // Pipeline Layout for the Shader.
-    Handle<PipelineLayout> layout = r.createPipelineLayout(
-        {
-        
-        }
-    );
+    Handle<PipelineLayout> layout = r.createPipelineLayout({});
 
     // Shader Description
     Handle<Shader> shader = r.createShader({
@@ -45,13 +41,15 @@ int main()
                             .offset = 8}}}}
     });
 
-    std::vector<Vertex> triVerts = triangleVertices();
+    GeometryData triGeometry = triangleVertices();
 
     Handle<Geometry> geometry = r.createGeometry({
-        .vertexInfo = {triVerts.size(), 0},
+        .vertexInfo = {triGeometry.vertices.size(), 0},
         .vertexSize = static_cast<uint32_t>(sizeof(Vertex)),
-        .dataSize = static_cast<uint32_t>(sizeof(Vertex)) * triVerts.size(),
-        .data = triVerts.data(),
+        .vertexDataSize = static_cast<uint32_t>(sizeof(Vertex)) * triGeometry.vertices.size(),
+        .vertexData = triGeometry.vertices.data(),
+        .indexCount = triGeometry.indices.size(),
+        .indexData = triGeometry.indices.data(),
     });
 
     SceneNode triangle = {
