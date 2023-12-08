@@ -39,6 +39,10 @@ namespace boitatah
         VkBuffer vertexBuffer;
         uint32_t vertexBufferOffset;
 
+        VkBuffer indexBuffer;
+        uint32_t indexBufferOffset;
+        uint32_t indexCount;
+
         // count, first
         glm::uvec2 vertexInfo;
         glm::uvec2 instanceInfo;

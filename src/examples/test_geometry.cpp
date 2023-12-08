@@ -41,15 +41,16 @@ int main()
                             .offset = 8}}}}
     });
 
-    GeometryData triGeometry = triangleVertices();
+    //GeometryData geometry = squareVertices();
+    GeometryData geometryData = planeVertices(1.0, 1.0, 500, 500);
 
     Handle<Geometry> geometry = r.createGeometry({
-        .vertexInfo = {triGeometry.vertices.size(), 0},
+        .vertexInfo = {geometryData.vertices.size(), 0},
         .vertexSize = static_cast<uint32_t>(sizeof(Vertex)),
-        .vertexDataSize = static_cast<uint32_t>(sizeof(Vertex)) * triGeometry.vertices.size(),
-        .vertexData = triGeometry.vertices.data(),
-        .indexCount = triGeometry.indices.size(),
-        .indexData = triGeometry.indices.data(),
+        .vertexDataSize = static_cast<uint32_t>(sizeof(Vertex)) * geometryData.vertices.size(),
+        .vertexData = geometryData.vertices.data(),
+        .indexCount = geometryData.indices.size(),
+        .indexData = geometryData.indices.data(),
     });
 
     SceneNode triangle = {

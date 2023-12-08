@@ -119,8 +119,10 @@ namespace boitatah
 
         BufferReservation vertexBufferReservation;
         Handle<BufferReservation> vertexBufferHandle = geom.buffers.size() > 0 ? geom.buffers[0] : Handle<BufferReservation>();
-
         bufferReservPool.get(vertexBufferHandle, vertexBufferReservation);
+
+        BufferReservation indexBufferReservation;
+        bufferReservPool.get(geom.indexBuffer, indexBufferReservation);
 
         vk->waitForFrame(buffers);
 
@@ -136,8 +138,14 @@ namespace boitatah
                 static_cast<int>(image.dimensions.x),
                 static_cast<int>(image.dimensions.y),
             },
+
             .vertexBuffer = vertexBufferHandle.isNull() ? VK_NULL_HANDLE : vertexBufferReservation.buffer->getBuffer(),
             .vertexBufferOffset = vertexBufferReservation.offset,
+            
+            .indexBuffer = geom.indexBuffer.isNull() ? VK_NULL_HANDLE : indexBufferReservation.buffer->getBuffer(),
+            .indexBufferOffset = indexBufferReservation.offset,
+            .indexCount = geom.indiceCount,
+
             .vertexInfo = geom.vertexInfo,
             .instanceInfo = {1, 0}, // scene.instanceInfo
         });
@@ -211,7 +219,6 @@ namespace boitatah
 
         for (const auto &node : nodes)
         {
-            // std::cout << node.name << std::endl;
             if (node.shader.isNull())
                 continue;
             renderToRenderTarget(node, rendertarget);
@@ -265,6 +272,9 @@ namespace boitatah
             .pipeline = command.shader.pipeline,
             .vertexBuffer = command.vertexBuffer,
             .vertexBufferOffset = command.vertexBufferOffset,
+            .indexBuffer = command.indexBuffer,
+            .indexBufferOffset = command.indexBufferOffset,
+            .indexCount = command.indexCount,
             .areaDims = {static_cast<int>(command.dimensions.x),
                          static_cast<int>(command.dimensions.y)},
             .areaOffset = {0, 0},
@@ -533,6 +543,7 @@ namespace boitatah
         std::cout << "copied index buffer " << std::endl;
         geo.vertexInfo = desc.vertexInfo;
         geo.vertexSize = desc.vertexSize;
+        geo.indiceCount = desc.indexCount;
 
         return geometryPool.set(geo);
     }
@@ -572,12 +583,10 @@ namespace boitatah
 
     Handle<BufferReservation> Renderer::reserveBuffer(const BufferReservationRequest &request)
     {
-        std::cout << "Reserving buffer " << request.request << " usage "<< static_cast<int>(request.usage) << std::endl;
         // Find Compatible Buffer
         Buffer *buffer = findOrCreateCompatibleBuffer({.requestSize = request.request,
                                                        .usage = request.usage,
                                                        .sharing = request.sharing});
-        std::cout << " reserving in chosen / created buffer " << std::endl;
         // allocate in buffer
         BufferReservation reservation = buffer->reserve(request.request);
 
@@ -586,17 +595,14 @@ namespace boitatah
 
     Handle<BufferReservation> Renderer::uploadBuffer(const BufferUploadDesc &desc)
     {
-        std::cout << "Uploading buffer " << desc.dataSize << " usage "<< static_cast<int>(desc.usage) <<\
-        " data " << desc.data <<  std::endl;
         Handle<BufferReservation> stagingHandle = reserveBuffer({.request = desc.dataSize,
                                                                     .usage = BUFFER_USAGE::TRANSFER_SRC,
                                                                     .sharing = SHARING_MODE::CONCURRENT});
-        std::cout << " reserved staging buffer " << std::endl;
+
         Handle<BufferReservation> resHandle = reserveBuffer({.request = desc.dataSize,
                                                                 .usage = desc.usage,
                                                                 .sharing = SHARING_MODE::CONCURRENT});
         
-        std::cout << " reserved destination buffer " << std::endl;
 
         if (resHandle.isNull() || stagingHandle.isNull())
             return Handle<BufferReservation>();
@@ -604,16 +610,12 @@ namespace boitatah
         BufferReservation stagingReservation;
         bufferReservPool.get(stagingHandle, stagingReservation);
 
-        std::cout << " reserved buffers " << std::endl;
-
         vk->copyDataToBuffer({
             .memory = stagingReservation.buffer->getMemory(),
             .offset = stagingReservation.offset,
             .size = desc.dataSize,
             .data = desc.data,
         });
-
-        std::cout << " copied data to buffer " << std::endl;
 
         copyBuffer({
             .src = stagingHandle,
@@ -633,7 +635,6 @@ namespace boitatah
 
     Buffer *Renderer::findOrCreateCompatibleBuffer(const BufferCompatibility &compatibility)
     {
-        std::cout << " finding compatible buffer " << std::endl;
         // Find buffer
         uint32_t bufferIndex = findCompatibleBuffer(compatibility);
         if (bufferIndex != UINT32_MAX)
@@ -643,16 +644,12 @@ namespace boitatah
         }
         else
         {
-            std::cout << "   finding compatible buffer failed " << std::endl;
-            std::cout << "   creating compatible buffer failed " << std::endl;
-            std::cout << "   request " << compatibility.requestSize << " usage " << static_cast<int>(compatibility.usage) << std::endl;
             Buffer *buffer = createBuffer({
                 .estimatedElementSize = compatibility.requestSize,
                 .partitions = 1 << 10,
                 .usage = compatibility.usage,
                 .sharing = compatibility.sharing,
             });
-            std::cout << "    buffer created"  << std::endl;
             // return reference
             return buffer;
         }

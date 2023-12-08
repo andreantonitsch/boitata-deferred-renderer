@@ -13,6 +13,13 @@ namespace boitatah
 
         size = desc.partitionSize * (1u << height);
 
+        //while buffer is larger than 100mb
+        while(size > 100000000){
+            height--;
+            size = desc.partitionSize * (1u << height);
+        }
+        //size = std::max(size, partitionSize);
+
         leafQuant = size / partitionSize;
 
         blocks.resize(leafQuant * 2 );

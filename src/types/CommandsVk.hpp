@@ -87,6 +87,10 @@ namespace boitatah::vk
         VkBuffer vertexBuffer;
         uint32_t vertexBufferOffset;
 
+        VkBuffer indexBuffer;
+        uint32_t indexBufferOffset;
+        uint32_t indexCount;
+
         glm::ivec2 areaDims;
         glm::ivec2 areaOffset;
         uint32_t vertexCount;

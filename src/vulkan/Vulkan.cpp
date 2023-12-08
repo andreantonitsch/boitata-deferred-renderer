@@ -462,11 +462,17 @@ void boitatah::vk::Vulkan::recordDrawCommand(const DrawCommandVk &command)
         vkCmdBindVertexBuffers(command.drawBuffer, 0, 1, vertexBuffers, offsets);
     }
 
-    vkCmdDraw(command.drawBuffer,
-              command.vertexCount,
-              command.instaceCount,
-              command.firstVertex,
-              command.firstInstance);
+    if(command.indexBuffer != VK_NULL_HANDLE){
+        vkCmdBindIndexBuffer(command.drawBuffer, command.indexBuffer,
+        command.indexBufferOffset, VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(command.drawBuffer, command.indexCount,
+                command.instaceCount, command.firstVertex, 
+                command.vertexBufferOffset, command.firstInstance);
+    }else{
+
+        vkCmdDraw(command.drawBuffer, command.vertexCount, command.instaceCount,
+                command.firstVertex, command.firstInstance);
+    }
 
     vkCmdEndRenderPass(command.drawBuffer);
     if (vkEndCommandBuffer(command.drawBuffer) != VK_SUCCESS)
@@ -884,7 +890,6 @@ boitatah::vk::BufferVkData boitatah::vk::Vulkan::getBufferAlignmentMemoryType(co
 
     if (desc.sharing == SHARING_MODE::CONCURRENT)
     {
-        std::cout << "Sharing buffer" << std::endl;
         dummyCreate.queueFamilyIndexCount = 2;
         dummyCreate.pQueueFamilyIndices = indexes.data();
     }
