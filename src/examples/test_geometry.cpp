@@ -17,9 +17,9 @@ int main()
     Renderer r({.windowDimensions = {windowWidth, windowHeight},
                 .appName = "Test Frame Buffer",
                 .debug = true,
-                .swapchainFormat = FORMAT::BGRA_8_SRGB,
+                .swapchainFormat = FORMAT::BGRA_8_UNORM,
                 .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR},
-                                   .attachmentFormats = {FORMAT::RGBA_8_SRGB},
+                                   .attachmentFormats = {FORMAT::BGRA_8_UNORM},
                                    .dimensions = {windowWidth, windowHeight}}});
 
     // Pipeline Layout for the Shader.
@@ -38,18 +38,19 @@ int main()
             .attributes = {{.format = FORMAT::RG_32_SFLOAT,
                            .offset = 0},
                            {.format = FORMAT::RGB_32_SFLOAT,
-                            .offset = 8}}}}
+                            .offset = formatSize(FORMAT::RG_32_SFLOAT)}}}}
     });
 
-    //GeometryData geometry = squareVertices();
-    GeometryData geometryData = planeVertices(1.0, 1.0, 500, 500);
+    //GeometryData geometryData = triangleVertices();
+    //GeometryData geometryData = squareVertices();
+    GeometryData geometryData = planeVertices(1.0, 1.0, 100, 200);
 
     Handle<Geometry> geometry = r.createGeometry({
         .vertexInfo = {geometryData.vertices.size(), 0},
         .vertexSize = static_cast<uint32_t>(sizeof(Vertex)),
-        .vertexDataSize = static_cast<uint32_t>(sizeof(Vertex)) * geometryData.vertices.size(),
+        .vertexDataSize = static_cast<uint32_t>(sizeof(Vertex) * geometryData.vertices.size()),
         .vertexData = geometryData.vertices.data(),
-        .indexCount = geometryData.indices.size(),
+        .indexCount = static_cast<uint32_t>(geometryData.indices.size()),
         .indexData = geometryData.indices.data(),
     });
 

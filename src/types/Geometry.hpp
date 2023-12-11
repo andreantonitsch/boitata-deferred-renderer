@@ -58,8 +58,8 @@ namespace boitatah
             .vertices = {
                 {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
                 {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-                {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-                {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}},
+                {{0.5f, 0.5f}, {0.0f, 0.0f, 0.0f}},
+                {{-0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}}},
             .indices = {0, 1, 2, 2, 3, 0},
         };
     }
@@ -73,14 +73,14 @@ namespace boitatah
         std::vector<uint32_t> indices;
 
         float w = width / widthSegments;
-        float h = width / heightSegments;
-        for(size_t i = 0; i <= widthSegments; i ++ ){
-            for(size_t j = 0; j <= heightSegments; j++){
-                float iw = static_cast<float>(i) / widthSegments;
-                float jh = static_cast<float>(j) / heightSegments;
+        float h = height / heightSegments;
+        for(size_t j = 0; j <= heightSegments; j++){
+            for(size_t i = 0; i <= widthSegments; i ++ ){
+                float iw = i * w;
+                float jh = j * h;
 
                 vertices.push_back({
-                    {i * w - (0.5 * width), j * h - (0.5 * height)}, 
+                    {iw - (0.5 * width), jh - (0.5 * height)}, 
                     {iw, jh, 0.0f}
                 });
             }
@@ -90,14 +90,14 @@ namespace boitatah
             for(size_t j = 0; j < heightSegments; j++){
 
                 
-                indices.push_back(j * widthSegments + i);
-                indices.push_back((j+1) * widthSegments + i + 1);
-                indices.push_back(j * widthSegments + i + 1);
+                indices.push_back(j * (widthSegments+1) + i);
+                indices.push_back(j * (widthSegments+1) + i + 1);
+                indices.push_back((j+1) * (widthSegments+1) + i);
 
 
-                indices.push_back(j * widthSegments + i + 1);
-                indices.push_back((j+1) * widthSegments + i+ 1);
-                indices.push_back((j+1) * widthSegments + i + 2);
+                indices.push_back(j * (widthSegments+1) + i + 1);
+                indices.push_back((j+1) * (widthSegments+1) + i + 1);
+                indices.push_back((j+1) *(widthSegments+1) + i);
             }
         }
         
