@@ -5,6 +5,7 @@
 #include "../types/Shader.hpp"
 #include "../utils/utils.hpp"
 #include "../collections/Pool.hpp"
+#include "../renderer/Camera.hpp"
 
 using namespace boitatah;
 
@@ -26,24 +27,15 @@ int main()
     Handle<PipelineLayout> layout = r.createPipelineLayout({});
 
     // Shader Description
-    Handle<Shader> shader = r.createShader({
-        .name = "test",
-        .vert = {
-            .byteCode = utils::readFile("./src/18_vert.spv"),
-            .entryFunction = "main"},
-        .frag = {.byteCode = utils::readFile("./src/18_frag.spv"), .entryFunction = "main"},
-        .layout = layout,
-        .bindings={{
-            .stride = 20,
-            .attributes = {{.format = FORMAT::RG_32_SFLOAT,
-                           .offset = 0},
-                           {.format = FORMAT::RGB_32_SFLOAT,
-                            .offset = formatSize(FORMAT::RG_32_SFLOAT)}}}}
-    });
+    Handle<Shader> shader = r.createShader({.name = "test",
+                                            .vert = {
+                                                .byteCode = utils::readFile("./src/18_vert.spv"),
+                                                .entryFunction = "main"},
+                                            .frag = {.byteCode = utils::readFile("./src/18_frag.spv"), .entryFunction = "main"},
+                                            .layout = layout,
+                                            .bindings = {{.stride = 20, .attributes = {{.format = FORMAT::RG_32_SFLOAT, .offset = 0}, {.format = FORMAT::RGB_32_SFLOAT, .offset = formatSize(FORMAT::RG_32_SFLOAT)}}}}});
 
-    //GeometryData geometryData = triangleVertices();
-    //GeometryData geometryData = squareVertices();
-    GeometryData geometryData = planeVertices(1.0, 1.0, 100, 200);
+    GeometryData geometryData = triangleVertices();
 
     Handle<Geometry> geometry = r.createGeometry({
         .vertexInfo = {geometryData.vertices.size(), 0},
@@ -58,11 +50,14 @@ int main()
         .name = "triangle",
         .geometry = geometry,
         .shader = shader,
-        });
+    });
 
     // Scene Description.
     SceneNode scene({.name = "root scene"});
     scene.add(&triangle);
+
+    Camera camera({.aspect = static_cast<float>(windowWidth) / windowHeight});
+    
     boitatah::utils::Timewatch timewatch(1000);
 
     while (!r.isWindowClosed())

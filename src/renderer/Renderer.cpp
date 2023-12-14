@@ -163,6 +163,16 @@ namespace boitatah
         presentRenderTarget(backbuffer);
     }
 
+    void Renderer::render(SceneNode &scene, Camera &camera)
+    {
+        auto backbuffer = backBufferManager->getNext();
+
+        renderSceneNode()
+
+        presentRenderTarget(backbuffer);
+
+    }
+
     void Renderer::presentRenderTarget(Handle<RenderTarget> &rendertarget)
     {
         window->windowEvents();
@@ -210,7 +220,7 @@ namespace boitatah
 
     void Renderer::renderSceneNode(SceneNode &scene, Handle<RenderTarget> &rendertarget)
     {
-        std::vector<SceneNode> nodes;
+        std::vector<SceneNode*> nodes;
         scene.sceneAsList(nodes);
 
         // TODO cullings and whatever
@@ -219,10 +229,20 @@ namespace boitatah
 
         for (const auto &node : nodes)
         {
-            if (node.shader.isNull())
+            if (node->shader.isNull())
                 continue;
-            renderToRenderTarget(node, rendertarget);
+            renderToRenderTarget(*node, rendertarget);
         }
+    }
+
+    void Renderer::renderSceneNode(SceneNode &scene, Camera &camera, Handle<RenderTarget> &rendertarget)
+    {
+        std::vector<SceneNode*> nodes;
+        scene.sceneAsList(nodes);
+
+        // TODO cullings and whatever
+        // TRANSFORM UPDATES
+        // ETC
     }
 
 #pragma endregion Rendering
@@ -665,16 +685,6 @@ namespace boitatah
         return UINT32_MAX;
     }
 
-    uint32_t Renderer::estimateNewBufferSize(const BufferCompatibility &compatibility)
-    {
-
-        if (compatibility.usage == BUFFER_USAGE::VERTEX)
-        {
-            return compatibility.requestSize * (1 << 10);
-        }
-
-        return 0;
-    }
 
 #pragma endregion Buffers
 

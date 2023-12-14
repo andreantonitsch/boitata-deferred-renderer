@@ -6,9 +6,11 @@ set(LIB_DR_SOURCES
             collections/PartitionList.cpp
             collections/BufferAllocator.cpp
             types/Buffer.cpp
-            types/BackBuffer.cpp
             types/Swapchain.cpp
+            renderer/Camera.cpp
+            renderer/BackBuffer.cpp
             renderer/Renderer.cpp
+            renderer/Camera.cpp
             renderer/Window.cpp
             vulkan/Vulkan.cpp
 )

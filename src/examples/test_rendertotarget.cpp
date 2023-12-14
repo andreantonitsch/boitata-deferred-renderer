@@ -64,12 +64,12 @@ int main()
 
     Handle<Geometry> geometry = r.createGeometry({.vertexInfo = {3, 0}});
 
-    SceneNode triangle = {
+    SceneNode triangle({
         .name = "triangle",
-        .shader = shader,
         .geometry = geometry,
+        .shader = shader,
         //.instanceInfo = {1, 0},
-        };
+        });
 
 
     boitatah::utils::Timewatch timewatch(100);

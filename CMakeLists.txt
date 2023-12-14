@@ -15,6 +15,8 @@ add_executable(test_rendertotarget src/examples/test_rendertotarget.cpp)
 add_executable(test_geometry src/examples/test_geometry.cpp)
 add_executable(test_partitionlist src/examples/test_partitionlist.cpp)
 add_executable(test_buffer_allocator src/examples/test_buffer_allocator.cpp)
+add_executable(test_scene_nodes src/examples/test_scene_nodes.cpp)
+add_executable(test_camera src/examples/test_camera.cpp)
 
 #-lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
 #include(FindVulkan)
@@ -34,4 +36,6 @@ target_link_libraries(test_rendertotarget ${LIBS})
 target_link_libraries(test_geometry ${LIBS})
 target_link_libraries(test_partitionlist ${LIBS})
 target_link_libraries(test_buffer_allocator ${LIBS})
+target_link_libraries(test_scene_nodes ${LIBS})
+target_link_libraries(test_camera ${LIBS})
 

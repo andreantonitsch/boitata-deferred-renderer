@@ -437,13 +437,6 @@ void boitatah::vk::Vulkan::recordDrawCommand(const DrawCommandVk &command)
         .clearValueCount = 1,
         .pClearValues = &clearColor,
     };
-
-    vkCmdBeginRenderPass(command.drawBuffer, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    vkCmdBindPipeline(command.drawBuffer,
-                      VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      command.pipeline);
-
     VkViewport viewport{
         .x = 0.0f,
         .y = 0.0f,
@@ -454,6 +447,13 @@ void boitatah::vk::Vulkan::recordDrawCommand(const DrawCommandVk &command)
     };
     vkCmdSetViewport(command.drawBuffer, 0, 1, &viewport);
     vkCmdSetScissor(command.drawBuffer, 0, 1, &scissor);
+
+    vkCmdBeginRenderPass(command.drawBuffer, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    vkCmdBindPipeline(command.drawBuffer,
+                      VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      command.pipeline);
+
 
     if (command.vertexBuffer != VK_NULL_HANDLE)
     {

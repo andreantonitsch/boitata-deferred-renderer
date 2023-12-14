@@ -9,8 +9,10 @@
 #include <string>
 #include <glm/vec2.hpp>
 
+#include "Camera.hpp"
+
 #include "../types/BackBufferDesc.hpp"
-#include "../types/BackBuffer.hpp"
+#include "BackBuffer.hpp"
 
 #include "../vulkan/Vulkan.hpp"
 #include "../types/BttEnums.hpp"
@@ -67,8 +69,11 @@ namespace boitatah
         // Render Methods
         void renderToRenderTarget(const SceneNode &scene, const Handle<RenderTarget> &rendertarget);
         void render(SceneNode &scene);
+        void render(SceneNode &scene, Camera &camera);
         void presentRenderTarget(Handle<RenderTarget> &rendertarget);
+        void writeDrawCommands(const SceneNode &object, const Handle<RenderTarget> &rendertarget);
         void renderSceneNode(SceneNode &scene, Handle<RenderTarget> &rendertarget);
+        void renderSceneNode(SceneNode &scene, Camera& camera, Handle<RenderTarget> &rendertarget);
 
         // Command Buffers
         CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
@@ -126,9 +131,6 @@ namespace boitatah
         // Buffers
         Buffer *findOrCreateCompatibleBuffer(const BufferCompatibility &compatibility);
         uint32_t findCompatibleBuffer(const BufferCompatibility &compatibility);
-        uint32_t estimateNewBufferSize(const BufferCompatibility &compatibility);
-
-        Buffer createStagingBuffer(const BufferDesc &desc);
 
         // Pools
         Pool<Shader> shaderPool = Pool<Shader>({.size = 10, .name = "shader pool"});
