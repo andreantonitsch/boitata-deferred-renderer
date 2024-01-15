@@ -81,6 +81,7 @@ namespace boitatah
         TRANSFER_DST = 4,
         TRANSFER_DST_VERTEX = 5,
         TRANSFER_DST_INDEX = 6,
+        UNIFORM_BUFFER = 7,
 
     };
 
@@ -347,6 +348,8 @@ namespace boitatah
         case BUFFER_USAGE::TRANSFER_DST_INDEX:
             return VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        case BUFFER_USAGE::UNIFORM_BUFFER:
+            return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
         default:
             return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         }

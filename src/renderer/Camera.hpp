@@ -18,7 +18,7 @@ namespace boitatah{
         float far = 100.0f;
         float near = 0.001f;
         float aspect = 16.0/10.0;
-        float fov = glm::radians(27);
+        float fov = glm::radians(27.0);
     };
 
     class Camera{

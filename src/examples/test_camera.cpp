@@ -62,7 +62,7 @@ int main()
 
     while (!r.isWindowClosed())
     {
-        r.render(scene);
+        r.render(scene, camera);
 
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
     }

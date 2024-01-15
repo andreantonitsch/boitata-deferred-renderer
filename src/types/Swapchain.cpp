@@ -208,9 +208,6 @@ namespace boitatah
         uint32_t formatCount;
         vkGetPhysicalDeviceSurfaceFormatsKHR(vulkan->getPhysicalDevice(), window->getSurface(), &formatCount, nullptr);
 
-//        if (options.useValidationLayers)
-//           std::cout << " AVAILABLE SURFACE FORMATS " << std::endl;
-
         if (formatCount != 0)
         {
             support.formats.resize(formatCount);
@@ -218,11 +215,6 @@ namespace boitatah
                                                  window->getSurface(),
                                                  &formatCount,
                                                  support.formats.data());
-
- //           for (const auto &format : support.formats)
-   //         {
- //               std::cout << " \tFORMAT :: " << format.format << std::endl;
- //           }
         }
 
         uint32_t presentModeCount;

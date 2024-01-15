@@ -30,7 +30,6 @@ namespace boitatah{
         VkSemaphore transferSem;
         VkFence inFlightFen;
     };
-
 }
 
 #endif //BOITATAH_COMMAND_BUFFER_HPP

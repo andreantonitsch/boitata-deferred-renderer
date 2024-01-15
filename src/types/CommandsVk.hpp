@@ -24,6 +24,24 @@ namespace boitatah::vk
 
     };
 
+    struct BeginCommandVk{
+        VkCommandBuffer commandBuffer;
+    };
+
+    struct BeginRenderpassCommandVk{
+        VkCommandBuffer commandBuffer;
+        VkRenderPass pass;
+        VkFramebuffer frameBuffer;
+
+        glm::vec4 clearColor;
+
+        glm::ivec2 scissorDims;
+        glm::ivec2 scissorOffset;
+
+        // glm::ivec2 viewportDims;
+        // glm::ivec2 viewportOffset;
+    };
+
     struct SubmitCommandVk
     {
         VkCommandBuffer commandBuffer;

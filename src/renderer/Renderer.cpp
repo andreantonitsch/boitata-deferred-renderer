@@ -31,9 +31,15 @@ namespace boitatah
         backBufferManager->setup(options.backBufferDesc);
 
         transferCommandBuffer = allocateCommandBuffer({.count = 1,
-                                                .level = COMMAND_BUFFER_LEVEL::PRIMARY,
-                                                .type = COMMAND_BUFFER_TYPE::TRANSFER});
+                                                       .level = COMMAND_BUFFER_LEVEL::PRIMARY,
+                                                       .type = COMMAND_BUFFER_TYPE::TRANSFER});
         transferFence = vk->createFence(true);
+
+        cameraUniforms = reserveBuffer({
+            .request = sizeof(FrameUniforms),
+            .usage = BUFFER_USAGE::UNIFORM_BUFFER,
+            .sharing = SHARING_MODE::CONCURRENT,
+        });
     }
 
     void Renderer::handleWindowResize()
@@ -141,7 +147,7 @@ namespace boitatah
 
             .vertexBuffer = vertexBufferHandle.isNull() ? VK_NULL_HANDLE : vertexBufferReservation.buffer->getBuffer(),
             .vertexBufferOffset = vertexBufferReservation.offset,
-            
+
             .indexBuffer = geom.indexBuffer.isNull() ? VK_NULL_HANDLE : indexBufferReservation.buffer->getBuffer(),
             .indexBufferOffset = indexBufferReservation.offset,
             .indexCount = geom.indiceCount,
@@ -153,7 +159,7 @@ namespace boitatah
         // vk->submitDrawCmdBuffer({.bufferData = buffers,
         //                          .submitType = COMMAND_BUFFER_TYPE::GRAPHICS});
         vk->submitDrawCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer,
-        .fence = buffers.inFlightFen});
+                                 .fence = buffers.inFlightFen});
     }
 
     void Renderer::render(SceneNode &scene)
@@ -163,15 +169,7 @@ namespace boitatah
         presentRenderTarget(backbuffer);
     }
 
-    void Renderer::render(SceneNode &scene, Camera &camera)
-    {
-        auto backbuffer = backBufferManager->getNext();
 
-        renderSceneNode()
-
-        presentRenderTarget(backbuffer);
-
-    }
 
     void Renderer::presentRenderTarget(Handle<RenderTarget> &rendertarget)
     {
@@ -190,7 +188,7 @@ namespace boitatah
             throw std::runtime_error("failed to framebuffer for Presentation");
 
         vk->waitForFrame(buffers);
-        //SubmitDrawCommand command{.bufferData = buffers, .submitType = COMMAND_BUFFER_TYPE::PRESENT};
+        // SubmitDrawCommand command{.bufferData = buffers, .submitType = COMMAND_BUFFER_TYPE::PRESENT};
         auto swapchainImage = swapchain->getNext(buffers.schainAcqSem);
 
         // failed to find swapchain image.
@@ -204,10 +202,11 @@ namespace boitatah
                                                     swapchainImage.image,
                                                     swapchainImage.sc,
                                                     swapchainImage.index,
-                                                    {.commandBuffer = buffers.transferBuffer.buffer,
-                                                    .waitSemaphore = buffers.schainAcqSem,
-                                                    .signalSemaphore = buffers.transferSem,
-                                                    .fence = buffers.inFlightFen,
+                                                    {
+                                                        .commandBuffer = buffers.transferBuffer.buffer,
+                                                        .waitSemaphore = buffers.schainAcqSem,
+                                                        .signalSemaphore = buffers.transferSem,
+                                                        .fence = buffers.inFlightFen,
                                                     });
 
         // If present was unsucessful we must remake the swapchain
@@ -220,7 +219,7 @@ namespace boitatah
 
     void Renderer::renderSceneNode(SceneNode &scene, Handle<RenderTarget> &rendertarget)
     {
-        std::vector<SceneNode*> nodes;
+        std::vector<SceneNode *> nodes;
         scene.sceneAsList(nodes);
 
         // TODO cullings and whatever
@@ -235,14 +234,73 @@ namespace boitatah
         }
     }
 
-    void Renderer::renderSceneNode(SceneNode &scene, Camera &camera, Handle<RenderTarget> &rendertarget)
+    void Renderer::render(SceneNode &scene, Camera &camera)
     {
-        std::vector<SceneNode*> nodes;
+        auto backbuffer = backBufferManager->getNext();
+
+        renderSceneNode(scene, camera, backbuffer);
+
+        presentRenderTarget(backbuffer);
+    }
+
+    void Renderer::renderSceneNode(SceneNode &scene, Camera &camera, Handle<RenderTarget> &rendertargetHandle)
+    {
+        std::vector<SceneNode *> nodes;
         scene.sceneAsList(nodes);
 
         // TODO cullings and whatever
         // TRANSFORM UPDATES
         // ETC
+
+        RenderTarget renderTarget;
+        renderTargetPool.get(rendertargetHandle, renderTarget);
+        RenderTargetCmdBuffers renderTargetBuffers;
+        rtCmdPool.get(renderTarget.cmdBuffers, renderTargetBuffers);
+        RenderPass pass;
+        renderpassPool.get(renderTarget.renderpass, pass);
+        Image image;
+        imagePool.get(renderTarget.attachments[0], image);
+        
+        // update camera uniforms
+        FrameUniforms frameUniforms ;
+        copyDataToBuffer({
+            .reservation = cameraUniforms,
+            .data = &frameUniforms,
+            .dataSize = sizeof(FrameUniforms)
+        });
+
+        beginBuffer({.buffer = renderTargetBuffers.drawBuffer});
+
+        beginRenderpass({
+            .commandBuffer = renderTargetBuffers.drawBuffer,
+            .pass = pass,
+            .target = renderTarget,
+
+            .clearColor = glm::vec4(0, 0, 0, 1),
+            .scissorDims = image.dimensions,
+            .scissorOffset = glm::vec2(0, 0),
+        });
+
+        // bind camera uniforms.
+        bindUniformsCommand({});
+
+        std::cout << "rendernode with camera" << std::endl;
+
+        // parallellizable?
+        for (const auto &node : nodes)
+        {
+            // if material changed,
+            //  bind pipeline
+
+            // bind object matrix
+            // push constant?
+            // draw object
+            if (node->shader.isNull())
+                continue;
+        }
+        // End Render Pass
+        // End Buffer
+        // Submit buffer
     }
 
 #pragma endregion Rendering
@@ -328,7 +386,7 @@ namespace boitatah
         if (!imagePool.get(srcBuffer.attachments[0], srcImage))
             throw std::runtime_error("failed to transfer buffers");
 
-        //begin buffer
+        // begin buffer
 
         vk->CmdCopyImage({.buffer = command.buffer.buffer,
                           .srcImage = srcImage.image,
@@ -337,19 +395,19 @@ namespace boitatah
                           .dstImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                           .extent = srcImage.dimensions});
 
-        //submit buffer
+        // submit buffer
     }
 
     void Renderer::copyBuffer(const CopyBufferCommand &command)
     {
         BufferReservation srcReservation;
         BufferReservation dstReservation;
-        if(!bufferReservPool.get(command.src, srcReservation))
+        if (!bufferReservPool.get(command.src, srcReservation))
             throw std::runtime_error("failed to copy buffer");
-        if(!bufferReservPool.get(command.dst, dstReservation))
+        if (!bufferReservPool.get(command.dst, dstReservation))
             throw std::runtime_error("failed to copy buffer");
 
-        //vk->waitIdle();
+        // vk->waitIdle();
         vk->waitForFence(transferFence);
         vk->beginCmdBuffer(command.buffer.buffer);
 
@@ -361,21 +419,47 @@ namespace boitatah
             .dstOffset = dstReservation.offset,
             .size = srcReservation.size,
         });
-        
+
         vk->submitCmdBuffer({
             .commandBuffer = command.buffer.buffer,
             .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
             .fence = transferFence,
         });
-
     }
 
-    void Renderer::beginBuffer(const BeginBufferCmmand &command)
+    void Renderer::beginBuffer(const BeginBufferCommand &command)
     {
+        vk->beginBufferCommand({.commandBuffer = command.buffer.buffer});
+    }
+
+    void Renderer::beginRenderpass(const BeginRenderpassCommand &command)
+    {
+        vk->beginRenderpassCommand({
+            .commandBuffer = command.commandBuffer.buffer,
+            .pass = command.pass.renderPass,
+            .frameBuffer = command.target.buffer,
+            .clearColor = command.clearColor,
+
+            .scissorDims = command.scissorDims,
+            .scissorOffset = command.scissorOffset,
+            //.viewportDims = command.viewportDims,
+            //.viewportOffset = command.viewportOffset,
+        });
     }
 
     void Renderer::submitBuffer(const SubmitBufferCommand &command)
     {
+        
+    }
+
+    void Renderer::drawCommand(const DrawCommand &command)
+    {
+
+    }
+
+    void Renderer::bindUniformsCommand(const BindUniformsCommand &command)
+    {
+
     }
 
 #pragma endregion Command Buffers
@@ -553,12 +637,11 @@ namespace boitatah
             geo.buffers.push_back(bufferHandle);
         }
         std::cout << "copied vertex buffer " << std::endl;
-        if (desc.indexCount != 0){
-            geo.indexBuffer = uploadBuffer({
-                .dataSize = static_cast<uint32_t>(desc.indexCount * sizeof(uint32_t)),
-                .data = desc.indexData,
-                .usage = BUFFER_USAGE::TRANSFER_DST_INDEX
-            });
+        if (desc.indexCount != 0)
+        {
+            geo.indexBuffer = uploadBuffer({.dataSize = static_cast<uint32_t>(desc.indexCount * sizeof(uint32_t)),
+                                            .data = desc.indexData,
+                                            .usage = BUFFER_USAGE::TRANSFER_DST_INDEX});
         }
         std::cout << "copied index buffer " << std::endl;
         geo.vertexInfo = desc.vertexInfo;
@@ -616,13 +699,12 @@ namespace boitatah
     Handle<BufferReservation> Renderer::uploadBuffer(const BufferUploadDesc &desc)
     {
         Handle<BufferReservation> stagingHandle = reserveBuffer({.request = desc.dataSize,
-                                                                    .usage = BUFFER_USAGE::TRANSFER_SRC,
-                                                                    .sharing = SHARING_MODE::CONCURRENT});
+                                                                 .usage = BUFFER_USAGE::TRANSFER_SRC,
+                                                                 .sharing = SHARING_MODE::CONCURRENT});
 
         Handle<BufferReservation> resHandle = reserveBuffer({.request = desc.dataSize,
-                                                                .usage = desc.usage,
-                                                                .sharing = SHARING_MODE::CONCURRENT});
-        
+                                                             .usage = desc.usage,
+                                                             .sharing = SHARING_MODE::CONCURRENT});
 
         if (resHandle.isNull() || stagingHandle.isNull())
             return Handle<BufferReservation>();
@@ -637,16 +719,29 @@ namespace boitatah
             .data = desc.data,
         });
 
-        copyBuffer({
-            .src = stagingHandle,
-            .dst = resHandle,
-            .buffer = transferCommandBuffer
-        });
+        copyBuffer({.src = stagingHandle,
+                    .dst = resHandle,
+                    .buffer = transferCommandBuffer});
 
         unreserveBuffer(stagingHandle);
 
-
         return resHandle;
+    }
+
+    void Renderer::copyDataToBuffer(const CopyDataToBufferDesc &desc)
+    {
+
+        BufferReservation reservation;
+        bufferReservPool.get(desc.reservation, reservation);
+
+        vk->copyDataToBuffer(
+            {
+                .memory = reservation.buffer->getMemory(),
+                .offset = reservation.offset,
+                .size = desc.dataSize,
+                .data = desc.data,
+            });
+
     }
 
     void Renderer::unreserveBuffer(Handle<BufferReservation> &reservation)
@@ -684,7 +779,6 @@ namespace boitatah
         }
         return UINT32_MAX;
     }
-
 
 #pragma endregion Buffers
 

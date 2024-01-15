@@ -114,6 +114,9 @@ namespace boitatah::vk
         BufferVkData createBuffer(const BufferDescVk & desc) const;
         BufferVkData getBufferAlignmentMemoryType(const BufferDescVk & desc) const;
 
+        VkDescriptorSetLayout createSetLayout();
+        VkDescriptorPool createSetPool();
+        
         void buildShader(const ShaderDescVk &desc, Shader &shader);
 
         // Manage Memory
@@ -138,6 +141,8 @@ namespace boitatah::vk
         void resetCommandBuffer(const VkCommandBuffer buffer);
 
         // Render Commands
+        void beginBufferCommand(const BeginCommandVk &command);
+        void beginRenderpassCommand(const BeginRenderpassCommandVk &command);
         void recordDrawCommand(const DrawCommandVk &command);
         void submitDrawCmdBuffer(const SubmitDrawCommandVk &command);
 

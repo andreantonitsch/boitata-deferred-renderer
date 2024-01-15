@@ -65,8 +65,8 @@ namespace boitatah
     }
     bool Buffer::checkCompatibility(const BufferCompatibility &compatibility)
     {
-        std::cout << " testing compatibility " << static_cast<int>(usage) <<
-        " " << static_cast<int>(compatibility.usage) << std::endl;
+        // std::cout << " testing compatibility " << static_cast<int>(usage) <<
+        // " " << static_cast<int>(compatibility.usage) << std::endl;
         return usage == compatibility.usage && 
         allocator->freeSpace() >= compatibility.requestSize;
     }

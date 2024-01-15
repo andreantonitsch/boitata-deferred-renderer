@@ -43,6 +43,11 @@ namespace boitatah
     class BackBufferManager;
     class Swapchain;
 
+    struct FrameUniforms{
+        glm::mat4 projection;
+        glm::mat4 view;
+    };
+
     struct RendererOptions
     {
         glm::u32vec2 windowDimensions = {800, 600};
@@ -71,7 +76,6 @@ namespace boitatah
         void render(SceneNode &scene);
         void render(SceneNode &scene, Camera &camera);
         void presentRenderTarget(Handle<RenderTarget> &rendertarget);
-        void writeDrawCommands(const SceneNode &object, const Handle<RenderTarget> &rendertarget);
         void renderSceneNode(SceneNode &scene, Handle<RenderTarget> &rendertarget);
         void renderSceneNode(SceneNode &scene, Camera& camera, Handle<RenderTarget> &rendertarget);
 
@@ -82,8 +86,11 @@ namespace boitatah
         void transferImage(const TransferImageCommand &command);
         void copyBuffer(const CopyBufferCommand &command);
 
-        void beginBuffer(const BeginBufferCmmand &command);
+        void beginBuffer(const BeginBufferCommand &command);
+        void beginRenderpass(const BeginRenderpassCommand &command);
         void submitBuffer(const SubmitBufferCommand &command);
+        void drawCommand(const DrawCommand &command);
+        void bindUniformsCommand(const BindUniformsCommand &command);
 
         // Object Creation
         // Creates PSO object, shader + pipeline.
@@ -100,6 +107,7 @@ namespace boitatah
         Buffer *createBuffer(const BufferDesc &desc);
         Handle<BufferReservation> reserveBuffer(const BufferReservationRequest &request);
         Handle<BufferReservation> uploadBuffer(const BufferUploadDesc& desc);
+        void copyDataToBuffer(const CopyDataToBufferDesc& desc);
         
         void unreserveBuffer(Handle<BufferReservation> &reservation);
         
@@ -122,6 +130,10 @@ namespace boitatah
         BackBufferManager *backBufferManager;
         Swapchain *swapchain;
 
+        // Frame Uniforms
+        //FrameUniforms cameraUniforms;
+        Handle<BufferReservation> cameraUniforms;
+        
         CommandBuffer transferCommandBuffer;
         VkFence transferFence;
         

@@ -59,9 +59,24 @@ namespace boitatah
         COMMAND_BUFFER_TYPE submitType;
     };
 
-    struct BeginBufferCmmand{
+    struct BeginBufferCommand{
         //command buffer
         CommandBuffer buffer;
+    };
+
+    struct BeginRenderpassCommand{
+        CommandBuffer commandBuffer;
+        RenderPass pass;
+        RenderTarget target;
+
+        glm::vec4 clearColor;
+
+        glm::ivec2 scissorDims;
+        glm::ivec2 scissorOffset;
+
+        // glm::ivec2 viewportDims;
+        // glm::ivec2 viewportOffset;
+
     };
 
     struct SubmitBufferCommand{
@@ -70,6 +85,17 @@ namespace boitatah
         //type of submission
         COMMAND_BUFFER_TYPE submitType;
     };
+
+    struct CopyDataToBufferDesc{
+        Handle<BufferReservation> reservation;
+        void *data;
+        uint64_t dataSize;
+    };
+
+    struct BindUniformsCommand{
+
+    };
+
 
 
 }
