@@ -27,6 +27,8 @@ using boitatah::MEMORY_PROPERTY;
 using boitatah::SAMPLES;
 using boitatah::Shader;
 using boitatah::ShaderDesc;
+using boitatah::ShaderLayout;
+using boitatah::ShaderLayoutDesc;
 
 #pragma region Validationsupportjank
 /// Validation Support Jank.
@@ -457,43 +459,6 @@ void boitatah::vk::Vulkan::beginRenderpassCommand(const BeginRenderpassCommandVk
 
 void boitatah::vk::Vulkan::recordDrawCommand(const DrawCommandVk &command)
 {
-    VkCommandBufferBeginInfo beginInfo{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = 0,
-        .pInheritanceInfo = nullptr};
-    if (vkBeginCommandBuffer(command.drawBuffer, &beginInfo) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to initialize buffer");
-    }
-
-    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-
-    VkRect2D scissor = {
-        .offset = {command.areaOffset.x, command.areaOffset.y},
-        .extent = {.width = static_cast<uint32_t>(command.areaDims.x),
-                   .height = static_cast<uint32_t>(command.areaDims.y)},
-    };
-    VkViewport viewport{
-        .x = 0.0f,
-        .y = 0.0f,
-        .width = static_cast<float>(scissor.extent.width),
-        .height = static_cast<float>(scissor.extent.height),
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f,
-    };
-    vkCmdSetViewport(command.drawBuffer, 0, 1, &viewport);
-    vkCmdSetScissor(command.drawBuffer, 0, 1, &scissor);
-
-    VkRenderPassBeginInfo passInfo{
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .renderPass = command.pass,
-        .framebuffer = command.frameBuffer,
-        .renderArea = scissor,
-        .clearValueCount = 1,
-        .pClearValues = &clearColor,
-    };
-    vkCmdBeginRenderPass(command.drawBuffer, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
-
     vkCmdBindPipeline(command.drawBuffer,
                       VK_PIPELINE_BIND_POINT_GRAPHICS,
                       command.pipeline);
@@ -821,9 +786,14 @@ void boitatah::vk::Vulkan::copyDataToBuffer(CopyToBufferVk op)
     vkUnmapMemory(device, op.memory);
 }
 
-VkPipelineLayout boitatah::vk::Vulkan::createPipelineLayout(const PipelineLayoutDesc &desc)
+VkPipelineLayout boitatah::vk::Vulkan::createShaderLayout(const ShaderLayoutDescVk &desc)
 {
     VkPipelineLayout layout;
+    
+    //  add camera layout
+    // add shader custom layout
+    
+    //add model push constants
 
     VkPipelineLayoutCreateInfo layoutCreate{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -836,6 +806,35 @@ VkPipelineLayout boitatah::vk::Vulkan::createPipelineLayout(const PipelineLayout
     if (vkCreatePipelineLayout(device, &layoutCreate, nullptr, &layout) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create Pipeline Layout");
+    }
+
+    return layout;
+}
+
+VkDescriptorSetLayout boitatah::vk::Vulkan::createDescriptorLayout(const DescriptorSetLayoutDesc &desc)
+{
+    VkDescriptorSetLayout layout;
+
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+    uint32_t binding_index = 0;
+    for(const auto& bindingDesc : desc.bindingDescriptors){
+        VkDescriptorSetLayoutBinding binding{
+            .binding = binding_index,
+            .descriptorType = castEnum<DESCRIPTOR_TYPE, VkDescriptorType>(bindingDesc.type),
+            .descriptorCount = binding.descriptorCount,
+            .stageFlags = castEnum<STAGE_FLAG, VkShaderStageFlags>(bindingDesc.stages)
+        };
+        binding_index++;
+    }
+
+    VkDescriptorSetLayoutCreateInfo info{
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount = static_cast<uint32_t>(bindings.size()),
+        .pBindings = bindings.data(),
+    };
+
+    if(vkCreateDescriptorSetLayout(device, &info, nullptr, &layout) != VK_SUCCESS){
+        throw std::runtime_error("Failed to create Descriptor Set Layout");
     }
 
     return layout;
@@ -1159,7 +1158,7 @@ void boitatah::vk::Vulkan::destroyImage(Image image)
     }
 }
 
-void boitatah::vk::Vulkan::destroyPipelineLayout(PipelineLayout &layout)
+void boitatah::vk::Vulkan::destroyPipelineLayout(ShaderLayout &layout)
 {
     vkDestroyPipelineLayout(device, layout.layout, nullptr);
 }

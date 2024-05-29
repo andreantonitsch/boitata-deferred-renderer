@@ -93,9 +93,12 @@ namespace boitatah
     };
 
     struct BindUniformsCommand{
-
+        
     };
 
+    struct BindPipelineCommand{
+
+    };
 
 
 }

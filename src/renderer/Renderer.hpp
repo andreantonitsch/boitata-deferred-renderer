@@ -43,10 +43,7 @@ namespace boitatah
     class BackBufferManager;
     class Swapchain;
 
-    struct FrameUniforms{
-        glm::mat4 projection;
-        glm::mat4 view;
-    };
+
 
     struct RendererOptions
     {
@@ -91,7 +88,8 @@ namespace boitatah
         void submitBuffer(const SubmitBufferCommand &command);
         void drawCommand(const DrawCommand &command);
         void bindUniformsCommand(const BindUniformsCommand &command);
-
+        void bindPipelineCommand(const BindPipelineCommand &command);
+        void bindDummyPipeline();
         // Object Creation
         // Creates PSO object, shader + pipeline.
         // Needs a Framebuffer for compatibility.
@@ -101,7 +99,7 @@ namespace boitatah
         Handle<RenderPass> createRenderPass(const RenderPassDesc &data);
         Handle<Image> addImage(Image image);
         Handle<Image> createImage(const ImageDesc &desc);
-        Handle<PipelineLayout> createPipelineLayout(const PipelineLayoutDesc &desc);
+        Handle<ShaderLayout> createShaderLayout(const ShaderLayoutDesc &desc);
         Handle<Geometry> createGeometry(const GeometryDesc &desc);
 
         Buffer *createBuffer(const BufferDesc &desc);
@@ -118,24 +116,26 @@ namespace boitatah
         void destroyShader(Handle<Shader> shader);
         void destroyRenderTarget(Handle<RenderTarget> buffer);
         void destroyRenderPass(Handle<RenderPass> pass);
-        void destroyLayout(Handle<PipelineLayout> layout);
+        void destroyLayout(Handle<ShaderLayout> layout);
 
     private:
         // Base objects
         // if this is a value member, then i have to deal with member initialization
         // This being a reference makes the code simpler for now
         // this however is not ideal
-        Vulkan *vk;
-        WindowManager *window;
-        BackBufferManager *backBufferManager;
+        Vulkan *m_vk;
+        WindowManager *m_window;
+        BackBufferManager *m_backBufferManager;
         Swapchain *swapchain;
 
         // Frame Uniforms
-        //FrameUniforms cameraUniforms;
-        Handle<BufferReservation> cameraUniforms;
+        Handle<BufferReservation> m_cameraUniforms;
+        // Handle<Uniform> m_cameraUniforms;
+        DescriptorSetLayout m_baseLayout;
+        Shader m_dummyPipeline;
         
-        CommandBuffer transferCommandBuffer;
-        VkFence transferFence;
+        CommandBuffer m_transferCommandBuffer;
+        VkFence m_transferFence;
         
         void handleWindowResize();
         void createSwapchain();
@@ -149,15 +149,16 @@ namespace boitatah
         Pool<RenderTarget> renderTargetPool = Pool<RenderTarget>({.size = 50, .name = "render target pool"});
         Pool<RenderPass> renderpassPool = Pool<RenderPass>({.size = 50, .name = "render pass pool"});
         Pool<Image> imagePool = Pool<Image>({.size = 50, .name = "image pool"});
-        Pool<PipelineLayout> pipelineLayoutPool = Pool<PipelineLayout>({.size = 50, .name = "pipeline layour pool"});
+        Pool<ShaderLayout> pipelineLayoutPool = Pool<ShaderLayout>({.size = 50, .name = "pipeline layout pool"});
         Pool<RenderTargetCmdBuffers> rtCmdPool = Pool<RenderTargetCmdBuffers>({.size = 50, .name = "rtcmd buffers pool"});
         Pool<Geometry> geometryPool = Pool<Geometry>({.size = 50, .name = "geometry pool"});
         Pool<BufferReservation> bufferReservPool = Pool<BufferReservation>({.size = 100, .name = "reservation pool"});
 
+
         std::vector<Buffer *> buffers;
 
         // Options Members
-        RendererOptions options;
+        RendererOptions m_options;
 
         // Vulkan Instance
         void createVulkan();

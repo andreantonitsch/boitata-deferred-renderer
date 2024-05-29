@@ -14,55 +14,72 @@ namespace boitatah
 
     Renderer::Renderer(RendererOptions opts)
     {
-        options = opts;
-        WindowDesc desc{.dimensions = options.windowDimensions,
-                        .windowName = options.appName};
+        m_options = opts;
+        WindowDesc desc{.dimensions = m_options.windowDimensions,
+                        .windowName = m_options.appName};
 
-        window = new WindowManager(desc);
+        m_window = new WindowManager(desc);
         createVulkan();
 
-        window->initSurface(vk->getInstance());
-        vk->attachWindow(window);
-        vk->completeInit();
+        m_window->initSurface(m_vk->getInstance());
+        m_vk->attachWindow(m_window);
+        m_vk->completeInit();
 
         createSwapchain();
 
-        backBufferManager = new BackBufferManager(this);
-        backBufferManager->setup(options.backBufferDesc);
+        m_backBufferManager = new BackBufferManager(this);
+        m_backBufferManager->setup(m_options.backBufferDesc);
 
-        transferCommandBuffer = allocateCommandBuffer({.count = 1,
+        m_transferCommandBuffer = allocateCommandBuffer({.count = 1,
                                                        .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                                                        .type = COMMAND_BUFFER_TYPE::TRANSFER});
-        transferFence = vk->createFence(true);
+        m_transferFence = m_vk->createFence(true);
 
-        cameraUniforms = reserveBuffer({
+        m_cameraUniforms = reserveBuffer({
             .request = sizeof(FrameUniforms),
             .usage = BUFFER_USAGE::UNIFORM_BUFFER,
             .sharing = SHARING_MODE::CONCURRENT,
         });
+
+        //camera uniforms
+        // FrameUniforms frameUniforms{}; //auto ptr
+        // m_cameraUniforms = createUniform<FrameUniforms>( frameUniforms );
+        // updateUniform(m_cameraUniforms, new frame uniforms
+
+        m_baseLayout.layout = m_vk->createDescriptorLayout({
+            .m_set = 0,
+            .bindingDescriptors = {
+                {
+                    .binding = 0,
+                    .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
+                    .stages = STAGE_FLAG::VERTEX
+                }
+            }
+        });
+
     }
 
     void Renderer::handleWindowResize()
     {
-        vk->waitIdle();
+        m_vk->waitIdle();
 
         swapchain->createSwapchain();
 
-        auto newWindowSize = window->getWindowDimensions();
+        auto newWindowSize = m_window->getWindowDimensions();
 
-        options.backBufferDesc.dimensions = {
+        m_options.backBufferDesc.dimensions = {
             static_cast<uint32_t>(newWindowSize.x),
             static_cast<uint32_t>(newWindowSize.y),
         };
 
-        backBufferManager->setup(options.backBufferDesc);
+        m_backBufferManager->setup(m_options.backBufferDesc);
     }
 
     void Renderer::createSwapchain()
     {
-        swapchain = new Swapchain({.format = options.swapchainFormat,
-                                   .useValidationLayers = options.debug});
-        swapchain->attach(vk, this, window);
+        swapchain = new Swapchain({.format = m_options.swapchainFormat,
+                                   .useValidationLayers = m_options.debug});
+        swapchain->attach(m_vk, this, m_window);
         swapchain->createSwapchain(); // options.windowDimensions, false, false);
     }
 
@@ -70,12 +87,12 @@ namespace boitatah
     {
         uint32_t extensionCount = 0;
 
-        vk = new Vulkan({
-            .appName = (char *)options.appName,
-            .extensions = window->requiredWindowExtensions(),
-            .useValidationLayers = options.debug,
-            .debugMessages = options.debug,
-            .window = window->window,
+        m_vk = new Vulkan({
+            .appName = (char *)m_options.appName,
+            .extensions = m_window->requiredWindowExtensions(),
+            .useValidationLayers = m_options.debug,
+            .debugMessages = m_options.debug,
+            .window = m_window->window,
         });
     }
 #pragma endregion Initialization
@@ -83,7 +100,7 @@ namespace boitatah
 #pragma region Rendering
     void Renderer::waitIdle()
     {
-        vk->waitIdle();
+        m_vk->waitIdle();
     }
 
     void Renderer::renderToRenderTarget(const SceneNode &scene, const Handle<RenderTarget> &rendertarget)
@@ -130,10 +147,10 @@ namespace boitatah
         BufferReservation indexBufferReservation;
         bufferReservPool.get(geom.indexBuffer, indexBufferReservation);
 
-        vk->waitForFrame(buffers);
+        m_vk->waitForFrame(buffers);
 
-        vk->resetCommandBuffer(buffers.drawBuffer.buffer);
-        vk->resetCommandBuffer(buffers.transferBuffer.buffer);
+        m_vk->resetCommandBuffer(buffers.drawBuffer.buffer);
+        m_vk->resetCommandBuffer(buffers.transferBuffer.buffer);
 
         recordDrawCommand({
             .drawBuffer = buffers.drawBuffer,
@@ -158,13 +175,13 @@ namespace boitatah
 
         // vk->submitDrawCmdBuffer({.bufferData = buffers,
         //                          .submitType = COMMAND_BUFFER_TYPE::GRAPHICS});
-        vk->submitDrawCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer,
+        m_vk->submitDrawCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer,
                                  .fence = buffers.inFlightFen});
     }
 
     void Renderer::render(SceneNode &scene)
     {
-        auto backbuffer = backBufferManager->getNext();
+        auto backbuffer = m_backBufferManager->getNext();
         renderSceneNode(scene, backbuffer);
         presentRenderTarget(backbuffer);
     }
@@ -173,7 +190,7 @@ namespace boitatah
 
     void Renderer::presentRenderTarget(Handle<RenderTarget> &rendertarget)
     {
-        window->windowEvents();
+        m_window->windowEvents();
 
         RenderTarget fb;
         if (!renderTargetPool.get(rendertarget, fb))
@@ -187,7 +204,7 @@ namespace boitatah
         if (!imagePool.get(fb.attachments[0], image))
             throw std::runtime_error("failed to framebuffer for Presentation");
 
-        vk->waitForFrame(buffers);
+        m_vk->waitForFrame(buffers);
         // SubmitDrawCommand command{.bufferData = buffers, .submitType = COMMAND_BUFFER_TYPE::PRESENT};
         auto swapchainImage = swapchain->getNext(buffers.schainAcqSem);
 
@@ -198,7 +215,7 @@ namespace boitatah
             return;
         }
 
-        bool successfullyPresent = vk->presentFrame(image,
+        bool successfullyPresent = m_vk->presentFrame(image,
                                                     swapchainImage.image,
                                                     swapchainImage.sc,
                                                     swapchainImage.index,
@@ -236,7 +253,7 @@ namespace boitatah
 
     void Renderer::render(SceneNode &scene, Camera &camera)
     {
-        auto backbuffer = backBufferManager->getNext();
+        auto backbuffer = m_backBufferManager->getNext();
 
         renderSceneNode(scene, camera, backbuffer);
 
@@ -264,7 +281,7 @@ namespace boitatah
         // update camera uniforms
         FrameUniforms frameUniforms ;
         copyDataToBuffer({
-            .reservation = cameraUniforms,
+            .reservation = m_cameraUniforms,
             .data = &frameUniforms,
             .dataSize = sizeof(FrameUniforms)
         });
@@ -281,7 +298,9 @@ namespace boitatah
             .scissorOffset = glm::vec2(0, 0),
         });
 
-        // bind camera uniforms.
+        //bind dummy pipeline
+
+        // bind camera uniforms
         bindUniformsCommand({});
 
         std::cout << "rendernode with camera" << std::endl;
@@ -291,6 +310,7 @@ namespace boitatah
         {
             // if material changed,
             //  bind pipeline
+            bindPipelineCommand({});
 
             // bind object matrix
             // push constant?
@@ -311,13 +331,13 @@ namespace boitatah
         for (auto &buffer : buffers)
             delete buffer;
 
-        vk->destroyFence(transferFence);
+        m_vk->destroyFence(m_transferFence);
 
         delete swapchain;
-        window->destroySurface(vk->getInstance());
-        delete backBufferManager;
-        delete vk;
-        delete window;
+        m_window->destroySurface(m_vk->getInstance());
+        delete m_backBufferManager;
+        delete m_vk;
+        delete m_window;
     }
 
     Renderer::~Renderer(void)
@@ -326,7 +346,7 @@ namespace boitatah
     }
     bool Renderer::isWindowClosed()
     {
-        return window->isWindowClosed();
+        return m_window->isWindowClosed();
     }
 #pragma endregion CleanUp / Destructor
 
@@ -335,7 +355,7 @@ namespace boitatah
     CommandBuffer Renderer::allocateCommandBuffer(const CommandBufferDesc &desc)
     {
         CommandBuffer buffer{
-            .buffer = vk->allocateCommandBuffer(desc),
+            .buffer = m_vk->allocateCommandBuffer(desc),
             .type = desc.type};
 
         return buffer;
@@ -343,7 +363,7 @@ namespace boitatah
 
     void Renderer::recordDrawCommand(const DrawCommand &command)
     {
-        vk->recordDrawCommand({
+        m_vk->recordDrawCommand({
             .drawBuffer = command.drawBuffer.buffer,
             .pass = command.renderPass.renderPass,
             .frameBuffer = command.renderTarget.buffer,
@@ -365,7 +385,7 @@ namespace boitatah
 
     void Renderer::clearCommandBuffer(const CommandBuffer &buffer)
     {
-        vk->resetCommandBuffer(buffer.buffer);
+        m_vk->resetCommandBuffer(buffer.buffer);
     }
 
     void Renderer::transferImage(const TransferImageCommand &command)
@@ -388,7 +408,7 @@ namespace boitatah
 
         // begin buffer
 
-        vk->CmdCopyImage({.buffer = command.buffer.buffer,
+        m_vk->CmdCopyImage({.buffer = command.buffer.buffer,
                           .srcImage = srcImage.image,
                           .srcImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                           .dstImage = dstImage.image,
@@ -408,10 +428,10 @@ namespace boitatah
             throw std::runtime_error("failed to copy buffer");
 
         // vk->waitIdle();
-        vk->waitForFence(transferFence);
-        vk->beginCmdBuffer(command.buffer.buffer);
+        m_vk->waitForFence(m_transferFence);
+        m_vk->beginCmdBuffer(command.buffer.buffer);
 
-        vk->CmdCopyBuffer({
+        m_vk->CmdCopyBuffer({
             .commandBuffer = command.buffer.buffer,
             .srcBuffer = srcReservation.buffer->getBuffer(),
             .srcOffset = srcReservation.offset,
@@ -420,21 +440,21 @@ namespace boitatah
             .size = srcReservation.size,
         });
 
-        vk->submitCmdBuffer({
+        m_vk->submitCmdBuffer({
             .commandBuffer = command.buffer.buffer,
             .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
-            .fence = transferFence,
+            .fence = m_transferFence,
         });
     }
 
     void Renderer::beginBuffer(const BeginBufferCommand &command)
     {
-        vk->beginBufferCommand({.commandBuffer = command.buffer.buffer});
+        m_vk->beginBufferCommand({.commandBuffer = command.buffer.buffer});
     }
 
     void Renderer::beginRenderpass(const BeginRenderpassCommand &command)
     {
-        vk->beginRenderpassCommand({
+        m_vk->beginRenderpassCommand({
             .commandBuffer = command.commandBuffer.buffer,
             .pass = command.pass.renderPass,
             .frameBuffer = command.target.buffer,
@@ -462,6 +482,16 @@ namespace boitatah
 
     }
 
+    void Renderer::bindPipelineCommand(const BindPipelineCommand &command)
+    {
+
+    }
+
+    void Renderer::bindDummyPipeline()
+    {
+        
+    }
+
 #pragma endregion Command Buffers
 
 #pragma region Create Vulkan Objects
@@ -470,12 +500,12 @@ namespace boitatah
     {
         Shader shader{
             .name = data.name,
-            .vert = {.shaderModule = vk->createShaderModule(data.vert.byteCode),
+            .vert = {.shaderModule = m_vk->createShaderModule(data.vert.byteCode),
                      .entryFunction = data.vert.entryFunction},
-            .frag = {.shaderModule = vk->createShaderModule(data.frag.byteCode),
+            .frag = {.shaderModule = m_vk->createShaderModule(data.frag.byteCode),
                      .entryFunction = data.vert.entryFunction}};
 
-        PipelineLayout layout;
+        ShaderLayout layout;
         if (!pipelineLayoutPool.get(data.layout, layout))
             throw std::runtime_error("failed to get pipeline layout");
 
@@ -486,7 +516,7 @@ namespace boitatah
         RenderPass pass;
         if (data.framebuffer.isNull())
         {
-            if (!renderpassPool.get(backBufferManager->getRenderPass(), pass))
+            if (!renderpassPool.get(m_backBufferManager->getRenderPass(), pass))
                 throw std::runtime_error("failed to back buffer render pass");
         }
         else
@@ -525,7 +555,7 @@ namespace boitatah
             }
         }
 
-        vk->buildShader(
+        m_vk->buildShader(
             {
                 .name = shader.name,
                 .vert = shader.vert,
@@ -587,7 +617,7 @@ namespace boitatah
         };
 
         RenderTarget framebuffer{
-            .buffer = vk->createFramebuffer(vkDesc),
+            .buffer = m_vk->createFramebuffer(vkDesc),
             .attachments = images,
             .renderpass = passhandle,
             .cmdBuffers = createRenderTargetCmdData()};
@@ -598,7 +628,7 @@ namespace boitatah
     Handle<RenderPass> Renderer::createRenderPass(const RenderPassDesc &data)
     {
         RenderPass pass{
-            .renderPass = vk->createRenderPass(data)};
+            .renderPass = m_vk->createRenderPass(data)};
 
         return renderpassPool.set(pass);
     }
@@ -610,16 +640,22 @@ namespace boitatah
 
     Handle<Image> Renderer::createImage(const ImageDesc &desc)
     {
-        Image image = vk->createImage(desc);
-        image.view = vk->createImageView(image.image, desc);
+        Image image = m_vk->createImage(desc);
+        image.view = m_vk->createImageView(image.image, desc);
 
         // Add to Image Pool.
         return imagePool.set(image);
     }
 
-    Handle<PipelineLayout> Renderer::createPipelineLayout(const PipelineLayoutDesc &desc)
+    Handle<ShaderLayout> Renderer::createShaderLayout(const ShaderLayoutDesc &desc)
     {
-        PipelineLayout layout{.layout = vk->createPipelineLayout(desc)};
+        VkDescriptorSetLayout materialLayout = m_vk->createDescriptorLayout(desc.materialLayout);
+        ShaderLayout layout{.layout = m_vk->createShaderLayout(
+            {
+                .materialLayout = materialLayout,
+                .baseLayout = m_baseLayout.layout,
+            })};
+            
         return pipelineLayoutPool.set(layout);
     }
 
@@ -653,7 +689,7 @@ namespace boitatah
 
     Handle<RenderPass> Renderer::getBackBufferRenderPass()
     {
-        return backBufferManager->getRenderPass();
+        return m_backBufferManager->getRenderPass();
     }
 
     Handle<RenderTargetCmdBuffers> Renderer::createRenderTargetCmdData()
@@ -665,9 +701,9 @@ namespace boitatah
             .transferBuffer = allocateCommandBuffer({.count = 1,
                                                      .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                                                      .type = COMMAND_BUFFER_TYPE::TRANSFER}),
-            .schainAcqSem = vk->createSemaphore(),
-            .transferSem = vk->createSemaphore(),
-            .inFlightFen = vk->createFence(true),
+            .schainAcqSem = m_vk->createSemaphore(),
+            .transferSem = m_vk->createSemaphore(),
+            .inFlightFen = m_vk->createFence(true),
         };
 
         return rtCmdPool.set(sync);
@@ -679,7 +715,7 @@ namespace boitatah
 
     Buffer *Renderer::createBuffer(const BufferDesc &desc)
     {
-        buffers.push_back(new Buffer(desc, vk));
+        buffers.push_back(new Buffer(desc, m_vk));
 
         return buffers.back();
     }
@@ -712,7 +748,7 @@ namespace boitatah
         BufferReservation stagingReservation;
         bufferReservPool.get(stagingHandle, stagingReservation);
 
-        vk->copyDataToBuffer({
+        m_vk->copyDataToBuffer({
             .memory = stagingReservation.buffer->getMemory(),
             .offset = stagingReservation.offset,
             .size = desc.dataSize,
@@ -721,7 +757,7 @@ namespace boitatah
 
         copyBuffer({.src = stagingHandle,
                     .dst = resHandle,
-                    .buffer = transferCommandBuffer});
+                    .buffer = m_transferCommandBuffer});
 
         unreserveBuffer(stagingHandle);
 
@@ -734,7 +770,7 @@ namespace boitatah
         BufferReservation reservation;
         bufferReservPool.get(desc.reservation, reservation);
 
-        vk->copyDataToBuffer(
+        m_vk->copyDataToBuffer(
             {
                 .memory = reservation.buffer->getMemory(),
                 .offset = reservation.offset,
@@ -789,7 +825,7 @@ namespace boitatah
         Shader shader;
         if (shaderPool.clear(handle, shader))
         {
-            vk->destroyShader(shader);
+            m_vk->destroyShader(shader);
         }
     }
 
@@ -805,7 +841,7 @@ namespace boitatah
                 {
                     if (!image.swapchain)
                     {
-                        vk->destroyImage(image);
+                        m_vk->destroyImage(image);
                     }
                 }
             }
@@ -814,9 +850,9 @@ namespace boitatah
 
             RenderTargetCmdBuffers data;
             if (rtCmdPool.clear(framebuffer.cmdBuffers, data))
-                vk->destroyRenderTargetCmdData(data);
+                m_vk->destroyRenderTargetCmdData(data);
 
-            vk->destroyFramebuffer(framebuffer);
+            m_vk->destroyFramebuffer(framebuffer);
         }
         else
         {
@@ -829,16 +865,16 @@ namespace boitatah
         RenderPass pass;
         if (renderpassPool.clear(passhandle, pass))
         {
-            vk->destroyRenderpass(pass);
+            m_vk->destroyRenderpass(pass);
         }
     }
 
-    void Renderer::destroyLayout(Handle<PipelineLayout> layouthandle)
+    void Renderer::destroyLayout(Handle<ShaderLayout> layouthandle)
     {
-        PipelineLayout layout;
+        ShaderLayout layout;
         if (pipelineLayoutPool.clear(layouthandle, layout))
         {
-            vk->destroyPipelineLayout(layout);
+            m_vk->destroyPipelineLayout(layout);
         }
     }
 

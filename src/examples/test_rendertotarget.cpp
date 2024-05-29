@@ -49,7 +49,7 @@ int main()
 
     Handle<RenderTarget> rendertarget = r.createRenderTarget(targetDesc);
 
-    Handle<PipelineLayout> layout = r.createPipelineLayout({});
+    Handle<ShaderLayout> layout = r.createShaderLayout({});
 
     Handle<Shader> shader = r.createShader({
         .name = "test",

@@ -53,11 +53,6 @@ namespace boitatah
         BUFFER_USAGE usage;
     };
 
-    struct CopyDataToBufferDesc{
-        Handle<BufferReservation> reservation;
-        void *data;
-        uint64_t dataSize;
-    };
 
     class Buffer
     {

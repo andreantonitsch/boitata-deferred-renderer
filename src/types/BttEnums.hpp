@@ -122,10 +122,32 @@ namespace boitatah
         CONCURRENT = 2,
     };
 
+    enum class DESCRIPTOR_TYPE {
+        UNIFORM_BUFFER = 1,
+    };
+
+    enum class STAGE_FLAG {
+        VERTEX = 1,
+    };
+
+
     template <typename From, typename To>
     static To castEnum(From from);
 
 #pragma region Enum Specializations
+
+    template <>
+    inline VkDescriptorType boitatah::castEnum(DESCRIPTOR_TYPE format)
+    {
+        switch (format)
+        {
+        case DESCRIPTOR_TYPE::UNIFORM_BUFFER:
+            return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        default:
+            return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        }
+    }
+    template VkDescriptorType boitatah::castEnum<DESCRIPTOR_TYPE, VkDescriptorType>(DESCRIPTOR_TYPE);
 
     template <>
     inline VkFormat boitatah::castEnum(FORMAT format)
@@ -356,6 +378,20 @@ namespace boitatah
     }
     template VkBufferUsageFlags boitatah::castEnum<BUFFER_USAGE, VkBufferUsageFlags>(BUFFER_USAGE MODE);
 
+    template <>
+    inline VkShaderStageFlags boitatah::castEnum(STAGE_FLAG stages)
+    {
+        switch (stages)
+        {
+        case STAGE_FLAG::VERTEX:
+            return VK_SHADER_STAGE_VERTEX_BIT;
+        default:
+            return VK_SHADER_STAGE_ALL_GRAPHICS;
+        }
+    }
+    template VkShaderStageFlags boitatah::castEnum<STAGE_FLAG, VkShaderStageFlags>(STAGE_FLAG MODE);
+
+
 #pragma endregion Enum Specializations
 
     static uint32_t formatSize(FORMAT format);
@@ -407,6 +443,8 @@ namespace boitatah
             return 0;
         }
     }
+
+    
 }
 
 #endif // BOITATAH_BTT_ENUMS_HPP

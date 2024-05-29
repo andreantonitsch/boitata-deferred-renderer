@@ -25,7 +25,7 @@ int main()
                 });
 
     // Pipeline Layout for the Shader.
-    Handle<PipelineLayout> layout = r.createPipelineLayout({});
+    Handle<ShaderLayout> layout = r.createShaderLayout({});
 
     // Shader Description
     Handle<Shader> shader = r.createShader({

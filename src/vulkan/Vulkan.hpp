@@ -108,7 +108,8 @@ namespace boitatah::vk
         VkRenderPass createRenderPass(const RenderPassDesc &desc);
         Image createImage(const ImageDesc &desc);
         VkImageView createImageView(VkImage image, const ImageDesc &desc);
-        VkPipelineLayout createPipelineLayout(const PipelineLayoutDesc &desc);
+        VkPipelineLayout createShaderLayout(const ShaderLayoutDescVk &desc);
+        VkDescriptorSetLayout createDescriptorLayout(const DescriptorSetLayoutDesc &desc);
         VkFence createFence(bool signaled);
         VkSemaphore createSemaphore();
         BufferVkData createBuffer(const BufferDescVk & desc) const;
@@ -145,7 +146,7 @@ namespace boitatah::vk
         void beginRenderpassCommand(const BeginRenderpassCommandVk &command);
         void recordDrawCommand(const DrawCommandVk &command);
         void submitDrawCmdBuffer(const SubmitDrawCommandVk &command);
-
+        void bindPipelineCommand(const BindPipelineCommandVk &command);
 
         // Buffer Commands
         void beginCmdBuffer(const VkCommandBuffer &buffer);
@@ -171,7 +172,7 @@ namespace boitatah::vk
         void destroyRenderpass(RenderPass &pass);
         void destroyFramebuffer(RenderTarget &framebuffer);
         void destroyImage(Image image);
-        void destroyPipelineLayout(PipelineLayout &layout);
+        void destroyPipelineLayout(ShaderLayout &layout);
         void destroyRenderTargetCmdData(const RenderTargetCmdBuffers &sync);
         void destroyBuffer(BufferVkData buffer) const;
         void destroyFence(VkFence fence);

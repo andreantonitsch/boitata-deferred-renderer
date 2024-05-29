@@ -17,6 +17,10 @@ namespace boitatah::vk
         //COMMAND_BUFFER_TYPE submitType;
     };
 
+    struct BindPipelineCommandVk{
+        VkPipeline pipeline;
+    };
+
     struct SubmitDrawCommandVk
     {
         VkCommandBuffer commandBuffer;
