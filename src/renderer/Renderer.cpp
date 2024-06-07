@@ -267,6 +267,8 @@ namespace boitatah
 
         // TODO cullings and whatever
         // TRANSFORM UPDATES
+        // BUILD UPDATE TRANSFER BUFFER FOR CHANGED UNIFORMS
+        // SORT BY MATERIALS
         // ETC
 
         RenderTarget renderTarget;
@@ -547,7 +549,7 @@ namespace boitatah
                 auto attribute = binding.attributes[j];
                 VkVertexInputAttributeDescription attributeDesc;
                 attributeDesc.binding = i;
-                attributeDesc.format = castEnum<FORMAT, VkFormat>(attribute.format);
+                attributeDesc.format = castEnum<VkFormat>(attribute.format);
                 attributeDesc.offset = runningOffset;
                 runningOffset = runningOffset + formatSize(attribute.format);
                 attributeDesc.location = j;
@@ -712,6 +714,13 @@ namespace boitatah
 #pragma endregion Create Vulkan Objects
 
 #pragma region Buffers
+
+    Handle<Uniform> Renderer::createUniform(void *data, uint32_t size, DESCRIPTOR_TYPE type)
+    {
+        
+
+        return Handle<Uniform>{};
+    }
 
     Buffer *Renderer::createBuffer(const BufferDesc &desc)
     {

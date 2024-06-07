@@ -115,12 +115,12 @@ bvk::Vulkan::~Vulkan(void)
     vkDestroyInstance(instance, nullptr);
 }
 
-VkInstance boitatah::vk::Vulkan::getInstance()
+VkInstance boitatah::vk::Vulkan::getInstance() const
 {
     return instance;
 }
 
-VkDevice boitatah::vk::Vulkan::getDevice()
+VkDevice boitatah::vk::Vulkan::getDevice() const
 {
     return device;
 }
@@ -248,7 +248,7 @@ VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
 
         colorAttachmentRefs.push_back({
             .attachment = attDesc.index,
-            .layout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.layout),
+            .layout = castEnum<VkImageLayout>(attDesc.layout),
         });
     }
 
@@ -292,7 +292,7 @@ Image boitatah::vk::Vulkan::createImage(const ImageDesc &desc)
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .flags = 0,
         .imageType = VK_IMAGE_TYPE_2D,
-        .format = castEnum<FORMAT, VkFormat>(desc.format),
+        .format = castEnum<VkFormat>(desc.format),
         .extent = {
             .width = desc.dimensions.x,
             .height = desc.dimensions.y,
@@ -300,11 +300,11 @@ Image boitatah::vk::Vulkan::createImage(const ImageDesc &desc)
         },
         .mipLevels = desc.mipLevels,
         .arrayLayers = 1,
-        .samples = castEnum<SAMPLES, VkSampleCountFlagBits>(desc.samples),
+        .samples = castEnum<VkSampleCountFlagBits>(desc.samples),
         .tiling = VK_IMAGE_TILING_OPTIMAL,
-        .usage = castEnum<IMAGE_USAGE, VkImageUsageFlagBits>(desc.usage),
+        .usage = castEnum<VkImageUsageFlagBits>(desc.usage),
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE, // TODO SHARING MODE change later.
-        .initialLayout = castEnum<IMAGE_LAYOUT, VkImageLayout>(desc.initialLayout),
+        .initialLayout = castEnum<VkImageLayout>(desc.initialLayout),
     };
 
     VkImage vkImage;
@@ -340,7 +340,7 @@ VkImageView boitatah::vk::Vulkan::createImageView(VkImage image, const ImageDesc
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .image = image,
         .viewType = VK_IMAGE_VIEW_TYPE_2D,
-        .format = castEnum<FORMAT, VkFormat>(desc.format),
+        .format = castEnum<VkFormat>(desc.format),
         .components = {
             .r = VK_COMPONENT_SWIZZLE_IDENTITY,
             .g = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -364,7 +364,7 @@ uint32_t boitatah::vk::Vulkan::findMemoryIndex(const MemoryDesc &props) const
 
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
     {
-        auto flags = castEnum<MEMORY_PROPERTY, VkMemoryPropertyFlagBits>(props.type);
+        auto flags = castEnum<VkMemoryPropertyFlagBits>(props.type);
         // If the memory has all required properties.
         if ((props.typeBits & (i << i)) &&
             ((memProperties.memoryTypes[i].propertyFlags &
@@ -388,7 +388,7 @@ VkCommandBuffer boitatah::vk::Vulkan::allocateCommandBuffer(const CommandBufferD
 {
     VkCommandBufferAllocateInfo allocateInfo{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .level = castEnum<COMMAND_BUFFER_LEVEL, VkCommandBufferLevel>(desc.level),
+        .level = castEnum<VkCommandBufferLevel>(desc.level),
         .commandBufferCount = desc.count};
 
     switch (desc.type)
@@ -820,9 +820,9 @@ VkDescriptorSetLayout boitatah::vk::Vulkan::createDescriptorLayout(const Descrip
     for(const auto& bindingDesc : desc.bindingDescriptors){
         VkDescriptorSetLayoutBinding binding{
             .binding = binding_index,
-            .descriptorType = castEnum<DESCRIPTOR_TYPE, VkDescriptorType>(bindingDesc.type),
+            .descriptorType = castEnum<VkDescriptorType>(bindingDesc.type),
             .descriptorCount = binding.descriptorCount,
-            .stageFlags = castEnum<STAGE_FLAG, VkShaderStageFlags>(bindingDesc.stages)
+            .stageFlags = castEnum<VkShaderStageFlags>(bindingDesc.stages)
         };
         binding_index++;
     }
@@ -879,8 +879,8 @@ boitatah::vk::BufferVkData boitatah::vk::Vulkan::createBuffer(const BufferDescVk
     VkBufferCreateInfo bufferInfo{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = desc.size,
-        .usage = castEnum<BUFFER_USAGE, VkBufferUsageFlags>(desc.usage),
-        .sharingMode = castEnum<SHARING_MODE, VkSharingMode>(desc.sharing),
+        .usage = castEnum<VkBufferUsageFlags>(desc.usage),
+        .sharingMode = castEnum<VkSharingMode>(desc.sharing),
     };
 
     if (desc.sharing == SHARING_MODE::CONCURRENT)
@@ -927,8 +927,8 @@ boitatah::vk::BufferVkData boitatah::vk::Vulkan::getBufferAlignmentMemoryType(co
     VkBufferCreateInfo dummyCreate{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = desc.size,
-        .usage = castEnum<BUFFER_USAGE, VkBufferUsageFlags>(desc.usage),
-        .sharingMode = castEnum<SHARING_MODE, VkSharingMode>(desc.sharing),
+        .usage = castEnum<VkBufferUsageFlags>(desc.usage),
+        .sharingMode = castEnum<VkSharingMode>(desc.sharing),
     };
 
     if (desc.sharing == SHARING_MODE::CONCURRENT)
@@ -1118,14 +1118,14 @@ VkFramebuffer boitatah::vk::Vulkan::createFramebuffer(const FramebufferDescVk &d
 
 VkAttachmentDescription boitatah::vk::Vulkan::createAttachmentDescription(const AttachmentDesc &attDesc)
 {
-    return VkAttachmentDescription{.format = castEnum<FORMAT, VkFormat>(attDesc.format),
-                                   .samples = castEnum<SAMPLES, VkSampleCountFlagBits>(attDesc.samples),
+    return VkAttachmentDescription{.format = castEnum<VkFormat>(attDesc.format),
+                                   .samples = castEnum<VkSampleCountFlagBits>(attDesc.samples),
                                    .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
                                    .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
                                    .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
                                    .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                                   .initialLayout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.initialLayout),
-                                   .finalLayout = castEnum<IMAGE_LAYOUT, VkImageLayout>(attDesc.finalLayout)};
+                                   .initialLayout = castEnum<VkImageLayout>(attDesc.initialLayout),
+                                   .finalLayout = castEnum<VkImageLayout>(attDesc.finalLayout)};
 }
 #pragma endregion PSO Building
 
@@ -1182,6 +1182,11 @@ void boitatah::vk::Vulkan::destroyBuffer(BufferVkData buffer) const
 void boitatah::vk::Vulkan::destroyFence(VkFence fence)
 {
     vkDestroyFence(device, fence, nullptr);
+}
+
+void boitatah::vk::Vulkan::destroyDescriptorPool(VkDescriptorPool pool)
+{
+    vkDestroyDescriptorPool(device, pool, nullptr);
 }
 
 #pragma endregion Object Destructions

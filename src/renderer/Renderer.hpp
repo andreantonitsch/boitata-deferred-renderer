@@ -25,7 +25,9 @@
 #include "../types/Buffer.hpp"
 #include "Window.hpp"
 #include "../types/Swapchain.hpp"
+#include "DescriptorPoolManager.hpp"
 
+#include "../types/Material.hpp"
 // Objective here is to have expose no lone vulkan types.
 // so that we can manage them. Thats what the vulkan class is for.
 // Renderer manages and exposes them
@@ -42,8 +44,6 @@ namespace boitatah
     template class Pool<Image>;
     class BackBufferManager;
     class Swapchain;
-
-
 
     struct RendererOptions
     {
@@ -74,7 +74,7 @@ namespace boitatah
         void render(SceneNode &scene, Camera &camera);
         void presentRenderTarget(Handle<RenderTarget> &rendertarget);
         void renderSceneNode(SceneNode &scene, Handle<RenderTarget> &rendertarget);
-        void renderSceneNode(SceneNode &scene, Camera& camera, Handle<RenderTarget> &rendertarget);
+        void renderSceneNode(SceneNode &scene, Camera &camera, Handle<RenderTarget> &rendertarget);
 
         // Command Buffers
         CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
@@ -90,6 +90,7 @@ namespace boitatah
         void bindUniformsCommand(const BindUniformsCommand &command);
         void bindPipelineCommand(const BindPipelineCommand &command);
         void bindDummyPipeline();
+
         // Object Creation
         // Creates PSO object, shader + pipeline.
         // Needs a Framebuffer for compatibility.
@@ -102,13 +103,22 @@ namespace boitatah
         Handle<ShaderLayout> createShaderLayout(const ShaderLayoutDesc &desc);
         Handle<Geometry> createGeometry(const GeometryDesc &desc);
 
+        //UNIFORMS
+        Handle<Uniform> createUniform(void *data, uint32_t size, DESCRIPTOR_TYPE type);
+        void updateUniform(Handle<Uniform> uniform, void* new_data);
+        void flagUniform(Handle<Uniform> uniform);
+
         Buffer *createBuffer(const BufferDesc &desc);
         Handle<BufferReservation> reserveBuffer(const BufferReservationRequest &request);
-        Handle<BufferReservation> uploadBuffer(const BufferUploadDesc& desc);
-        void copyDataToBuffer(const CopyDataToBufferDesc& desc);
-        
+        Handle<BufferReservation> uploadBuffer(const BufferUploadDesc &desc);
+        void copyDataToBuffer(const CopyDataToBufferDesc &desc);
         void unreserveBuffer(Handle<BufferReservation> &reservation);
-        
+
+        // Constructs a transfer queue for uniform updating on the beginning of the frame.
+        void beginTransfer();
+        void transferUniform(Handle<Uniform> uniform);
+        void submitTransfer();
+
         Handle<RenderPass> getBackBufferRenderPass();
 
         Handle<RenderTargetCmdBuffers> createRenderTargetCmdData();
@@ -127,16 +137,17 @@ namespace boitatah
         WindowManager *m_window;
         BackBufferManager *m_backBufferManager;
         Swapchain *swapchain;
+        DescriptorPoolManager *descriptorPoolManager;
 
         // Frame Uniforms
         Handle<BufferReservation> m_cameraUniforms;
         // Handle<Uniform> m_cameraUniforms;
         DescriptorSetLayout m_baseLayout;
         Shader m_dummyPipeline;
-        
+
         CommandBuffer m_transferCommandBuffer;
         VkFence m_transferFence;
-        
+
         void handleWindowResize();
         void createSwapchain();
 
@@ -153,7 +164,9 @@ namespace boitatah
         Pool<RenderTargetCmdBuffers> rtCmdPool = Pool<RenderTargetCmdBuffers>({.size = 50, .name = "rtcmd buffers pool"});
         Pool<Geometry> geometryPool = Pool<Geometry>({.size = 50, .name = "geometry pool"});
         Pool<BufferReservation> bufferReservPool = Pool<BufferReservation>({.size = 100, .name = "reservation pool"});
+        Pool<Uniform> uniformPool = Pool<Uniform>({.size = 1<<16, .name = "uniforms pool"});
 
+        std::vector<Handle<Uniform>> uniformUpdateQueue = std::vector<Handle<Uniform>>(100);
 
         std::vector<Buffer *> buffers;
 

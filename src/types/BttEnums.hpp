@@ -5,8 +5,7 @@
 namespace boitatah
 {
 
-/// CONVERSION BETWEEN BOITATAH ENUMS AND VK ENUMS
-
+    /// CONVERSION BETWEEN BOITATAH ENUMS AND VK ENUMS
 
     enum class COLOR_SPACE
     {
@@ -122,16 +121,17 @@ namespace boitatah
         CONCURRENT = 2,
     };
 
-    enum class DESCRIPTOR_TYPE {
+    enum class DESCRIPTOR_TYPE
+    {
         UNIFORM_BUFFER = 1,
     };
 
-    enum class STAGE_FLAG {
+    enum class STAGE_FLAG
+    {
         VERTEX = 1,
     };
 
-
-    template <typename From, typename To>
+    template <typename To, typename From>
     static To castEnum(From from);
 
 #pragma region Enum Specializations
@@ -147,7 +147,7 @@ namespace boitatah
             return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         }
     }
-    template VkDescriptorType boitatah::castEnum<DESCRIPTOR_TYPE, VkDescriptorType>(DESCRIPTOR_TYPE);
+    template VkDescriptorType boitatah::castEnum<VkDescriptorType, DESCRIPTOR_TYPE>(DESCRIPTOR_TYPE);
 
     template <>
     inline VkFormat boitatah::castEnum(FORMAT format)
@@ -198,7 +198,7 @@ namespace boitatah
             return VK_FORMAT_UNDEFINED;
         }
     }
-    template VkFormat boitatah::castEnum<FORMAT, VkFormat>(FORMAT);
+    template VkFormat boitatah::castEnum<VkFormat, FORMAT>(FORMAT);
 
     template <>
     inline VkColorSpaceKHR boitatah::castEnum(COLOR_SPACE colorSpace)
@@ -211,7 +211,7 @@ namespace boitatah
             return VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
         }
     }
-    template VkColorSpaceKHR boitatah::castEnum<COLOR_SPACE, VkColorSpaceKHR>(COLOR_SPACE);
+    template VkColorSpaceKHR boitatah::castEnum<VkColorSpaceKHR, COLOR_SPACE>(COLOR_SPACE);
 
     template <>
     inline VkPresentModeKHR boitatah::castEnum(FRAME_BUFFERING buffering_mode)
@@ -228,7 +228,7 @@ namespace boitatah
             return VK_PRESENT_MODE_FIFO_KHR;
         }
     }
-    template VkPresentModeKHR boitatah::castEnum<FRAME_BUFFERING, VkPresentModeKHR>(FRAME_BUFFERING);
+    template VkPresentModeKHR boitatah::castEnum<VkPresentModeKHR, FRAME_BUFFERING>(FRAME_BUFFERING);
 
     template <>
     inline VkImageLayout boitatah::castEnum(IMAGE_LAYOUT imageLayout)
@@ -245,7 +245,7 @@ namespace boitatah
             return VK_IMAGE_LAYOUT_UNDEFINED;
         }
     }
-    template VkImageLayout boitatah::castEnum<IMAGE_LAYOUT, VkImageLayout>(IMAGE_LAYOUT);
+    template VkImageLayout boitatah::castEnum<VkImageLayout, IMAGE_LAYOUT>(IMAGE_LAYOUT);
 
     template <>
     inline VkSampleCountFlagBits boitatah::castEnum(SAMPLES samples)
@@ -266,7 +266,7 @@ namespace boitatah
             return VK_SAMPLE_COUNT_1_BIT;
         }
     }
-    template VkSampleCountFlagBits boitatah::castEnum<SAMPLES, VkSampleCountFlagBits>(SAMPLES);
+    template VkSampleCountFlagBits boitatah::castEnum<VkSampleCountFlagBits, SAMPLES>(SAMPLES);
 
     template <>
     inline VkImageUsageFlagBits boitatah::castEnum(IMAGE_USAGE samples)
@@ -291,7 +291,7 @@ namespace boitatah
             return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         }
     }
-    template VkImageUsageFlagBits boitatah::castEnum<IMAGE_USAGE, VkImageUsageFlagBits>(IMAGE_USAGE);
+    template VkImageUsageFlagBits boitatah::castEnum<VkImageUsageFlagBits, IMAGE_USAGE>(IMAGE_USAGE);
 
     template <>
     inline VkMemoryPropertyFlagBits boitatah::castEnum(MEMORY_PROPERTY properties)
@@ -315,7 +315,7 @@ namespace boitatah
             return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         }
     }
-    template VkMemoryPropertyFlagBits boitatah::castEnum<MEMORY_PROPERTY, VkMemoryPropertyFlagBits>(MEMORY_PROPERTY);
+    template VkMemoryPropertyFlagBits boitatah::castEnum<VkMemoryPropertyFlagBits, MEMORY_PROPERTY>(MEMORY_PROPERTY);
 
     template <>
     inline VkCommandBufferLevel boitatah::castEnum(COMMAND_BUFFER_LEVEL properties)
@@ -331,7 +331,7 @@ namespace boitatah
             return VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         }
     }
-    template VkCommandBufferLevel boitatah::castEnum<COMMAND_BUFFER_LEVEL, VkCommandBufferLevel>(COMMAND_BUFFER_LEVEL);
+    template VkCommandBufferLevel boitatah::castEnum<VkCommandBufferLevel, COMMAND_BUFFER_LEVEL>(COMMAND_BUFFER_LEVEL);
 
     template <>
     inline VkSharingMode boitatah::castEnum(SHARING_MODE properties)
@@ -347,7 +347,7 @@ namespace boitatah
             return VK_SHARING_MODE_EXCLUSIVE;
         }
     }
-    template VkSharingMode boitatah::castEnum<SHARING_MODE, VkSharingMode>(SHARING_MODE);
+    template VkSharingMode boitatah::castEnum<VkSharingMode, SHARING_MODE>(SHARING_MODE);
 
     template <>
     inline VkBufferUsageFlags boitatah::castEnum(BUFFER_USAGE usage)
@@ -376,7 +376,7 @@ namespace boitatah
             return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         }
     }
-    template VkBufferUsageFlags boitatah::castEnum<BUFFER_USAGE, VkBufferUsageFlags>(BUFFER_USAGE MODE);
+    template VkBufferUsageFlags boitatah::castEnum<VkBufferUsageFlags, BUFFER_USAGE>(BUFFER_USAGE MODE);
 
     template <>
     inline VkShaderStageFlags boitatah::castEnum(STAGE_FLAG stages)
@@ -389,7 +389,7 @@ namespace boitatah
             return VK_SHADER_STAGE_ALL_GRAPHICS;
         }
     }
-    template VkShaderStageFlags boitatah::castEnum<STAGE_FLAG, VkShaderStageFlags>(STAGE_FLAG MODE);
+    template VkShaderStageFlags boitatah::castEnum<VkShaderStageFlags, STAGE_FLAG>(STAGE_FLAG MODE);
 
 
 #pragma endregion Enum Specializations
@@ -444,7 +444,6 @@ namespace boitatah
         }
     }
 
-    
 }
 
 #endif // BOITATAH_BTT_ENUMS_HPP

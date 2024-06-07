@@ -11,7 +11,6 @@
 
 namespace boitatah
 {
-
     class Buffer;
 
     struct BufferCompatibility
@@ -52,7 +51,6 @@ namespace boitatah
         void* data;
         BUFFER_USAGE usage;
     };
-
 
     class Buffer
     {

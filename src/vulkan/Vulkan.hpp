@@ -92,8 +92,8 @@ namespace boitatah::vk
         ~Vulkan(void);
         void completeInit();
 
-        VkInstance getInstance();
-        VkDevice getDevice();
+        VkInstance getInstance() const;
+        VkDevice getDevice() const;
         VkPhysicalDevice getPhysicalDevice();
         void attachWindow(boitatah::window::WindowManager *window);
 
@@ -115,9 +115,10 @@ namespace boitatah::vk
         BufferVkData createBuffer(const BufferDescVk & desc) const;
         BufferVkData getBufferAlignmentMemoryType(const BufferDescVk & desc) const;
 
-        VkDescriptorSetLayout createSetLayout();
         VkDescriptorPool createSetPool();
-        
+        void resetPool(const VkDescriptorPool pool);
+
+
         void buildShader(const ShaderDescVk &desc, Shader &shader);
 
         // Manage Memory
@@ -176,6 +177,7 @@ namespace boitatah::vk
         void destroyRenderTargetCmdData(const RenderTargetCmdBuffers &sync);
         void destroyBuffer(BufferVkData buffer) const;
         void destroyFence(VkFence fence);
+        void destroyDescriptorPool(VkDescriptorPool pool);
         // Copy assignment?
         // Vulkan& operator= (const Vulkan &v);//copy assignment
 

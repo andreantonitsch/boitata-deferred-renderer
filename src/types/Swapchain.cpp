@@ -10,7 +10,7 @@ namespace boitatah
     Swapchain::Swapchain(SwapchainOptions options)
     {
         this->options = options;
-        swapchainFormat = boitatah::castEnum<FORMAT, VkFormat>(options.format);
+        swapchainFormat = boitatah::castEnum<VkFormat>(options.format);
     }
 
     Swapchain::~Swapchain(void)
@@ -94,7 +94,7 @@ namespace boitatah
             .imageColorSpace = format.colorSpace,
             .imageExtent = extent,
             .imageArrayLayers = 1, // 2 for stereoscopic aplications (nothing to do with deffered rendering)
-            .imageUsage = boitatah::castEnum<IMAGE_USAGE, VkImageUsageFlagBits>(IMAGE_USAGE::COLOR_ATT_TRANSFER_DST),
+            .imageUsage = boitatah::castEnum<VkImageUsageFlagBits>(IMAGE_USAGE::COLOR_ATT_TRANSFER_DST),
             .oldSwapchain = VK_NULL_HANDLE
             };
 
@@ -236,8 +236,8 @@ namespace boitatah
         for (const auto &surfaceFormat : availableFormats)
         {
             // GPUs usually display in BGRA [citation needed]
-            if (surfaceFormat.format == boitatah::castEnum<FORMAT, VkFormat>(scFormat) &&
-                surfaceFormat.colorSpace == boitatah::castEnum<COLOR_SPACE, VkColorSpaceKHR>(scColorSpace))
+            if (surfaceFormat.format == boitatah::castEnum<VkFormat>(scFormat) &&
+                surfaceFormat.colorSpace == boitatah::castEnum<VkColorSpaceKHR>(scColorSpace))
             {
                 return surfaceFormat;
             }
@@ -273,12 +273,12 @@ namespace boitatah
     {
         for (const auto &mode : availableModes)
         {
-            if (mode == boitatah::castEnum<FRAME_BUFFERING, VkPresentModeKHR>(FRAME_BUFFERING::TRIPLE_BUFFER))
+            if (mode == boitatah::castEnum<VkPresentModeKHR>(FRAME_BUFFERING::TRIPLE_BUFFER))
             {
                 return mode;
             }
         }
 
-        return boitatah::castEnum<FRAME_BUFFERING, VkPresentModeKHR>(FRAME_BUFFERING::VSYNC);
+        return boitatah::castEnum<VkPresentModeKHR>(FRAME_BUFFERING::VSYNC);
     }
 }
