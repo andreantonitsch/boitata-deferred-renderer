@@ -2,7 +2,7 @@
 #define BOITATAH_COMMAND_BUFFER_HPP
 #include <vulkan/vulkan.h>
 
-#include "BttEnums.hpp"
+#include "../BttEnums.hpp"
 
 namespace boitatah{
 

@@ -1520,6 +1520,7 @@ void boitatah::vk::Vulkan::populateMessenger(VkDebugUtilsMessengerCreateInfoEXT 
 
 int boitatah::vk::Vulkan::evaluatePhysicalDevice(VkPhysicalDevice device)
 {
+\
 
     VkPhysicalDeviceProperties deviceProps;
     vkGetPhysicalDeviceProperties(device, &deviceProps);

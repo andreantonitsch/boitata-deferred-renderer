@@ -13,10 +13,10 @@
 
 
 #include <vector>
-#include "Shader.hpp"
+#include "../types/Shader.hpp"
 #include <optional>
 #include <string>
-#include "Geometry.hpp"
+#include "../types/Geometry.hpp"
 
 namespace boitatah
 {

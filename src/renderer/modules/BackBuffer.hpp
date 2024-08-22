@@ -6,10 +6,10 @@
 #include <glm/vec2.hpp>
 
 #include <vulkan/vulkan.h>
-#include "../types/RenderTarget.hpp"
+#include "../../types/RenderTarget.hpp"
 #include <vector>
-#include "Renderer.hpp"
-#include "../types/BackBufferDesc.hpp"
+#include "../Renderer.hpp"
+#include "../../types/BackBufferDesc.hpp"
 
 namespace boitatah{
 

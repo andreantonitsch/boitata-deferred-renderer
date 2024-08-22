@@ -8,14 +8,14 @@
 #include <glm/vec2.hpp>
 
 #include <vulkan/vulkan.h>
-#include "../vulkan/Vulkan.hpp"
-#include "../renderer/Renderer.hpp"
-#include "../renderer/Window.hpp"
-#include "../collections/Pool.hpp"
+#include "../../vulkan/Vulkan.hpp"
+#include "../Renderer.hpp"
+#include "Window.hpp"
+#include "../../collections/Pool.hpp"
 #include <vector>
 #include <string>
-#include "RenderTarget.hpp"
-#include "../types/BttEnums.hpp"
+#include "../../types/RenderTarget.hpp"
+#include "../../types/BttEnums.hpp"
 
 namespace boitatah
 {

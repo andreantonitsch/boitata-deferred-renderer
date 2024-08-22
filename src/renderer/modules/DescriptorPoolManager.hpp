@@ -1,11 +1,11 @@
 #ifndef BOITATAH_DESCPOOLMANAGER_HPP
 #define BOITATAH_DESCPOOLMANAGER_HPP
 
-#include "../vulkan/Vulkan.hpp"
-#include "../collections/Pool.hpp"
+#include "../../vulkan/Vulkan.hpp"
+#include "../../collections/Pool.hpp"
 #include <vector>
 #include <span>
-#include "../types/Descriptors.hpp"
+#include "../../types/Descriptors.hpp"
 
 namespace boitatah
 {

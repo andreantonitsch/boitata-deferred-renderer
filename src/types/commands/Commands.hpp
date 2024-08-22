@@ -2,15 +2,41 @@
 #define BOITATAH_COMMANDS_HPP
 #include <vulkan/vulkan.h>
 
-#include "Buffer.hpp"
-#include "Shader.hpp"
-#include "RenderTarget.hpp"
+#include "../../buffers/Buffer.hpp"
+#include "../Shader.hpp"
+#include "../RenderTarget.hpp"
 #include "CommandBuffer.hpp"
-#include "../collections/Pool.hpp"
-#include "BttEnums.hpp"
+#include "../../collections/Pool.hpp"
+#include "../BttEnums.hpp"
+#include "../Material.hpp"
 
 namespace boitatah
 {
+
+    struct SubmitDrawCommand
+    {
+        RenderTargetCmdBuffers bufferData;
+        COMMAND_BUFFER_TYPE submitType;
+    };
+
+    struct SubmitCommand
+    {
+        COMMAND_BUFFER_TYPE submitType;
+    };
+
+    struct BeginBufferCommand
+    {
+        // command buffer
+        CommandBuffer buffer;
+    };
+
+    struct SubmitBufferCommand
+    {
+        // command buffer
+        CommandBuffer buffer;
+        // type of submission
+        COMMAND_BUFFER_TYPE submitType;
+    };
 
     struct CopyBufferCommand
     {
@@ -19,7 +45,6 @@ namespace boitatah
         CommandBuffer buffer;
     };
 
-
     struct TransferImageCommand
     {
         Handle<RenderTarget> src;
@@ -27,7 +52,20 @@ namespace boitatah
         CommandBuffer buffer;
     };
 
-    
+    struct CopyDataToBufferDesc
+    {
+        Handle<BufferReservation> reservation;
+        const void *data;
+        uint64_t dataSize;
+    };
+
+    struct TransferUniformCommand{
+        Handle<Uniform> uniform;
+        uint32_t frameIndex;
+    };
+
+
+
     struct DrawCommand
     {
         CommandBuffer drawBuffer;
@@ -48,23 +86,8 @@ namespace boitatah
         glm::uvec2 instanceInfo;
     };
 
-    struct SubmitDrawCommand
+    struct BeginRenderpassCommand
     {
-        RenderTargetCmdBuffers bufferData;
-        COMMAND_BUFFER_TYPE submitType;
-    };
-
-    struct SubmitCommand
-    {
-        COMMAND_BUFFER_TYPE submitType;
-    };
-
-    struct BeginBufferCommand{
-        //command buffer
-        CommandBuffer buffer;
-    };
-
-    struct BeginRenderpassCommand{
         CommandBuffer commandBuffer;
         RenderPass pass;
         RenderTarget target;
@@ -76,30 +99,7 @@ namespace boitatah
 
         // glm::ivec2 viewportDims;
         // glm::ivec2 viewportOffset;
-
     };
-
-    struct SubmitBufferCommand{
-        //command buffer
-        CommandBuffer buffer; 
-        //type of submission
-        COMMAND_BUFFER_TYPE submitType;
-    };
-
-    struct CopyDataToBufferDesc{
-        Handle<BufferReservation> reservation;
-        void *data;
-        uint64_t dataSize;
-    };
-
-    struct BindUniformsCommand{
-        
-    };
-
-    struct BindPipelineCommand{
-
-    };
-
 
 }
 

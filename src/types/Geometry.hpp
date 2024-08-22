@@ -3,7 +3,7 @@
 
 #include <glm/glm.hpp>
 #include <vector>
-#include "Buffer.hpp"
+#include "../buffers/Buffer.hpp"
 #include "../collections/Pool.hpp"
 #include <array>
 namespace boitatah

@@ -4,7 +4,7 @@
 #include <vulkan/vulkan.h>
 #include <glm/vec2.hpp>
 #include "BttEnums.hpp"
-#include "CommandBuffer.hpp"
+#include "commands/CommandBuffer.hpp"
 #include "../collections/Pool.hpp"
 #include "Image.hpp"
 

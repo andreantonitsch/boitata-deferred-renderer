@@ -61,7 +61,7 @@ namespace boitatah::vk
         VkDeviceMemory memory;
         uint32_t offset;
         uint64_t size;
-        void *data;
+        const void *data;
     };
 
     struct CopyBufferCommandVk

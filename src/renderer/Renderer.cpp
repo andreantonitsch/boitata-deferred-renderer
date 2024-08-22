@@ -31,8 +31,8 @@ namespace boitatah
         m_backBufferManager->setup(m_options.backBufferDesc);
 
         m_transferCommandBuffer = allocateCommandBuffer({.count = 1,
-                                                       .level = COMMAND_BUFFER_LEVEL::PRIMARY,
-                                                       .type = COMMAND_BUFFER_TYPE::TRANSFER});
+                                                         .level = COMMAND_BUFFER_LEVEL::PRIMARY,
+                                                         .type = COMMAND_BUFFER_TYPE::TRANSFER});
         m_transferFence = m_vk->createFence(true);
 
         m_cameraUniforms = reserveBuffer({
@@ -41,22 +41,16 @@ namespace boitatah
             .sharing = SHARING_MODE::CONCURRENT,
         });
 
-        //camera uniforms
-        // FrameUniforms frameUniforms{}; //auto ptr
-        // m_cameraUniforms = createUniform<FrameUniforms>( frameUniforms );
-        // updateUniform(m_cameraUniforms, new frame uniforms
+        // camera uniforms
+        //  FrameUniforms frameUniforms{}; //auto ptr
+        //  m_cameraUniforms = createUniform<FrameUniforms>( frameUniforms );
+        //  updateUniform(m_cameraUniforms, new frame uniforms
 
-        m_baseLayout.layout = m_vk->createDescriptorLayout({
-            .m_set = 0,
-            .bindingDescriptors = {
-                {
-                    .binding = 0,
-                    .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
-                    .stages = STAGE_FLAG::VERTEX
-                }
-            }
-        });
-
+        m_baseLayout.layout = m_vk->createDescriptorLayout({.m_set = 0,
+                                                            .bindingDescriptors = {
+                                                                {.binding = 0,
+                                                                 .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
+                                                                 .stages = STAGE_FLAG::VERTEX}}});
     }
 
     void Renderer::handleWindowResize()
@@ -152,7 +146,7 @@ namespace boitatah
         m_vk->resetCommandBuffer(buffers.drawBuffer.buffer);
         m_vk->resetCommandBuffer(buffers.transferBuffer.buffer);
 
-        recordDrawCommand({
+        drawCommand({
             .drawBuffer = buffers.drawBuffer,
             .renderTarget = target,
             .renderPass = pass,
@@ -176,7 +170,7 @@ namespace boitatah
         // vk->submitDrawCmdBuffer({.bufferData = buffers,
         //                          .submitType = COMMAND_BUFFER_TYPE::GRAPHICS});
         m_vk->submitDrawCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer,
-                                 .fence = buffers.inFlightFen});
+                                   .fence = buffers.inFlightFen});
     }
 
     void Renderer::render(SceneNode &scene)
@@ -185,8 +179,6 @@ namespace boitatah
         renderSceneNode(scene, backbuffer);
         presentRenderTarget(backbuffer);
     }
-
-
 
     void Renderer::presentRenderTarget(Handle<RenderTarget> &rendertarget)
     {
@@ -216,15 +208,15 @@ namespace boitatah
         }
 
         bool successfullyPresent = m_vk->presentFrame(image,
-                                                    swapchainImage.image,
-                                                    swapchainImage.sc,
-                                                    swapchainImage.index,
-                                                    {
-                                                        .commandBuffer = buffers.transferBuffer.buffer,
-                                                        .waitSemaphore = buffers.schainAcqSem,
-                                                        .signalSemaphore = buffers.transferSem,
-                                                        .fence = buffers.inFlightFen,
-                                                    });
+                                                      swapchainImage.image,
+                                                      swapchainImage.sc,
+                                                      swapchainImage.index,
+                                                      {
+                                                          .commandBuffer = buffers.transferBuffer.buffer,
+                                                          .waitSemaphore = buffers.schainAcqSem,
+                                                          .signalSemaphore = buffers.transferSem,
+                                                          .fence = buffers.inFlightFen,
+                                                      });
 
         // If present was unsucessful we must remake the swapchain
         // and recreate our backbuffer.
@@ -271,6 +263,10 @@ namespace boitatah
         // SORT BY MATERIALS
         // ETC
 
+        // UPDATE UNIFORMS
+        updateUniforms(nodes);
+
+
         RenderTarget renderTarget;
         renderTargetPool.get(rendertargetHandle, renderTarget);
         RenderTargetCmdBuffers renderTargetBuffers;
@@ -279,14 +275,13 @@ namespace boitatah
         renderpassPool.get(renderTarget.renderpass, pass);
         Image image;
         imagePool.get(renderTarget.attachments[0], image);
-        
+
+
         // update camera uniforms
-        FrameUniforms frameUniforms ;
-        copyDataToBuffer({
-            .reservation = m_cameraUniforms,
-            .data = &frameUniforms,
-            .dataSize = sizeof(FrameUniforms)
-        });
+        FrameUniforms frameUniforms;
+        copyDataToBuffer({.reservation = m_cameraUniforms,
+                          .data = &frameUniforms,
+                          .dataSize = sizeof(FrameUniforms)});
 
         beginBuffer({.buffer = renderTargetBuffers.drawBuffer});
 
@@ -300,10 +295,10 @@ namespace boitatah
             .scissorOffset = glm::vec2(0, 0),
         });
 
-        //bind dummy pipeline
+        // bind dummy pipeline
 
         // bind camera uniforms
-        bindUniformsCommand({});
+        // bindUniformsCommand({});
 
         std::cout << "rendernode with camera" << std::endl;
 
@@ -312,7 +307,7 @@ namespace boitatah
         {
             // if material changed,
             //  bind pipeline
-            bindPipelineCommand({});
+            // bindPipelineCommand({});
 
             // bind object matrix
             // push constant?
@@ -363,7 +358,7 @@ namespace boitatah
         return buffer;
     }
 
-    void Renderer::recordDrawCommand(const DrawCommand &command)
+    void Renderer::drawCommand(const DrawCommand &command)
     {
         m_vk->recordDrawCommand({
             .drawBuffer = command.drawBuffer.buffer,
@@ -390,6 +385,19 @@ namespace boitatah
         m_vk->resetCommandBuffer(buffer.buffer);
     }
 
+    void Renderer::queueTransferUniform(const TransferUniformCommand &command)
+    {
+        Uniform uniform;
+        uniformPool.get(command.uniform, uniform);
+
+        // TODO change usage to type depending on uniform type.
+        queueUploadBuffer({
+            .dataSize = uniform.get_size(),
+            .data = uniform.get_data(),
+            .usage = BUFFER_USAGE::UNIFORM_BUFFER
+        });
+    }
+
     void Renderer::transferImage(const TransferImageCommand &command)
     {
         RenderTarget dstBuffer;
@@ -411,11 +419,11 @@ namespace boitatah
         // begin buffer
 
         m_vk->CmdCopyImage({.buffer = command.buffer.buffer,
-                          .srcImage = srcImage.image,
-                          .srcImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                          .dstImage = dstImage.image,
-                          .dstImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                          .extent = srcImage.dimensions});
+                            .srcImage = srcImage.image,
+                            .srcImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                            .dstImage = dstImage.image,
+                            .dstImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                            .extent = srcImage.dimensions});
 
         // submit buffer
     }
@@ -471,27 +479,15 @@ namespace boitatah
 
     void Renderer::submitBuffer(const SubmitBufferCommand &command)
     {
-        
-    }
-
-    void Renderer::drawCommand(const DrawCommand &command)
-    {
-
-    }
-
-    void Renderer::bindUniformsCommand(const BindUniformsCommand &command)
-    {
-
-    }
-
-    void Renderer::bindPipelineCommand(const BindPipelineCommand &command)
-    {
-
+        m_vk->submitCmdBuffer({
+            .commandBuffer = command.buffer.buffer,
+            .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
+            .fence = m_transferFence,
+        });
     }
 
     void Renderer::bindDummyPipeline()
     {
-        
     }
 
 #pragma endregion Command Buffers
@@ -653,11 +649,11 @@ namespace boitatah
     {
         VkDescriptorSetLayout materialLayout = m_vk->createDescriptorLayout(desc.materialLayout);
         ShaderLayout layout{.layout = m_vk->createShaderLayout(
-            {
-                .materialLayout = materialLayout,
-                .baseLayout = m_baseLayout.layout,
-            })};
-            
+                                {
+                                    .materialLayout = materialLayout,
+                                    .baseLayout = m_baseLayout.layout,
+                                })};
+
         return pipelineLayoutPool.set(layout);
     }
 
@@ -717,7 +713,6 @@ namespace boitatah
 
     Handle<Uniform> Renderer::createUniform(void *data, uint32_t size, DESCRIPTOR_TYPE type)
     {
-        
 
         return Handle<Uniform>{};
     }
@@ -741,7 +736,7 @@ namespace boitatah
         return bufferReservPool.set(reservation);
     }
 
-    Handle<BufferReservation> Renderer::uploadBuffer(const BufferUploadDesc &desc)
+    std::pair<Handle<BufferReservation>, Handle<BufferReservation>> Renderer::getUploadBufferHandles(const BufferUploadDesc &desc)
     {
         Handle<BufferReservation> stagingHandle = reserveBuffer({.request = desc.dataSize,
                                                                  .usage = BUFFER_USAGE::TRANSFER_SRC,
@@ -750,8 +745,23 @@ namespace boitatah
         Handle<BufferReservation> resHandle = reserveBuffer({.request = desc.dataSize,
                                                              .usage = desc.usage,
                                                              .sharing = SHARING_MODE::CONCURRENT});
-
         if (resHandle.isNull() || stagingHandle.isNull())
+        {
+            unreserveBuffer(stagingHandle);
+            unreserveBuffer(resHandle);
+            return std::pair(Handle<BufferReservation>(), Handle<BufferReservation>());
+        }
+        return std::pair(stagingHandle, resHandle);
+    }
+
+    Handle<BufferReservation> Renderer::uploadBuffer(const BufferUploadDesc &desc)
+    {
+        auto pair = getUploadBufferHandles(desc);
+
+        Handle<BufferReservation> stagingHandle = pair.first;
+        Handle<BufferReservation> resHandle = pair.second;
+
+        if (resHandle.isNull())
             return Handle<BufferReservation>();
 
         BufferReservation stagingReservation;
@@ -773,6 +783,30 @@ namespace boitatah
         return resHandle;
     }
 
+    Handle<BufferReservation> Renderer::queueUploadBuffer(const BufferUploadDesc &desc)
+    {
+        auto pair = getUploadBufferHandles(desc);
+
+        Handle<BufferReservation> stagingHandle = pair.first;
+        Handle<BufferReservation> resHandle = pair.second;
+
+        if (resHandle.isNull())
+            return Handle<BufferReservation>();
+
+        stagingBufferQueue.emplace_back(stagingHandle);
+    }
+
+    void Renderer::clearUploadBufferQueue()
+    {
+
+        for (size_t i = 0; i < stagingBufferQueue.size(); i++)
+        {
+            unreserveBuffer(stagingBufferQueue[i]);
+        }
+
+        stagingBufferQueue.clear();
+    }
+
     void Renderer::copyDataToBuffer(const CopyDataToBufferDesc &desc)
     {
 
@@ -786,7 +820,6 @@ namespace boitatah
                 .size = desc.dataSize,
                 .data = desc.data,
             });
-
     }
 
     void Renderer::unreserveBuffer(Handle<BufferReservation> &reservation)

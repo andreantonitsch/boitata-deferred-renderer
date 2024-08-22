@@ -10,12 +10,12 @@
 #include <optional>
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
-#include "../types/CommandBuffer.hpp"
+#include "../types/commands/CommandBuffer.hpp"
 #include "../types/RenderTarget.hpp"
 #include "../types/Memory.hpp"
 #include "../types/Image.hpp"
-#include "../types/CommandsVk.hpp"
-#include "../renderer/Window.hpp"
+#include "CommandsVk.hpp"
+#include "../renderer/modules/Window.hpp"
 
 namespace boitatah::vk
 {

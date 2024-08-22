@@ -6,7 +6,7 @@
 #include "../collections/BufferAllocator.hpp"
 //#include "../renderer/Renderer.hpp"
 #include <vulkan/vulkan.h>
-#include "BttEnums.hpp"
+#include "../types/BttEnums.hpp"
 #include <glm/glm.hpp>
 
 namespace boitatah
@@ -48,7 +48,7 @@ namespace boitatah
 
     struct BufferUploadDesc{
         uint32_t dataSize;
-        void* data;
+        const void* data;
         BUFFER_USAGE usage;
     };
 

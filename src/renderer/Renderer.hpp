@@ -7,25 +7,26 @@
 
 #include <vector>
 #include <string>
+#include <utility>
 #include <glm/vec2.hpp>
 
-#include "Camera.hpp"
+#include "modules/Camera.hpp"
 
 #include "../types/BackBufferDesc.hpp"
-#include "BackBuffer.hpp"
+#include "modules/BackBuffer.hpp"
 
 #include "../vulkan/Vulkan.hpp"
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
-#include "../types/CommandBuffer.hpp"
+#include "../types/commands/CommandBuffer.hpp"
 #include "../types/RenderTarget.hpp"
 #include "../collections/Pool.hpp"
-#include "../types/Commands.hpp"
-#include "../types/Scene.hpp"
-#include "../types/Buffer.hpp"
-#include "Window.hpp"
-#include "../types/Swapchain.hpp"
-#include "DescriptorPoolManager.hpp"
+#include "../types/commands/Commands.hpp"
+#include "../scene/Scene.hpp"
+#include "../buffers/Buffer.hpp"
+#include "modules/Window.hpp"
+#include "modules/Swapchain.hpp"
+#include "modules/DescriptorPoolManager.hpp"
 
 #include "../types/Material.hpp"
 // Objective here is to have expose no lone vulkan types.
@@ -76,21 +77,6 @@ namespace boitatah
         void renderSceneNode(SceneNode &scene, Handle<RenderTarget> &rendertarget);
         void renderSceneNode(SceneNode &scene, Camera &camera, Handle<RenderTarget> &rendertarget);
 
-        // Command Buffers
-        CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
-        void recordDrawCommand(const DrawCommand &command);
-        void clearCommandBuffer(const CommandBuffer &buffer);
-        void transferImage(const TransferImageCommand &command);
-        void copyBuffer(const CopyBufferCommand &command);
-
-        void beginBuffer(const BeginBufferCommand &command);
-        void beginRenderpass(const BeginRenderpassCommand &command);
-        void submitBuffer(const SubmitBufferCommand &command);
-        void drawCommand(const DrawCommand &command);
-        void bindUniformsCommand(const BindUniformsCommand &command);
-        void bindPipelineCommand(const BindPipelineCommand &command);
-        void bindDummyPipeline();
-
         // Object Creation
         // Creates PSO object, shader + pipeline.
         // Needs a Framebuffer for compatibility.
@@ -103,6 +89,23 @@ namespace boitatah
         Handle<ShaderLayout> createShaderLayout(const ShaderLayoutDesc &desc);
         Handle<Geometry> createGeometry(const GeometryDesc &desc);
 
+        // Command Buffers
+        CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
+        void beginBuffer(const BeginBufferCommand &command);
+        void submitBuffer(const SubmitBufferCommand &command);
+        void clearCommandBuffer(const CommandBuffer &buffer);
+
+        void beginRenderpass(const BeginRenderpassCommand &command);
+
+        // Constructs a transfer queue for uniform updating on the beginning of the frame.
+        void queueTransferUniform(const TransferUniformCommand &command);
+        void transferImage(const TransferImageCommand &command);
+        void copyBuffer(const CopyBufferCommand &command);
+        void drawCommand(const DrawCommand &command);
+
+
+        void bindDummyPipeline();
+
         //UNIFORMS
         Handle<Uniform> createUniform(void *data, uint32_t size, DESCRIPTOR_TYPE type);
         void updateUniform(Handle<Uniform> uniform, void* new_data);
@@ -110,14 +113,17 @@ namespace boitatah
 
         Buffer *createBuffer(const BufferDesc &desc);
         Handle<BufferReservation> reserveBuffer(const BufferReservationRequest &request);
+        std::pair<Handle<BufferReservation>,Handle<BufferReservation>> getUploadBufferHandles(const BufferUploadDesc &desc);
         Handle<BufferReservation> uploadBuffer(const BufferUploadDesc &desc);
+        Handle<BufferReservation> queueUploadBuffer(const BufferUploadDesc &desc);
+        void clearUploadBufferQueue();
         void copyDataToBuffer(const CopyDataToBufferDesc &desc);
+        void updateUniforms(const SceneNode* scene_nodes);
+
+
         void unreserveBuffer(Handle<BufferReservation> &reservation);
 
-        // Constructs a transfer queue for uniform updating on the beginning of the frame.
-        void beginTransfer();
-        void transferUniform(Handle<Uniform> uniform);
-        void submitTransfer();
+
 
         Handle<RenderPass> getBackBufferRenderPass();
 
@@ -166,9 +172,13 @@ namespace boitatah
         Pool<BufferReservation> bufferReservPool = Pool<BufferReservation>({.size = 100, .name = "reservation pool"});
         Pool<Uniform> uniformPool = Pool<Uniform>({.size = 1<<16, .name = "uniforms pool"});
 
-        std::vector<Handle<Uniform>> uniformUpdateQueue = std::vector<Handle<Uniform>>(100);
 
-        std::vector<Buffer *> buffers;
+#pragma region UPDATE QUEUES
+        std::vector<Handle<Uniform>> uniformUpdateQueue = std::vector<Handle<Uniform>>();
+        std::vector<Handle<BufferReservation>> stagingBufferQueue = std::vector<Handle<BufferReservation>>();
+#pragma endregion 
+
+        std::vector<Buffer *> buffers; 
 
         // Options Members
         RendererOptions m_options;

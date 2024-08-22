@@ -5,13 +5,13 @@ set(LIBRARY_OUTPUT_PATH ${OUTPUT_FOLDER}/libs)
 set(LIB_DR_SOURCES
             collections/PartitionList.cpp
             collections/BufferAllocator.cpp
-            types/Buffer.cpp
-            types/Swapchain.cpp
-            renderer/Camera.cpp
-            renderer/BackBuffer.cpp
+            buffers/Buffer.cpp
+            renderer/modules/Swapchain.cpp
+            renderer/modules/Camera.cpp
+            renderer/modules/BackBuffer.cpp
             renderer/Renderer.cpp
-            renderer/Camera.cpp
-            renderer/Window.cpp
+            renderer/modules/Camera.cpp
+            renderer/modules/Window.cpp
             vulkan/Vulkan.cpp
 )
 
