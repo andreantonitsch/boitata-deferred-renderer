@@ -10,25 +10,30 @@
 #include <utility>
 #include <glm/vec2.hpp>
 
+#include "../vulkan/Vulkan.hpp"
+
+#include "modules/BackBuffer.hpp"
+#include "modules/Window.hpp"
+#include "modules/Swapchain.hpp"
+#include "modules/DescriptorPoolManager.hpp"
 #include "modules/Camera.hpp"
 
-#include "../types/BackBufferDesc.hpp"
-#include "modules/BackBuffer.hpp"
+#include "../collections/Pool.hpp"
 
-#include "../vulkan/Vulkan.hpp"
+#include "../scene/Scene.hpp"
+
+#include "../buffers/Buffer.hpp"
+
+#include "../types/BackBufferDesc.hpp"
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
 #include "../types/commands/CommandBuffer.hpp"
 #include "../types/RenderTarget.hpp"
-#include "../collections/Pool.hpp"
 #include "../types/commands/Commands.hpp"
-#include "../scene/Scene.hpp"
-#include "../buffers/Buffer.hpp"
-#include "modules/Window.hpp"
-#include "modules/Swapchain.hpp"
-#include "modules/DescriptorPoolManager.hpp"
-
 #include "../types/Material.hpp"
+#include "../types/Uniform.hpp"
+
+
 // Objective here is to have expose no lone vulkan types.
 // so that we can manage them. Thats what the vulkan class is for.
 // Renderer manages and exposes them
@@ -110,7 +115,9 @@ namespace boitatah
         Handle<Uniform> createUniform(void *data, uint32_t size, DESCRIPTOR_TYPE type);
         void updateUniform(Handle<Uniform> uniform, void* new_data);
         void flagUniform(Handle<Uniform> uniform);
+        void updateUniforms(const SceneNode* scene_nodes);
 
+        //BUFFERS
         Buffer *createBuffer(const BufferDesc &desc);
         Handle<BufferReservation> reserveBuffer(const BufferReservationRequest &request);
         std::pair<Handle<BufferReservation>,Handle<BufferReservation>> getUploadBufferHandles(const BufferUploadDesc &desc);
@@ -118,11 +125,7 @@ namespace boitatah
         Handle<BufferReservation> queueUploadBuffer(const BufferUploadDesc &desc);
         void clearUploadBufferQueue();
         void copyDataToBuffer(const CopyDataToBufferDesc &desc);
-        void updateUniforms(const SceneNode* scene_nodes);
-
-
         void unreserveBuffer(Handle<BufferReservation> &reservation);
-
 
 
         Handle<RenderPass> getBackBufferRenderPass();

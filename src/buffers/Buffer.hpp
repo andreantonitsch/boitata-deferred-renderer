@@ -1,13 +1,15 @@
 #ifndef BOITATAH_BUFFER_HPP
 #define BOITATAH_BUFFER_HPP
 
+#include <vulkan/vulkan.h>
+#include <glm/glm.hpp>
+
 #include "../vulkan/Vulkan.hpp"
+
 #include "../collections/Pool.hpp"
 #include "../collections/BufferAllocator.hpp"
-//#include "../renderer/Renderer.hpp"
-#include <vulkan/vulkan.h>
+
 #include "../types/BttEnums.hpp"
-#include <glm/glm.hpp>
 
 namespace boitatah
 {

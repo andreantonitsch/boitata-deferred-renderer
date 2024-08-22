@@ -1,8 +1,4 @@
 #include "BackBuffer.hpp"
-#include "../types/RenderTarget.hpp"
-#include "../collections/Pool.hpp"
-#include "../types/BackBufferDesc.hpp"
-#include "Renderer.hpp"
 
 namespace boitatah
 {

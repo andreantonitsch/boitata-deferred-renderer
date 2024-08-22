@@ -1,12 +1,14 @@
+#include "Renderer.hpp"
+
 #include <iostream>
 #include <stdexcept>
 
-#include "Renderer.hpp"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
 #include <stdexcept>
-#include "../types/Swapchain.hpp"
+
+
 
 namespace boitatah
 {
@@ -794,15 +796,17 @@ namespace boitatah
             return Handle<BufferReservation>();
 
         stagingBufferQueue.emplace_back(stagingHandle);
+
+        
     }
 
     void Renderer::clearUploadBufferQueue()
     {
 
-        for (size_t i = 0; i < stagingBufferQueue.size(); i++)
-        {
-            unreserveBuffer(stagingBufferQueue[i]);
-        }
+        // for (size_t i = 0; i < stagingBufferQueue.size(); i++)
+        // {
+        //     unreserveBuffer(stagingBufferQueue[i]);
+        // }
 
         stagingBufferQueue.clear();
     }

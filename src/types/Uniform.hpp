@@ -1,11 +1,11 @@
-#ifndef  BOITATAH_UNIFORM_HPP 
+#ifndef BOITATAH_UNIFORM_HPP 
 #define BOITATAH_UNIFORM_HPP
 
 #include "../collections/Pool.hpp"
-#include "BttEnums.hpp"
 #include "../buffers/Buffer.hpp"
+#include "BttEnums.hpp"
 
-namespace boitata{
+namespace boitatah{
     struct UniformCreateDesc{
 
     };
