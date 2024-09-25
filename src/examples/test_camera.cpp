@@ -5,7 +5,7 @@
 #include "../types/Shader.hpp"
 #include "../utils/utils.hpp"
 #include "../collections/Pool.hpp"
-#include "../renderer/Camera.hpp"
+#include "../renderer/modules/Camera.hpp"
 
 using namespace boitatah;
 

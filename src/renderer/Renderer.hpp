@@ -17,6 +17,7 @@
 #include "modules/Swapchain.hpp"
 #include "modules/DescriptorPoolManager.hpp"
 #include "modules/Camera.hpp"
+#include "modules/GPUResourceManager.hpp"
 
 #include "../collections/Pool.hpp"
 
@@ -31,7 +32,6 @@
 #include "../types/RenderTarget.hpp"
 #include "../types/commands/Commands.hpp"
 #include "../types/Material.hpp"
-#include "../types/Uniform.hpp"
 
 
 // Objective here is to have expose no lone vulkan types.
@@ -113,9 +113,8 @@ namespace boitatah
 
         //UNIFORMS
         Handle<Uniform> createUniform(void *data, uint32_t size, DESCRIPTOR_TYPE type);
-        void updateUniform(Handle<Uniform> uniform, void* new_data);
-        void flagUniform(Handle<Uniform> uniform);
-        void updateUniforms(const SceneNode* scene_nodes);
+        void updateUniform(const Handle<Uniform> uniform, const void* new_data, const uint32_t new_size);
+        void commitSceneNodeUniforms(const SceneNode * scene_nodes);
 
         //BUFFERS
         Buffer *createBuffer(const BufferDesc &desc);
@@ -147,6 +146,7 @@ namespace boitatah
         BackBufferManager *m_backBufferManager;
         Swapchain *swapchain;
         DescriptorPoolManager *descriptorPoolManager;
+        GPUResourceManager *uniformManager;
 
         // Frame Uniforms
         Handle<BufferReservation> m_cameraUniforms;

@@ -265,8 +265,8 @@ namespace boitatah
         // SORT BY MATERIALS
         // ETC
 
-        // UPDATE UNIFORMS
-        updateUniforms(nodes);
+        // COMMIT UNIFORM UPDATES OF ACTIVE NODES
+        //updateUniforms(nodes);
 
 
         RenderTarget renderTarget;
@@ -281,9 +281,9 @@ namespace boitatah
 
         // update camera uniforms
         FrameUniforms frameUniforms;
-        copyDataToBuffer({.reservation = m_cameraUniforms,
-                          .data = &frameUniforms,
-                          .dataSize = sizeof(FrameUniforms)});
+        // copyDataToBuffer({.reservation = m_cameraUniforms,
+        //                   .data = &frameUniforms,
+        //                   .dataSize = sizeof(FrameUniforms)});
 
         beginBuffer({.buffer = renderTargetBuffers.drawBuffer});
 
@@ -393,11 +393,11 @@ namespace boitatah
         uniformPool.get(command.uniform, uniform);
 
         // TODO change usage to type depending on uniform type.
-        queueUploadBuffer({
-            .dataSize = uniform.get_size(),
-            .data = uniform.get_data(),
-            .usage = BUFFER_USAGE::UNIFORM_BUFFER
-        });
+        // queueUploadBuffer({
+        //     .dataSize = uniform.get_size(),
+        //     .data = uniform.get_data(),
+        //     .usage = BUFFER_USAGE::UNIFORM_BUFFER
+        // });
     }
 
     void Renderer::transferImage(const TransferImageCommand &command)
@@ -719,12 +719,25 @@ namespace boitatah
         return Handle<Uniform>{};
     }
 
+    void Renderer::updateUniform(const Handle<Uniform> uniform, const void *new_data, const uint32_t new_size)
+    {
+        // TODO
+        //uniformManager->updateUniform(uniform, new_data, new_size);
+    }
+
+    void Renderer::commitSceneNodeUniforms(const SceneNode * scene_nodes)
+    {
+
+    }
+
     Buffer *Renderer::createBuffer(const BufferDesc &desc)
     {
         buffers.push_back(new Buffer(desc, m_vk));
 
         return buffers.back();
     }
+
+
 
     Handle<BufferReservation> Renderer::reserveBuffer(const BufferReservationRequest &request)
     {
