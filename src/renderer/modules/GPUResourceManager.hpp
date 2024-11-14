@@ -2,13 +2,14 @@
 #define BOITATAH_UNIFORM_MANAGER_HPP
 
 #include "../../vulkan/Vulkan.hpp"
-#include "../collections/Pool.hpp"
-#include "../buffers/Buffer.hpp"
-#include "../buffers/BufferManager.hpp"
-#include "../types/GPUResource.hpp"
+#include "../../collections/Pool.hpp"
+#include "../../buffers/Buffer.hpp"
+#include "../../buffers/BufferManager.hpp"
+#include "../../types/GPUResource.hpp"
 
 namespace boitatah
 {
+
     class GPUResourceManager{
 
         public:
@@ -26,7 +27,7 @@ namespace boitatah
 
         private:
             vk::Vulkan* m_vulkan;
-            BufferManager bufferManager;
+            buffer::BufferManager* bufferManager;
             
             std::vector<Pool<GPUResource>> pools;
             Pool<GPUResource> uniformPool = Pool<GPUResource>({.size = 1<<16, .name = "uniforms pool"});

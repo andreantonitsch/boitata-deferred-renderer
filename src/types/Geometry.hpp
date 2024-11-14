@@ -3,6 +3,7 @@
 
 #include <glm/glm.hpp>
 #include <vector>
+#include "../buffers/BufferStructs.hpp"
 #include "../buffers/Buffer.hpp"
 #include "../collections/Pool.hpp"
 #include <array>
@@ -21,8 +22,8 @@ namespace boitatah
 
     struct Geometry
     {
-        std::vector<Handle<BufferReservation>> buffers;
-        Handle<BufferReservation> indexBuffer;
+        std::vector<Handle<BufferAddress>> buffers;
+        Handle<BufferAddress> indexBuffer;
         glm::ivec2 vertexInfo;
         uint32_t vertexSize;
         uint32_t indiceCount;

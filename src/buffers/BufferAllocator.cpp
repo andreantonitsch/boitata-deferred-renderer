@@ -2,7 +2,8 @@
 #include "math.h"
 #include <bit>
 #include <algorithm>
-namespace boitatah
+
+namespace boitatah::buffer
 {
 
     BufferAllocator::BufferAllocator(const BufferAllocatorDesc &desc) : blockPool({.size = ((desc.partitionSize * (1u << desc.height)) / desc.partitionSize) * 2u - 1u})
@@ -43,6 +44,7 @@ namespace boitatah
                 .index = i,
                 .leftChildIndex = block.id * 2 - 1,
                 .rightChildIndex = block.id * 2,
+                .largestFreeBlockSize = block.size,
                 .occupation = FREE,
             };
 
@@ -74,6 +76,7 @@ namespace boitatah
             return Handle<Block>();
 
         nodes[available_index].occupation = FULL;
+        nodes[available_index].largestFreeBlockSize = 0;
         upstreamOccupationCorrect(available_index);
         //std::cout << "allocator corrected" << std::endl;
         occupiedSpace += blocks[available_index].size;
@@ -99,7 +102,17 @@ namespace boitatah
             }
 
             uint32_t p = static_cast<uint32_t>(n);
-            nodes[p].occupation = occupationFromChildrenNodes(p);
+            auto& node = nodes[p];
+            node.occupation = occupationFromChildrenNodes(p);
+            if(node.occupation == PARTIAL){
+                node.largestFreeBlockSize = std::max(
+                                nodes[node.leftChildIndex].largestFreeBlockSize,
+                                nodes[node.rightChildIndex].largestFreeBlockSize);
+            } else if(node.occupation == FULL){
+                node.largestFreeBlockSize = static_cast<uint32_t>(0);
+            } else if(node.occupation == FREE){
+                node.largestFreeBlockSize = blocks[p].size;
+            }
         }
     }
 
@@ -196,6 +209,11 @@ namespace boitatah
     uint32_t BufferAllocator::getOccupiedSpace()
     {
         return occupiedSpace;
+    }
+
+    uint32_t BufferAllocator::getLargestFreeBlockSize()
+    {
+        return nodes[0].largestFreeBlockSize;
     }
 
     std::string BufferAllocator::coolPrint()

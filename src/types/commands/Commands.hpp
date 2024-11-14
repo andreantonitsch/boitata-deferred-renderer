@@ -40,8 +40,8 @@ namespace boitatah
 
     struct CopyBufferCommand
     {
-        Handle<BufferReservation> src;
-        Handle<BufferReservation> dst;
+        Handle<BufferAddress> src;
+        Handle<BufferAddress> dst;
         CommandBuffer buffer;
     };
 
@@ -54,7 +54,7 @@ namespace boitatah
 
     struct CopyDataToBufferDesc
     {
-        Handle<BufferReservation> reservation;
+        Handle<BufferAddress> reservation;
         const void *data;
         uint64_t dataSize;
     };

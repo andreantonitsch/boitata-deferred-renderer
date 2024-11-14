@@ -17,6 +17,7 @@ namespace boitatah{
         // at most 2, one per material and one per instance
         std::vector<DescriptorSetLayout> materialLayouts;
         //Bindings perMaterialBindings;
+        //Bindings perInstanceBindings;
     };
 
     //Binds resources to shaders

@@ -223,7 +223,8 @@ void boitatah::vk::Vulkan::waitIdle()
     vkDeviceWaitIdle(device);
 }
 
-void boitatah::vk::Vulkan::waitForFence(VkFence &fence)
+
+void boitatah::vk::Vulkan::waitForFence(const VkFence &fence) const
 {
     std::cout << " waiting for fence " << std::endl;
     VkResult result = vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
@@ -231,6 +232,12 @@ void boitatah::vk::Vulkan::waitForFence(VkFence &fence)
         std::cout << "wait for fence failed " << result << std::endl;
     std::cout << " waited for fence " << std::endl;
     vkResetFences(device, 1, &fence);
+}
+
+bool boitatah::vk::Vulkan::checkFenceStatus(const VkFence &fence) const
+{
+    VkResult result = vkGetFenceStatus(device, fence);
+    return result == VK_TRUE;
 }
 
 #pragma endregion Synchronization
@@ -413,11 +420,11 @@ VkCommandBuffer boitatah::vk::Vulkan::allocateCommandBuffer(const CommandBufferD
     return buffer;
 }
 
-void boitatah::vk::Vulkan::beginBufferCommand(const BeginCommandVk &command)
+void boitatah::vk::Vulkan::beginCmdBuffer(const BeginCommandVk &command)
 {
     VkCommandBufferBeginInfo beginInfo{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = 0,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
         .pInheritanceInfo = nullptr};
     if (vkBeginCommandBuffer(command.commandBuffer, &beginInfo) != VK_SUCCESS)
     {
@@ -490,7 +497,7 @@ void boitatah::vk::Vulkan::recordDrawCommand(const DrawCommandVk &command)
     }
 }
 
-void boitatah::vk::Vulkan::resetCommandBuffer(const VkCommandBuffer buffer)
+void boitatah::vk::Vulkan::resetCmdBuffer(const VkCommandBuffer buffer)
 {
     vkResetCommandBuffer(buffer, 0);
 }
@@ -518,16 +525,16 @@ void boitatah::vk::Vulkan::submitDrawCmdBuffer(const SubmitDrawCommandVk &comman
     }
 }
 
-void boitatah::vk::Vulkan::beginCmdBuffer(const VkCommandBuffer &buffer)
-{
-    vkResetCommandBuffer(buffer, 0);
+// void boitatah::vk::Vulkan::beginCmdBuffer(const VkCommandBuffer &buffer)
+// {
+//     vkResetCommandBuffer(buffer, 0);
 
-    VkCommandBufferBeginInfo beginInfo{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-    };
-    vkBeginCommandBuffer(buffer, &beginInfo);
-}
+//     VkCommandBufferBeginInfo beginInfo{
+//         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+//         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+//     };
+//     vkBeginCommandBuffer(buffer, &beginInfo);
+// }
 
 void boitatah::vk::Vulkan::submitCmdBuffer(const SubmitCommandVk &command)
 {

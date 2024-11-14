@@ -140,23 +140,21 @@ namespace boitatah::vk
 
         // Generic Commands
         VkCommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
-        void resetCommandBuffer(const VkCommandBuffer buffer);
+        void beginCmdBuffer(const BeginCommandVk &command);
+        void resetCmdBuffer(const VkCommandBuffer buffer);
+        void submitCmdBuffer(const SubmitCommandVk &command);
 
         // Render Commands
-        void beginBufferCommand(const BeginCommandVk &command);
+        //void beginBufferCommand(const BeginCommandVk &command);
         void beginRenderpassCommand(const BeginRenderpassCommandVk &command);
         void recordDrawCommand(const DrawCommandVk &command);
         void submitDrawCmdBuffer(const SubmitDrawCommandVk &command);
         void bindPipelineCommand(const BindPipelineCommandVk &command);
 
-        // Buffer Commands
-        void beginCmdBuffer(const VkCommandBuffer &buffer);
-        void submitCmdBuffer(const SubmitCommandVk &command);
 
         // Transfer Commands
         void CmdCopyImage(const CopyImageCommandVk &command);
         void CmdCopyBuffer(const CopyBufferCommandVk &command);
-
         void CmdTransitionLayout(const TransitionLayoutCmdVk &command);
 
 #pragma endregion Commands
@@ -165,8 +163,8 @@ namespace boitatah::vk
         // Sync Methods
         void waitForFrame(RenderTargetCmdBuffers &bufferData);
         void waitIdle();
-        void waitForFence(VkFence &fence);
-
+        void waitForFence(const VkFence &fence) const;
+        bool checkFenceStatus(const VkFence &fence) const;
 
         // Destroy Objects
         void destroyShader(Shader &shader);

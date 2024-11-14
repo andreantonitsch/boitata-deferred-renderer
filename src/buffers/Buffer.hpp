@@ -7,52 +7,14 @@
 #include "../vulkan/Vulkan.hpp"
 
 #include "../collections/Pool.hpp"
-#include "../collections/BufferAllocator.hpp"
+#include "BufferStructs.hpp"
+#include "BufferAllocator.hpp"
 
 #include "../types/BttEnums.hpp"
 
-namespace boitatah
+namespace boitatah::buffer
 {
-    class Buffer;
-
-    struct BufferCompatibility
-    {
-        uint32_t requestSize;
-        BUFFER_USAGE usage;
-        SHARING_MODE sharing;
-    };
-
-    struct BufferReservationRequest
-    {
-        uint32_t request;
-        BUFFER_USAGE usage;
-        SHARING_MODE sharing;
-    };
-
-    struct BufferReservation
-    {
-        Buffer* buffer;
-        uint32_t size;
-        uint32_t requestSize;
-        uint32_t offset;
-        Handle<Block> reservedBlock;
-    };
-
-    struct BufferDesc
-    {
-        // uint32_t alignment;
-        uint32_t estimatedElementSize;
-        // power of 2.
-        uint32_t partitions;
-        BUFFER_USAGE usage;
-        SHARING_MODE sharing;
-    };
-
-    struct BufferUploadDesc{
-        uint32_t dataSize;
-        const void* data;
-        BUFFER_USAGE usage;
-    };
+   
 
     class Buffer
     {
@@ -60,12 +22,13 @@ namespace boitatah
         Buffer(const BufferDesc &desc, const vk::Vulkan *vulkan);
         ~Buffer(void);
 
-        BufferReservation reserve(const uint32_t request);
+        Handle<BufferReservation> reserve(const uint32_t request);
         bool unreserve(const Handle<BufferReservation> reservation);
 
-        //BufferReservation checkReservation(const Handle<BufferReservation> reservation);
+        //void updateBufferSync(const Handle<BufferReservation> handle, void * data);
+        void queueUpdate(const Handle<BufferReservation> handle, void * data);
 
-        bool checkCompatibility(const BufferCompatibility &compatibility);
+        bool checkCompatibility(const BufferReservationRequest &compatibility);
 
         VkBuffer getBuffer();
         VkDeviceMemory getMemory();
@@ -82,7 +45,7 @@ namespace boitatah
 
         uint32_t alignment;
         uint32_t actualSize;
-
+        uint32_t largestchunk;
 
         Pool<BufferReservation> reservationPool{{.size = 50, .name = "buffer pool"}};
 

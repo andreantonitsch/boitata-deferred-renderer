@@ -4,8 +4,9 @@ set(LIBRARY_OUTPUT_PATH ${OUTPUT_FOLDER}/libs)
 
 set(LIB_DR_SOURCES
             collections/PartitionList.cpp
-            collections/BufferAllocator.cpp
+            buffers/BufferAllocator.cpp
             buffers/Buffer.cpp
+            buffers/BufferManager.cpp
             renderer/modules/Swapchain.cpp
             renderer/modules/Camera.cpp
             renderer/modules/BackBuffer.cpp

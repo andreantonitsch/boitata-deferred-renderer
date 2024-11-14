@@ -1,4 +1,4 @@
-#include "../collections/BufferAllocator.hpp"
+#include "../buffers/BufferAllocator.hpp"
 #include "../utils/utils.hpp"
 #include "../collections/Pool.hpp"
 #include <vector>
@@ -7,7 +7,7 @@
 int main()
 {
     using namespace boitatah;
-
+    using namespace boitatah::buffer;
     BufferAllocatorDesc desc{};
     desc.alignment = 16u;
     desc.height = 9u;

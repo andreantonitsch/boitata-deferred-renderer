@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-namespace boitatah {
+namespace boitatah::buffer {
 
     struct Block{
         uint32_t id;
@@ -26,6 +26,8 @@ namespace boitatah {
         // children nodes.
         uint32_t leftChildIndex;
         uint32_t rightChildIndex;
+
+        uint32_t largestFreeBlockSize;
 
         //FREE nodes are leaves;
         //1 partial;
@@ -52,6 +54,7 @@ namespace boitatah {
 
             uint32_t freeSpace();
             uint32_t getOccupiedSpace();
+            uint32_t getLargestFreeBlockSize();
             std::string coolPrint();
 
             uint32_t getSize();
@@ -70,7 +73,7 @@ namespace boitatah {
 
             Pool<Block> blockPool;
 
-            uint32_t getNodeBuddy(uint32_t index);
+            //uint32_t getNodeBuddy(uint32_t index);
             uint32_t getNodeLevel(uint32_t index);
 
             uint32_t findFreeNode(uint32_t request);

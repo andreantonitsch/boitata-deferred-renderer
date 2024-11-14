@@ -15,6 +15,14 @@ namespace boitatah
         uint32_t gen = 0;
 
         bool isNull() const { return gen == 0; }
+        bool operator == (const Handle &other)
+        {
+            if( i == other.i && gen == other.gen)
+                return true;
+            else
+                return false;
+        }
+
     };
 
     struct PoolOptions

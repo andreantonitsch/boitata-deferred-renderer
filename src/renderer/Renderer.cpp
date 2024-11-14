@@ -27,6 +27,8 @@ namespace boitatah
         m_vk->attachWindow(m_window);
         m_vk->completeInit();
 
+        m_bufferManager = new BufferManager(m_vk);
+
         createSwapchain();
 
         m_backBufferManager = new BackBufferManager(this);
@@ -37,7 +39,7 @@ namespace boitatah
                                                          .type = COMMAND_BUFFER_TYPE::TRANSFER});
         m_transferFence = m_vk->createFence(true);
 
-        m_cameraUniforms = reserveBuffer({
+        m_cameraUniforms = getBufferManager().reserveBuffer({
             .request = sizeof(FrameUniforms),
             .usage = BUFFER_USAGE::UNIFORM_BUFFER,
             .sharing = SHARING_MODE::CONCURRENT,
@@ -136,17 +138,17 @@ namespace boitatah
             throw std::runtime_error("Failed to retrieve geometry");
         }
 
-        BufferReservation vertexBufferReservation;
-        Handle<BufferReservation> vertexBufferHandle = geom.buffers.size() > 0 ? geom.buffers[0] : Handle<BufferReservation>();
-        bufferReservPool.get(vertexBufferHandle, vertexBufferReservation);
+        Handle<BufferAddress> vertexBufferHandle = geom.buffers.size() > 0 ? geom.buffers[0] : Handle<BufferAddress>();
+        auto vertexBufferReservation = m_bufferManager->getAddressReservation(vertexBufferHandle);
+        auto vertexBuffer = m_bufferManager->getAddressBuffer(vertexBufferHandle);
 
-        BufferReservation indexBufferReservation;
-        bufferReservPool.get(geom.indexBuffer, indexBufferReservation);
+        auto indexBufferReservation = m_bufferManager->getAddressReservation(geom.indexBuffer);
+        auto indexBuffer = m_bufferManager->getAddressBuffer(geom.indexBuffer);
 
         m_vk->waitForFrame(buffers);
 
-        m_vk->resetCommandBuffer(buffers.drawBuffer.buffer);
-        m_vk->resetCommandBuffer(buffers.transferBuffer.buffer);
+        m_vk->resetCmdBuffer(buffers.drawBuffer.buffer);
+        m_vk->resetCmdBuffer(buffers.transferBuffer.buffer);
 
         drawCommand({
             .drawBuffer = buffers.drawBuffer,
@@ -158,10 +160,10 @@ namespace boitatah
                 static_cast<int>(image.dimensions.y),
             },
 
-            .vertexBuffer = vertexBufferHandle.isNull() ? VK_NULL_HANDLE : vertexBufferReservation.buffer->getBuffer(),
+            .vertexBuffer = vertexBufferHandle.isNull() ? VK_NULL_HANDLE : vertexBuffer->getBuffer(),
             .vertexBufferOffset = vertexBufferReservation.offset,
 
-            .indexBuffer = geom.indexBuffer.isNull() ? VK_NULL_HANDLE : indexBufferReservation.buffer->getBuffer(),
+            .indexBuffer = geom.indexBuffer.isNull() ? VK_NULL_HANDLE : indexBuffer->getBuffer(),
             .indexBufferOffset = indexBufferReservation.offset,
             .indexCount = geom.indiceCount,
 
@@ -343,6 +345,14 @@ namespace boitatah
     {
         cleanup();
     }
+
+    BufferManager &Renderer::getBufferManager()
+    {
+        if(m_bufferManager == nullptr)
+            throw std::runtime_error("null buffer manager");
+        return *m_bufferManager;
+    }
+
     bool Renderer::isWindowClosed()
     {
         return m_window->isWindowClosed();
@@ -384,7 +394,7 @@ namespace boitatah
 
     void Renderer::clearCommandBuffer(const CommandBuffer &buffer)
     {
-        m_vk->resetCommandBuffer(buffer.buffer);
+        m_vk->resetCmdBuffer(buffer.buffer);
     }
 
     void Renderer::queueTransferUniform(const TransferUniformCommand &command)
@@ -418,7 +428,6 @@ namespace boitatah
         if (!imagePool.get(srcBuffer.attachments[0], srcImage))
             throw std::runtime_error("failed to transfer buffers");
 
-        // begin buffer
 
         m_vk->CmdCopyImage({.buffer = command.buffer.buffer,
                             .srcImage = srcImage.image,
@@ -427,29 +436,27 @@ namespace boitatah
                             .dstImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                             .extent = srcImage.dimensions});
 
-        // submit buffer
     }
 
     void Renderer::copyBuffer(const CopyBufferCommand &command)
     {
-        BufferReservation srcReservation;
-        BufferReservation dstReservation;
-        if (!bufferReservPool.get(command.src, srcReservation))
-            throw std::runtime_error("failed to copy buffer");
-        if (!bufferReservPool.get(command.dst, dstReservation))
-            throw std::runtime_error("failed to copy buffer");
+        auto srcBuffer  = m_bufferManager->getAddressBuffer(command.src);
+        auto dstBuffer  = m_bufferManager->getAddressBuffer(command.dst);
+
+        auto srcReserve = m_bufferManager->getAddressReservation(command.src);
+        auto dstReserve  = m_bufferManager->getAddressReservation(command.dst);
 
         // vk->waitIdle();
         m_vk->waitForFence(m_transferFence);
-        m_vk->beginCmdBuffer(command.buffer.buffer);
+        m_vk->beginCmdBuffer({.commandBuffer = command.buffer.buffer});
 
         m_vk->CmdCopyBuffer({
             .commandBuffer = command.buffer.buffer,
-            .srcBuffer = srcReservation.buffer->getBuffer(),
-            .srcOffset = srcReservation.offset,
-            .dstBuffer = dstReservation.buffer->getBuffer(),
-            .dstOffset = dstReservation.offset,
-            .size = srcReservation.size,
+            .srcBuffer = srcBuffer->getBuffer(),
+            .srcOffset = srcReserve.offset,
+            .dstBuffer = dstBuffer->getBuffer(),
+            .dstOffset = dstReserve.offset,
+            .size = srcReserve.size,
         });
 
         m_vk->submitCmdBuffer({
@@ -461,7 +468,7 @@ namespace boitatah
 
     void Renderer::beginBuffer(const BeginBufferCommand &command)
     {
-        m_vk->beginBufferCommand({.commandBuffer = command.buffer.buffer});
+        m_vk->beginCmdBuffer({.commandBuffer = command.buffer.buffer});
     }
 
     void Renderer::beginRenderpass(const BeginRenderpassCommand &command)
@@ -664,7 +671,7 @@ namespace boitatah
         Geometry geo{};
         if (desc.vertexDataSize != 0)
         {
-            Handle<BufferReservation> bufferHandle = uploadBuffer({
+            Handle<BufferAddress> bufferHandle = m_bufferManager->uploadBuffer({
                 .dataSize = desc.vertexDataSize,
                 .data = desc.vertexData,
                 .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
@@ -675,7 +682,7 @@ namespace boitatah
         std::cout << "copied vertex buffer " << std::endl;
         if (desc.indexCount != 0)
         {
-            geo.indexBuffer = uploadBuffer({.dataSize = static_cast<uint32_t>(desc.indexCount * sizeof(uint32_t)),
+            geo.indexBuffer = m_bufferManager->uploadBuffer({.dataSize = static_cast<uint32_t>(desc.indexCount * sizeof(uint32_t)),
                                             .data = desc.indexData,
                                             .usage = BUFFER_USAGE::TRANSFER_DST_INDEX});
         }
@@ -730,150 +737,143 @@ namespace boitatah
 
     }
 
-    Buffer *Renderer::createBuffer(const BufferDesc &desc)
-    {
-        buffers.push_back(new Buffer(desc, m_vk));
+    // Buffer *Renderer::createBuffer(const BufferDesc &desc)
+    // {
+    //     buffers.push_back(new Buffer(desc, m_vk));
 
-        return buffers.back();
-    }
+    //     return buffers.back();
+    // }
 
 
 
-    Handle<BufferReservation> Renderer::reserveBuffer(const BufferReservationRequest &request)
-    {
-        // Find Compatible Buffer
-        Buffer *buffer = findOrCreateCompatibleBuffer({.requestSize = request.request,
-                                                       .usage = request.usage,
-                                                       .sharing = request.sharing});
-        // allocate in buffer
-        BufferReservation reservation = buffer->reserve(request.request);
+    // Handle<BufferAddress> Renderer::reserveBuffer(const BufferReservationRequest &request)
+    // { 
+    //     return bufferManager->reserveBuffer(request);
+    // }
 
-        return bufferReservPool.set(reservation);
-    }
+    // std::pair<Handle<BufferAddress>, Handle<BufferAddress>> Renderer::getUploadBufferHandles(const BufferUploadDesc &desc)
+    // {
+    //     Handle<BufferAddress> stagingHandle = bufferManager->reserveBuffer({.request = desc.dataSize,
+    //                                                              .usage = BUFFER_USAGE::TRANSFER_SRC,
+    //                                                              .sharing = SHARING_MODE::CONCURRENT});
 
-    std::pair<Handle<BufferReservation>, Handle<BufferReservation>> Renderer::getUploadBufferHandles(const BufferUploadDesc &desc)
-    {
-        Handle<BufferReservation> stagingHandle = reserveBuffer({.request = desc.dataSize,
-                                                                 .usage = BUFFER_USAGE::TRANSFER_SRC,
-                                                                 .sharing = SHARING_MODE::CONCURRENT});
+    //     Handle<BufferAddress> resHandle = bufferManager->reserveBuffer({.request = desc.dataSize,
+    //                                                          .usage = desc.usage,
+    //                                                          .sharing = SHARING_MODE::CONCURRENT});
+    //     if (resHandle.isNull() || stagingHandle.isNull())
+    //     {
+    //         unreserveBuffer(stagingHandle);
+    //         unreserveBuffer(resHandle);
+    //         return std::pair(Handle<BufferAddress>(), Handle<BufferAddress>());
+    //     }
+    //     return std::pair(stagingHandle, resHandle);
+    // }
 
-        Handle<BufferReservation> resHandle = reserveBuffer({.request = desc.dataSize,
-                                                             .usage = desc.usage,
-                                                             .sharing = SHARING_MODE::CONCURRENT});
-        if (resHandle.isNull() || stagingHandle.isNull())
-        {
-            unreserveBuffer(stagingHandle);
-            unreserveBuffer(resHandle);
-            return std::pair(Handle<BufferReservation>(), Handle<BufferReservation>());
-        }
-        return std::pair(stagingHandle, resHandle);
-    }
+    // Handle<BufferAddress> Renderer::uploadBuffer(const BufferUploadDesc &desc)
+    // {
+    //     auto pair = getUploadBufferHandles(desc);
 
-    Handle<BufferReservation> Renderer::uploadBuffer(const BufferUploadDesc &desc)
-    {
-        auto pair = getUploadBufferHandles(desc);
+    //     Handle<BufferAddress> stagingHandle = pair.first;
+    //     Handle<BufferAddress> resHandle = pair.second;
 
-        Handle<BufferReservation> stagingHandle = pair.first;
-        Handle<BufferReservation> resHandle = pair.second;
+    //     // if (resHandle.isNull())
+    //     //     return Handle<BufferAddress>();
 
-        if (resHandle.isNull())
-            return Handle<BufferReservation>();
+    //     // BufferAddress stagingReservation;
+    //     // bufferReservPool.get(stagingHandle, stagingReservation);
 
-        BufferReservation stagingReservation;
-        bufferReservPool.get(stagingHandle, stagingReservation);
+    //     // m_vk->copyDataToBuffer({
+    //     //     .memory = stagingReservation.buffer->getMemory(),
+    //     //     .offset = stagingReservation.offset,
+    //     //     .size = desc.dataSize,
+    //     //     .data = desc.data,
+    //     // });
 
-        m_vk->copyDataToBuffer({
-            .memory = stagingReservation.buffer->getMemory(),
-            .offset = stagingReservation.offset,
-            .size = desc.dataSize,
-            .data = desc.data,
-        });
+    //     // copyBuffer({.src = stagingHandle,
+    //     //             .dst = resHandle,
+    //     //             .buffer = m_transferCommandBuffer});
 
-        copyBuffer({.src = stagingHandle,
-                    .dst = resHandle,
-                    .buffer = m_transferCommandBuffer});
+    //     // unreserveBuffer(stagingHandle);
 
-        unreserveBuffer(stagingHandle);
+    //     return resHandle;
+    // }
 
-        return resHandle;
-    }
+    // Handle<BufferReservation> Renderer::queueUploadBuffer(const BufferUploadDesc &desc)
+    // {
+    //     auto pair = getUploadBufferHandles(desc);
 
-    Handle<BufferReservation> Renderer::queueUploadBuffer(const BufferUploadDesc &desc)
-    {
-        auto pair = getUploadBufferHandles(desc);
+    //     Handle<BufferReservation> stagingHandle = pair.first;
+    //     Handle<BufferReservation> resHandle = pair.second;
 
-        Handle<BufferReservation> stagingHandle = pair.first;
-        Handle<BufferReservation> resHandle = pair.second;
+    //     if (resHandle.isNull())
+    //         return Handle<BufferReservation>();
 
-        if (resHandle.isNull())
-            return Handle<BufferReservation>();
-
-        stagingBufferQueue.emplace_back(stagingHandle);
+    //     stagingBufferQueue.emplace_back(stagingHandle);
 
         
-    }
+    // }
 
-    void Renderer::clearUploadBufferQueue()
-    {
+    // void Renderer::clearUploadBufferQueue()
+    // {
 
-        // for (size_t i = 0; i < stagingBufferQueue.size(); i++)
-        // {
-        //     unreserveBuffer(stagingBufferQueue[i]);
-        // }
+    //     // for (size_t i = 0; i < stagingBufferQueue.size(); i++)
+    //     // {
+    //     //     unreserveBuffer(stagingBufferQueue[i]);
+    //     // }
 
-        stagingBufferQueue.clear();
-    }
+    //     stagingBufferQueue.clear();
+    // }
 
-    void Renderer::copyDataToBuffer(const CopyDataToBufferDesc &desc)
-    {
+    // void Renderer::copyDataToBuffer(const CopyDataToBufferDesc &desc)
+    // {
 
-        BufferReservation reservation;
-        bufferReservPool.get(desc.reservation, reservation);
+    //     // BufferReservation reservation;
+    //     // bufferReservPool.get(desc.reservation, reservation);
 
-        m_vk->copyDataToBuffer(
-            {
-                .memory = reservation.buffer->getMemory(),
-                .offset = reservation.offset,
-                .size = desc.dataSize,
-                .data = desc.data,
-            });
-    }
+    //     // m_vk->copyDataToBuffer(
+    //     //     {
+    //     //         .memory = reservation.buffer->getMemory(),
+    //     //         .offset = reservation.offset,
+    //     //         .size = desc.dataSize,
+    //     //         .data = desc.data,
+    //     //     });
+    // }
 
-    void Renderer::unreserveBuffer(Handle<BufferReservation> &reservation)
-    {
-    }
+    // void Renderer::unreserveBuffer(Handle<BufferAddress> &reservation)
+    // {
+    // }
 
-    Buffer *Renderer::findOrCreateCompatibleBuffer(const BufferCompatibility &compatibility)
-    {
-        // Find buffer
-        uint32_t bufferIndex = findCompatibleBuffer(compatibility);
-        if (bufferIndex != UINT32_MAX)
-        {
-            // return reference
-            return buffers[bufferIndex];
-        }
-        else
-        {
-            Buffer *buffer = createBuffer({
-                .estimatedElementSize = compatibility.requestSize,
-                .partitions = 1 << 10,
-                .usage = compatibility.usage,
-                .sharing = compatibility.sharing,
-            });
-            // return reference
-            return buffer;
-        }
-    }
+    // Buffer *Renderer::findOrCreateCompatibleBuffer(const BufferReservationRequest &compatibility)
+    // {
+    //     // // Find buffer
+    //     // uint32_t bufferIndex = findCompatibleBuffer(compatibility);
+    //     // if (bufferIndex != UINT32_MAX)
+    //     // {
+    //     //     // return reference
+    //     //     return buffers[bufferIndex];
+    //     // }
+    //     // else
+    //     // {
+    //     //     Buffer *buffer = createBuffer({
+    //     //         .estimatedElementSize = compatibility.request,
+    //     //         .partitions = 1 << 10,
+    //     //         .usage = compatibility.usage,
+    //     //         .sharing = compatibility.sharing,
+    //     //     });
+    //     //     // return reference
+    //     //     return buffer;
+    //     // }
+    // }
 
-    uint32_t Renderer::findCompatibleBuffer(const BufferCompatibility &compatibility)
-    {
-        for (int i = 0; i < buffers.size(); i++)
-        {
-            if (buffers[i]->checkCompatibility(compatibility))
-                return i;
-        }
-        return UINT32_MAX;
-    }
+    // uint32_t Renderer::findCompatibleBuffer(const BufferReservationRequest &compatibility)
+    // {
+    //     for (int i = 0; i < buffers.size(); i++)
+    //     {
+    //         if (buffers[i]->checkCompatibility(compatibility))
+    //             return i;
+    //     }
+    //     return UINT32_MAX;
+    // }
 
 #pragma endregion Buffers
 

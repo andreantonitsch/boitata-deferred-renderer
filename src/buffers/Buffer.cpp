@@ -1,7 +1,7 @@
 #include "Buffer.hpp"
 #include "../vulkan/Vulkan.hpp"
 #include <bit>
-namespace boitatah
+namespace boitatah::buffer
 {
 
     Buffer::Buffer(const BufferDesc &desc, const vk::Vulkan *vulkan) : vulkan(vulkan)
@@ -43,37 +43,56 @@ namespace boitatah
         vulkan->destroyBuffer({.buffer = buffer, .memory = memory});
         delete allocator;
     }
-    BufferReservation Buffer::reserve(const uint32_t request)
+    
+    Handle<BufferReservation> Buffer::reserve(const uint32_t request)
     {
-
         auto blockHandle = allocator->allocate(request);
 
         // failed to reserve a buffer.
         if (blockHandle.isNull())
-            return BufferReservation{};
+            return Handle<BufferReservation>{};
 
-        Block block;
-        BufferReservation reservation{
-            .buffer = this,
-        };
+        BufferReservation reservation{};
         allocator->getBlockData(blockHandle, reservation.offset, reservation.size);
 
         reservation.reservedBlock = blockHandle;
         reservation.requestSize = request;
 
-        return reservation;
+        Handle<BufferReservation> reservationHandle = reservationPool.set(reservation);
+        return reservationHandle;
     }
-    bool Buffer::checkCompatibility(const BufferCompatibility &compatibility)
+
+
+    bool Buffer::unreserve(const Handle<BufferReservation> reservation)
     {
-        // std::cout << " testing compatibility " << static_cast<int>(usage) <<
-        // " " << static_cast<int>(compatibility.usage) << std::endl;
+        if (reservation.isNull())
+            return false;
+
+        BufferReservation bufferReservation;
+        if(!reservationPool.get(reservation, bufferReservation))
+            throw std::runtime_error("reservation double release");
+        
+        allocator->release(bufferReservation.reservedBlock);
+
+        return true;
+    }
+
+    // TODO implement
+    void Buffer::queueUpdate(const Handle<BufferReservation> handle, void *data)
+    {
+
+
+
+    }
+
+    bool Buffer::checkCompatibility(const BufferReservationRequest &compatibility)
+    {
         return usage == compatibility.usage && 
-        allocator->freeSpace() >= compatibility.requestSize;
+               allocator->getLargestFreeBlockSize() >= compatibility.request;
     }
     VkBuffer Buffer::getBuffer()
     {
         return buffer;
-        ;
     }
     VkDeviceMemory Buffer::getMemory()
     {

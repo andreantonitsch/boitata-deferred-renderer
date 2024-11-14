@@ -12,19 +12,6 @@
 
 #include "../vulkan/Vulkan.hpp"
 
-#include "modules/BackBuffer.hpp"
-#include "modules/Window.hpp"
-#include "modules/Swapchain.hpp"
-#include "modules/DescriptorPoolManager.hpp"
-#include "modules/Camera.hpp"
-#include "modules/GPUResourceManager.hpp"
-
-#include "../collections/Pool.hpp"
-
-#include "../scene/Scene.hpp"
-
-#include "../buffers/Buffer.hpp"
-
 #include "../types/BackBufferDesc.hpp"
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
@@ -32,6 +19,23 @@
 #include "../types/RenderTarget.hpp"
 #include "../types/commands/Commands.hpp"
 #include "../types/Material.hpp"
+
+#include "../buffers/Buffer.hpp"
+#include "../buffers/BufferManager.hpp"
+
+#include "modules/BackBuffer.hpp"
+#include "modules/Window.hpp"
+#include "modules/Swapchain.hpp"
+#include "modules/DescriptorPoolManager.hpp"
+#include "modules/Camera.hpp"
+//#include "modules/GPUResourceManager.hpp"
+
+#include "../collections/Pool.hpp"
+
+#include "../scene/Scene.hpp"
+
+
+
 
 
 // Objective here is to have expose no lone vulkan types.
@@ -43,6 +47,7 @@ namespace boitatah
 {
     using namespace vk;
     using namespace window;
+    using namespace buffer;
 
     template class Pool<Shader>;
     template class Pool<RenderTarget>;
@@ -67,6 +72,9 @@ namespace boitatah
         Renderer(RendererOptions options);
 
         ~Renderer(void);
+
+        // Manangers
+        BufferManager& getBufferManager();
 
         // Window methods
         bool isWindowClosed();
@@ -117,14 +125,14 @@ namespace boitatah
         void commitSceneNodeUniforms(const SceneNode * scene_nodes);
 
         //BUFFERS
-        Buffer *createBuffer(const BufferDesc &desc);
-        Handle<BufferReservation> reserveBuffer(const BufferReservationRequest &request);
-        std::pair<Handle<BufferReservation>,Handle<BufferReservation>> getUploadBufferHandles(const BufferUploadDesc &desc);
-        Handle<BufferReservation> uploadBuffer(const BufferUploadDesc &desc);
-        Handle<BufferReservation> queueUploadBuffer(const BufferUploadDesc &desc);
-        void clearUploadBufferQueue();
-        void copyDataToBuffer(const CopyDataToBufferDesc &desc);
-        void unreserveBuffer(Handle<BufferReservation> &reservation);
+        //Buffer *createBuffer(const BufferDesc &desc);
+        //Handle<BufferAddress> reserveBuffer(const BufferReservationRequest &request);
+        //std::pair<Handle<BufferAddress>,Handle<BufferAddress>> getUploadBufferHandles(const BufferUploadDesc &desc);
+        //Handle<BufferAddress> uploadBuffer(const BufferUploadDesc &desc);
+        //Handle<BufferAddress> queueUploadBuffer(const BufferUploadDesc &desc);
+        //void clearUploadBufferQueue();
+        //void copyDataToBuffer(const CopyDataToBufferDesc &desc);
+        //void unreserveBuffer(Handle<BufferAddress> &reservation);
 
 
         Handle<RenderPass> getBackBufferRenderPass();
@@ -146,10 +154,11 @@ namespace boitatah
         BackBufferManager *m_backBufferManager;
         Swapchain *swapchain;
         DescriptorPoolManager *descriptorPoolManager;
-        GPUResourceManager *uniformManager;
+        BufferManager *m_bufferManager;
+ 
 
         // Frame Uniforms
-        Handle<BufferReservation> m_cameraUniforms;
+        Handle<BufferAddress> m_cameraUniforms;
         // Handle<Uniform> m_cameraUniforms;
         DescriptorSetLayout m_baseLayout;
         Shader m_dummyPipeline;
@@ -161,8 +170,8 @@ namespace boitatah
         void createSwapchain();
 
         // Buffers
-        Buffer *findOrCreateCompatibleBuffer(const BufferCompatibility &compatibility);
-        uint32_t findCompatibleBuffer(const BufferCompatibility &compatibility);
+        //Buffer *findOrCreateCompatibleBuffer(const BufferReservationRequest &compatibility);
+        //uint32_t findCompatibleBuffer(const BufferReservationRequest &compatibility);
 
         // Pools
         Pool<Shader> shaderPool = Pool<Shader>({.size = 10, .name = "shader pool"});
@@ -172,13 +181,12 @@ namespace boitatah
         Pool<ShaderLayout> pipelineLayoutPool = Pool<ShaderLayout>({.size = 50, .name = "pipeline layout pool"});
         Pool<RenderTargetCmdBuffers> rtCmdPool = Pool<RenderTargetCmdBuffers>({.size = 50, .name = "rtcmd buffers pool"});
         Pool<Geometry> geometryPool = Pool<Geometry>({.size = 50, .name = "geometry pool"});
-        Pool<BufferReservation> bufferReservPool = Pool<BufferReservation>({.size = 100, .name = "reservation pool"});
         Pool<Uniform> uniformPool = Pool<Uniform>({.size = 1<<16, .name = "uniforms pool"});
 
 
 #pragma region UPDATE QUEUES
         std::vector<Handle<Uniform>> uniformUpdateQueue = std::vector<Handle<Uniform>>();
-        std::vector<Handle<BufferReservation>> stagingBufferQueue = std::vector<Handle<BufferReservation>>();
+        std::vector<Handle<BufferAddress>> stagingBufferQueue = std::vector<Handle<BufferAddress>>();
 #pragma endregion 
 
         std::vector<Buffer *> buffers; 
