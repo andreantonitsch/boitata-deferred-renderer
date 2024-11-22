@@ -34,7 +34,6 @@ namespace boitatah::vk
         uint64_t actualSize;
 
         uint32_t memoryTypeBits;
-
     };
 
     struct CommandPools
@@ -111,7 +110,7 @@ namespace boitatah::vk
         VkPipelineLayout createShaderLayout(const ShaderLayoutDescVk &desc);
         VkDescriptorSetLayout createDescriptorLayout(const DescriptorSetLayoutDesc &desc);
         VkFence createFence(bool signaled);
-        VkSemaphore createSemaphore();
+        VkSemaphore createSemaphore() const;
         BufferVkData createBuffer(const BufferDescVk & desc) const;
         BufferVkData getBufferAlignmentMemoryType(const BufferDescVk & desc) const;
 
@@ -123,8 +122,11 @@ namespace boitatah::vk
 
         // Manage Memory
         VkDeviceMemory allocateMemory(const MemoryDesc &desc);
+        void* mapMemory(const MapMemoryVk &desc);
+        void unmapMemory(const UnmapMemoryVk &desc) const;
         void bindImageMemory(VkDeviceMemory memory, VkImage image);
-        void copyDataToBuffer(CopyToBufferVk op);
+        void mapDataAndCopyToBuffer(CopyToBufferVk op);
+        void copyToMappedMemory(const CopyMappedMemoryVk &op) const;
 
         uint32_t getAlignmentForBuffer(const VkBuffer buffer) const;
 
@@ -154,7 +156,7 @@ namespace boitatah::vk
 
         // Transfer Commands
         void CmdCopyImage(const CopyImageCommandVk &command);
-        void CmdCopyBuffer(const CopyBufferCommandVk &command);
+        void CmdCopyBuffer(const CopyBufferCommandVk &command) const;
         void CmdTransitionLayout(const TransitionLayoutCmdVk &command);
 
 #pragma endregion Commands
@@ -164,7 +166,7 @@ namespace boitatah::vk
         void waitForFrame(RenderTargetCmdBuffers &bufferData);
         void waitIdle();
         void waitForFence(const VkFence &fence) const;
-        bool checkFenceStatus(const VkFence &fence) const;
+        bool checkFenceStatus(VkFence fence) ;
 
         // Destroy Objects
         void destroyShader(Shader &shader);
@@ -176,6 +178,7 @@ namespace boitatah::vk
         void destroyBuffer(BufferVkData buffer) const;
         void destroyFence(VkFence fence);
         void destroyDescriptorPool(VkDescriptorPool pool);
+        void destroyDescriptorSetLayout(VkDescriptorSetLayout &layout);
         // Copy assignment?
         // Vulkan& operator= (const Vulkan &v);//copy assignment
 

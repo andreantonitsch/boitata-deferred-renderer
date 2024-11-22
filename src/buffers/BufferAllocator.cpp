@@ -111,7 +111,7 @@ namespace boitatah::buffer
             } else if(node.occupation == FULL){
                 node.largestFreeBlockSize = static_cast<uint32_t>(0);
             } else if(node.occupation == FREE){
-                node.largestFreeBlockSize = blocks[p].size;
+                node.largestFreeBlockSize = blocks[node.index].size;
             }
         }
     }
@@ -214,6 +214,11 @@ namespace boitatah::buffer
     uint32_t BufferAllocator::getLargestFreeBlockSize()
     {
         return nodes[0].largestFreeBlockSize;
+    }
+
+    uint32_t BufferAllocator::getPartitionSize()
+    {
+        return partitionSize;
     }
 
     std::string BufferAllocator::coolPrint()

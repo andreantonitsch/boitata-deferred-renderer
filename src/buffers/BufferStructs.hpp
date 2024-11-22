@@ -1,12 +1,15 @@
 #ifndef BOITATAH_BUFFER_STRUCTS_HPP
 #define BOITATAH_BUFFER_STRUCTS_HPP
 
+#include <memory>
 #include "../collections/Pool.hpp"
 #include "../types/BttEnums.hpp"
 #include "BufferAllocator.hpp"
 
 namespace boitatah::buffer
 {
+    class Buffer;
+    class BufferManager;
 
     struct BufferReservationRequest
     {
@@ -24,6 +27,9 @@ namespace boitatah::buffer
         Handle<Block> reservedBlock;
     };
 
+
+
+
     struct BufferDesc
     {
         // uint32_t alignment;
@@ -32,19 +38,22 @@ namespace boitatah::buffer
         uint32_t partitions;
         BUFFER_USAGE usage;
         SHARING_MODE sharing;
-    };
 
-    struct BufferUploadDesc{
-        uint32_t dataSize;
-        const void* data;
-        BUFFER_USAGE usage;
+        //if sharing == sharing_mode::exclusive, requires a buffermanager
+        std::weak_ptr<BufferManager> bufferManager;
+        //std::shared_ptr<Buffer> stagingBuffer;
     };
-
-    class Buffer;
+    
     struct BufferAddress{
         Handle<Buffer *> buffer;
         Handle<BufferReservation> reservation;
         uint32_t size;
+    };
+
+    struct BufferUploadDesc{
+        Handle<BufferAddress> address;
+        uint32_t dataSize;
+        const void* data;
     };
 
     struct BufferAddressDesc

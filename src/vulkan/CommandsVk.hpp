@@ -60,8 +60,8 @@ namespace boitatah::vk
     {
         VkDeviceMemory memory;
         uint32_t offset;
-        uint64_t size;
-        const void *data;
+        uint32_t size;
+        void *data;
     };
 
     struct CopyBufferCommandVk
@@ -122,6 +122,25 @@ namespace boitatah::vk
     };
 
 
+    struct MapMemoryVk{
+        VkDeviceMemory memory;
+        uint32_t offset;
+        uint32_t size;
+    };
+    
+    struct UnmapMemoryVk{
+        VkDeviceMemory memory;
+    };
+
+    // sizes and offsets in bytes
+    struct CopyMappedMemoryVk
+    {
+        uint32_t offset;
+        uint32_t elementSize;
+        uint32_t elementCount;
+        void *map;
+        void *data;
+    };
 
 }
 #endif //BOITATAH_COMMANDS_VK_HPP

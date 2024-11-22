@@ -55,6 +55,7 @@ namespace boitatah::buffer {
             uint32_t freeSpace();
             uint32_t getOccupiedSpace();
             uint32_t getLargestFreeBlockSize();
+            uint32_t getPartitionSize();
             std::string coolPrint();
 
             uint32_t getSize();

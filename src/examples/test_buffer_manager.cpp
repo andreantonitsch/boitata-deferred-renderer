@@ -7,6 +7,13 @@
 #include "../collections/Pool.hpp"
 #include "../renderer/modules/Camera.hpp"
 
+
+#include <vector>
+
+#include <chrono>
+#include <thread>
+#include <cstdlib>
+
 using namespace boitatah;
 
 int main()
@@ -24,13 +31,27 @@ int main()
                                    .dimensions = {windowWidth, windowHeight}}});
 
 
-    auto bufferManager = r.getBufferManager();
+    auto& bufferManager = r.getBufferManager();
     
     auto bufferSpace = bufferManager.reserveBuffer({
-        .request = 1024,
-        .usage = BUFFER_USAGE::TRANSFER_DST,
-        .sharing = SHARING_MODE::EXCLUSIVE,
-    });
+          .request = 1u << 4,
+          .usage = BUFFER_USAGE::TRANSFER_DST,
+          .sharing = SHARING_MODE::EXCLUSIVE,
+      });
+
+    int quantity = 10000;
+    std::vector<Handle<BufferAddress>> buffers(quantity);
+
+    for (int i = 0; i < quantity; i++)
+    {
+        buffers[i] = bufferManager.reserveBuffer({
+          .request = 1u << 10u ,
+          .usage = BUFFER_USAGE::TRANSFER_DST,
+          .sharing = SHARING_MODE::EXCLUSIVE,
+      });
+    }
+    
+  
 
     // // Pipeline Layout for the Shader.
     // Handle<ShaderLayout> layout = r.createShaderLayout({});
@@ -67,15 +88,16 @@ int main()
 
     // Camera camera({.aspect = static_cast<float>(windowWidth) / windowHeight});
     
-    boitatah::utils::Timewatch timewatch(1000);
+    //boitatah::utils::Timewatch timewatch(10);
 
-    while (!r.isWindowClosed())
-    {
-        //r.render(scene, camera);
+    // while (!r.isWindowClosed())
+    // {
+    //     //std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    //     //r.render(scene, camera);
 
-        //std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
-    }
-    r.waitIdle();
+    //     //std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
+    // }
+    //r.waitIdle();
 
     //r.destroyLayout(layout);
     //r.destroyShader(shader);

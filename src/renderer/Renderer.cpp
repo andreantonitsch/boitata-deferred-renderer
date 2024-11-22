@@ -27,23 +27,22 @@ namespace boitatah
         m_vk->attachWindow(m_window);
         m_vk->completeInit();
 
-        m_bufferManager = new BufferManager(m_vk);
-
         createSwapchain();
 
-        m_backBufferManager = new BackBufferManager(this);
-        m_backBufferManager->setup(m_options.backBufferDesc);
+        //m_backBufferManager = new BackBufferManager(this);
+        //m_backBufferManager->setup(m_options.backBufferDesc);
 
-        m_transferCommandBuffer = allocateCommandBuffer({.count = 1,
-                                                         .level = COMMAND_BUFFER_LEVEL::PRIMARY,
-                                                         .type = COMMAND_BUFFER_TYPE::TRANSFER});
+        //m_transferCommandBuffer = allocateCommandBuffer({.count = 1,
+        //                                                 .level = COMMAND_BUFFER_LEVEL::PRIMARY,
+         //                                                .type = COMMAND_BUFFER_TYPE::TRANSFER});
         m_transferFence = m_vk->createFence(true);
+        m_bufferManager = new BufferManager(m_vk);
 
-        m_cameraUniforms = getBufferManager().reserveBuffer({
-            .request = sizeof(FrameUniforms),
-            .usage = BUFFER_USAGE::UNIFORM_BUFFER,
-            .sharing = SHARING_MODE::CONCURRENT,
-        });
+        // m_cameraUniforms = getBufferManager().reserveBuffer({
+        //     .request = sizeof(FrameUniforms),
+        //     .usage = BUFFER_USAGE::UNIFORM_BUFFER,
+        //     .sharing = SHARING_MODE::CONCURRENT,
+        // });
 
         // camera uniforms
         //  FrameUniforms frameUniforms{}; //auto ptr
@@ -139,11 +138,17 @@ namespace boitatah
         }
 
         Handle<BufferAddress> vertexBufferHandle = geom.buffers.size() > 0 ? geom.buffers[0] : Handle<BufferAddress>();
-        auto vertexBufferReservation = m_bufferManager->getAddressReservation(vertexBufferHandle);
-        auto vertexBuffer = m_bufferManager->getAddressBuffer(vertexBufferHandle);
+        
+        
+        BufferReservation vertexBufferReservation;
+        Buffer* vertexBuffer;
+        m_bufferManager->getAddressReservation(vertexBufferHandle, vertexBufferReservation);
+        m_bufferManager->getAddressBuffer(vertexBufferHandle, vertexBuffer);
 
-        auto indexBufferReservation = m_bufferManager->getAddressReservation(geom.indexBuffer);
-        auto indexBuffer = m_bufferManager->getAddressBuffer(geom.indexBuffer);
+        BufferReservation indexBufferReservation;
+        Buffer* indexBuffer;
+        m_bufferManager->getAddressBuffer(geom.indexBuffer, indexBuffer);
+        m_bufferManager->getAddressReservation(geom.indexBuffer, indexBufferReservation);
 
         m_vk->waitForFrame(buffers);
 
@@ -329,10 +334,19 @@ namespace boitatah
 #pragma region CleanUp/Destructor
     void Renderer::cleanup()
     {
+        m_vk->waitIdle();
+        m_vk->destroyDescriptorSetLayout(m_baseLayout.layout);
+        delete m_bufferManager;
+
         for (auto &buffer : buffers)
             delete buffer;
 
-        m_vk->destroyFence(m_transferFence);
+        if(m_vk->checkFenceStatus(m_transferFence))
+            m_vk->destroyFence(m_transferFence);
+        else{
+            m_vk->waitForFence(m_transferFence);
+            m_vk->destroyFence(m_transferFence);
+        }
 
         delete swapchain;
         m_window->destroySurface(m_vk->getInstance());
@@ -439,12 +453,22 @@ namespace boitatah
     }
 
     void Renderer::copyBuffer(const CopyBufferCommand &command)
-    {
-        auto srcBuffer  = m_bufferManager->getAddressBuffer(command.src);
-        auto dstBuffer  = m_bufferManager->getAddressBuffer(command.dst);
+    {   
+        bool fetchedBuffers = true;
+        Buffer * srcBuffer;
+        Buffer *dstBuffer;
 
-        auto srcReserve = m_bufferManager->getAddressReservation(command.src);
-        auto dstReserve  = m_bufferManager->getAddressReservation(command.dst);
+        BufferReservation srcReservation;
+        BufferReservation dstReservation;
+
+        fetchedBuffers &= m_bufferManager->getAddressBuffer(command.src, srcBuffer);
+        fetchedBuffers &= m_bufferManager->getAddressBuffer(command.dst, dstBuffer);
+
+        m_bufferManager->getAddressReservation(command.src,srcReservation);
+        m_bufferManager->getAddressReservation(command.dst, dstReservation);
+
+        if(!fetchedBuffers)
+            throw std::runtime_error("Failed to fetch buffers to copy");
 
         // vk->waitIdle();
         m_vk->waitForFence(m_transferFence);
@@ -453,10 +477,10 @@ namespace boitatah
         m_vk->CmdCopyBuffer({
             .commandBuffer = command.buffer.buffer,
             .srcBuffer = srcBuffer->getBuffer(),
-            .srcOffset = srcReserve.offset,
+            .srcOffset = srcReservation.offset,
             .dstBuffer = dstBuffer->getBuffer(),
-            .dstOffset = dstReserve.offset,
-            .size = srcReserve.size,
+            .dstOffset = dstReservation.offset,
+            .size = srcReservation.size,
         });
 
         m_vk->submitCmdBuffer({
@@ -671,10 +695,15 @@ namespace boitatah
         Geometry geo{};
         if (desc.vertexDataSize != 0)
         {
-            Handle<BufferAddress> bufferHandle = m_bufferManager->uploadBuffer({
-                .dataSize = desc.vertexDataSize,
-                .data = desc.vertexData,
+            auto bufferHandle = m_bufferManager->reserveBuffer({
+                .request = desc.vertexDataSize,
                 .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
+                .sharing = SHARING_MODE::EXCLUSIVE,
+            });
+            m_bufferManager->uploadToBuffer({
+                .address = bufferHandle,
+                .dataSize = desc.vertexDataSize,
+                .data = desc.vertexData
             });
 
             geo.buffers.push_back(bufferHandle);
@@ -682,10 +711,18 @@ namespace boitatah
         std::cout << "copied vertex buffer " << std::endl;
         if (desc.indexCount != 0)
         {
-            geo.indexBuffer = m_bufferManager->uploadBuffer({.dataSize = static_cast<uint32_t>(desc.indexCount * sizeof(uint32_t)),
-                                            .data = desc.indexData,
-                                            .usage = BUFFER_USAGE::TRANSFER_DST_INDEX});
+            uint32_t data_size = static_cast<uint32_t>(desc.indexCount * sizeof(uint32_t));
+            geo.indexBuffer = m_bufferManager->reserveBuffer({.request = data_size,
+                                                                .usage = BUFFER_USAGE::TRANSFER_DST_INDEX,
+                                                                .sharing = SHARING_MODE::EXCLUSIVE});
+
+            m_bufferManager->uploadToBuffer({
+                .address = geo.indexBuffer,
+                .dataSize = data_size,
+                .data = desc.indexData
+            });
         }
+        
         std::cout << "copied index buffer " << std::endl;
         geo.vertexInfo = desc.vertexInfo;
         geo.vertexSize = desc.vertexSize;

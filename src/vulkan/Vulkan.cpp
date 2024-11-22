@@ -234,10 +234,10 @@ void boitatah::vk::Vulkan::waitForFence(const VkFence &fence) const
     vkResetFences(device, 1, &fence);
 }
 
-bool boitatah::vk::Vulkan::checkFenceStatus(const VkFence &fence) const
+bool boitatah::vk::Vulkan::checkFenceStatus(VkFence fence)
 {
     VkResult result = vkGetFenceStatus(device, fence);
-    return result == VK_TRUE;
+    return result == VK_SUCCESS;
 }
 
 #pragma endregion Synchronization
@@ -703,7 +703,7 @@ void boitatah::vk::Vulkan::CmdCopyImage(const CopyImageCommandVk &command)
     });
 }
 
-void boitatah::vk::Vulkan::CmdCopyBuffer(const CopyBufferCommandVk &command)
+void boitatah::vk::Vulkan::CmdCopyBuffer(const CopyBufferCommandVk &command) const
 {
     VkBufferCopy copy{
         .srcOffset = command.srcOffset,
@@ -776,6 +776,25 @@ VkDeviceMemory boitatah::vk::Vulkan::allocateMemory(const MemoryDesc &desc)
     return memory;
 }
 
+void *boitatah::vk::Vulkan::mapMemory(const MapMemoryVk &desc)
+{
+    // auto memoryUnmapper = [&, this](){
+    //     unmapMemory({.memory = desc.memory});
+    // };
+    void *mappedTarget;
+    if(vkMapMemory(device, desc.memory, desc.offset, desc.size, 0, &mappedTarget) != VK_SUCCESS){
+        return nullptr;
+    }
+    //std::unique_ptr<void> mapped_pointer = std::make_unique<void>(mappedTarget);
+    return mappedTarget;
+}
+
+void boitatah::vk::Vulkan::unmapMemory(const UnmapMemoryVk &desc) const
+{
+
+    vkUnmapMemory(device, desc.memory);
+}
+
 void boitatah::vk::Vulkan::bindImageMemory(VkDeviceMemory memory, VkImage image)
 {
     // binds from start.
@@ -783,14 +802,25 @@ void boitatah::vk::Vulkan::bindImageMemory(VkDeviceMemory memory, VkImage image)
     vkBindImageMemory(device, image, memory, 0);
 }
 
-void boitatah::vk::Vulkan::copyDataToBuffer(CopyToBufferVk op)
+void boitatah::vk::Vulkan::mapDataAndCopyToBuffer(CopyToBufferVk op)
 {
-    void *mappedTarget;
-    vkMapMemory(device, op.memory, op.offset, op.size, 0, &mappedTarget);
+    //maps a pointer to mapped memory, offset from its start.
+    // size is the memory range to be mapped.   
+    void * mapMem = mapMemory({.memory = op.memory, .offset = op.offset, .size = op.size});
 
-    memcpy(mappedTarget, op.data, (size_t)op.size);
+    std::byte* byte_source = static_cast<std::byte*>(op.data);
+    std::copy(byte_source, byte_source + op.size, static_cast<std::byte*>(mapMem));
+    unmapMemory({.memory = op.memory});
+}
 
-    vkUnmapMemory(device, op.memory);
+void boitatah::vk::Vulkan::copyToMappedMemory(const CopyMappedMemoryVk &op) const
+{
+    std::byte* start = static_cast<std::byte*>(op.data) + op.offset * op.elementSize;
+    std::byte* end = start + op.elementSize * op.elementCount;
+    std::copy(
+        start,
+        end,
+        static_cast<std::byte*>(op.map));
 }
 
 VkPipelineLayout boitatah::vk::Vulkan::createShaderLayout(const ShaderLayoutDescVk &desc)
@@ -859,11 +889,11 @@ VkFence boitatah::vk::Vulkan::createFence(bool signaled)
     VkFence fence;
     if (vkCreateFence(device, &fenceInfo, nullptr, &fence) != VK_SUCCESS)
         throw std::runtime_error("Failed to create Fence");
-
+    std::cout << "created fence" << std::endl;
     return fence;
 }
 
-VkSemaphore boitatah::vk::Vulkan::createSemaphore()
+VkSemaphore boitatah::vk::Vulkan::createSemaphore() const
 {
     VkSemaphoreCreateInfo semaphoreInfo{
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
@@ -1194,6 +1224,11 @@ void boitatah::vk::Vulkan::destroyFence(VkFence fence)
 void boitatah::vk::Vulkan::destroyDescriptorPool(VkDescriptorPool pool)
 {
     vkDestroyDescriptorPool(device, pool, nullptr);
+}
+
+void boitatah::vk::Vulkan::destroyDescriptorSetLayout(VkDescriptorSetLayout &layout)
+{
+    vkDestroyDescriptorSetLayout(device, layout, nullptr);
 }
 
 #pragma endregion Object Destructions

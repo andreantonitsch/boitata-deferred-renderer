@@ -1,16 +1,53 @@
 #include "BufferManager.hpp"
+#include "Buffer.hpp"
+#include "BufferStructs.hpp"
 #include <algorithm>
 
 
 namespace boitatah::buffer
 {
 
+    BufferManager::BufferManager(Vulkan *vk_instance)
+    {
+        m_vk = vk_instance;
+        m_transferFence = m_vk->createFence(true);
+
+
+        transferBuffer.buffer = m_vk->allocateCommandBuffer({.count = 1, 
+                        .level = COMMAND_BUFFER_LEVEL::PRIMARY,
+                        .type = COMMAND_BUFFER_TYPE::TRANSFER });
+        transferBuffer.type = COMMAND_BUFFER_TYPE::TRANSFER;
+    }
+
+    BufferManager::~BufferManager(void)
+    {
+
+        if(m_vk->checkFenceStatus(m_transferFence))
+            m_vk->destroyFence(m_transferFence);
+        else{
+            m_vk->waitForFence(m_transferFence);
+            m_vk->destroyFence(m_transferFence);
+        }
+
+        std::cout << "Cleared buffer manager fence" << std::endl;
+
+        while(activeBuffers.size()){
+            releaseBuffer(activeBuffers.back());
+        }
+    }
+
     Handle<Buffer *> BufferManager::createBuffer(const BufferDesc &&description)
     {
         Buffer * buffer = new Buffer(description, m_vk);
         Handle<Buffer *> bufferHandle = bufferPool.set(buffer);
         activeBuffers.push_back(bufferHandle);
+        std::cout << "Created Buffer" << buffer->getID() <<std::endl;
         return bufferHandle;
+    }
+
+    std::shared_ptr<Buffer> BufferManager::createStagingBuffer(const BufferDesc &&description)
+    {
+        return std::shared_ptr<Buffer>();
     }
 
     void BufferManager::releaseBuffer(Handle<Buffer *> handle)
@@ -18,7 +55,7 @@ namespace boitatah::buffer
         // get buffer
         Buffer* buffer;
         if(!bufferPool.get(handle, buffer)){
-            std::runtime_error("doubly_released buffer");
+            std::runtime_error("doubly released buffer");
        }
         // delete buffer from pool of buffers
         bufferPool.clear(handle, buffer);
@@ -28,6 +65,11 @@ namespace boitatah::buffer
         if(position != activeBuffers.end()){
             activeBuffers.erase(position);
         }
+        else{
+            std::cout << "failed to find buffer in active buffers" << std::endl;
+        }
+        
+        std::cout << "Deleted buffer " << buffer->getID() << std::endl;
 
         //delete buffer
         delete buffer;
@@ -46,12 +88,14 @@ namespace boitatah::buffer
         {
             Handle<Buffer *> buffer = createBuffer({
                 .estimatedElementSize = compatibility.request,
-                .partitions = 1 << 10,
+                .partitions = partitionsPerBuffer,
                 .usage = compatibility.usage,
                 .sharing = compatibility.sharing,
+                // .stagingBuffer = compatibility.sharing == SHARING_MODE::CONCURRENT ?
+                //                  nullptr :
+                //                  findOrCreateCompatibleStagingBuffer(compatibility)
             });
             // return handle copy
-
             return buffer;
         }
     }
@@ -65,33 +109,29 @@ namespace boitatah::buffer
                 bufferPool.get(activeBuffers[i], buffer);
                 if (buffer->checkCompatibility(compatibility))
                     return i;
-            }
+            }            
             return UINT32_MAX;
         }
     }
 
-    BufferManager::BufferManager(Vulkan *vk_instance)
+    std::shared_ptr<Buffer> BufferManager::findOrCreateCompatibleStagingBuffer(const BufferReservationRequest &compatibility)
     {
-        m_vk = vk_instance;
-        m_trasnferFence = m_vk->createFence({});
-        transferBuffer.buffer = m_vk->allocateCommandBuffer({.count = 1, 
-                        .level = COMMAND_BUFFER_LEVEL::PRIMARY,
-                        .type = COMMAND_BUFFER_TYPE::TRANSFER });
-        transferBuffer.type = COMMAND_BUFFER_TYPE::TRANSFER;
+        return std::shared_ptr<Buffer>();
     }
 
-    BufferManager::~BufferManager()
+    uint32_t BufferManager::findCompatibleStagingBuffer(const BufferReservationRequest &compatibility)
     {
-        m_vk->destroyFence(m_trasnferFence);
+        return 0;
     }
-
 
     Handle<BufferAddress> BufferManager::reserveBuffer(const BufferReservationRequest &request)
     {
 
         Handle<Buffer *> bufferHandle = findOrCreateCompatibleBuffer(request);
-        if(bufferHandle.isNull())
+        if(bufferHandle.isNull()){
+            std::cout << "reserve buffer failed. no buffer created." << std::endl;
             return Handle<BufferAddress>();
+        }
 
         Buffer * buffer;
         bufferPool.get(bufferHandle, buffer);
@@ -101,17 +141,16 @@ namespace boitatah::buffer
             .reservation = buffer->reserve(request.request),
             .size = static_cast<uint32_t>(request.request)
         };
-
+            
         return addressPool.set(bufferAddress);
     }
-    // TODO
-    Handle<BufferAddress> BufferManager::uploadBuffer(const BufferUploadDesc &desc)
+
+    bool BufferManager::uploadToBuffer(const BufferUploadDesc &desc)
     {
-        return Handle<BufferAddress>();
+        return true;
     }
     
-    // TODO
-    void BufferManager::queueUpdateReservation(Handle<BufferAddress> reservation, void *new_data)
+    void BufferManager::queueUpdates()
     {
         //BufferReservation reservation;
 
@@ -129,19 +168,33 @@ namespace boitatah::buffer
             {
                 .commandBuffer = transferBuffer.buffer,
                 .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
-                .fence = m_trasnferFence
+                .fence = m_transferFence
             }
         );
     }
 
-    const BufferReservation &BufferManager::getAddressReservation(const Handle<BufferAddress> handle) const
+    bool BufferManager::getAddressReservation(const Handle<BufferAddress> handle, BufferReservation& reservation)
     {
-        // TODO: insert return statement here
+        BufferAddress address;
+
+        if(addressPool.get(handle, address)){
+            Buffer *buffer;
+            if(bufferPool.get(address.buffer, buffer)){
+                buffer->getReservationData(address.reservation, reservation);
+                return true;
+            }
+        }
+        return false;
     }
 
-    Buffer *BufferManager::getAddressBuffer(const Handle<BufferAddress> handle)
+    bool BufferManager::getAddressBuffer(const Handle<BufferAddress> handle, Buffer*& buffer)
     {
-        return nullptr;
+        BufferAddress address;
+        if(addressPool.get(handle, address)){
+            if(bufferPool.get(address.buffer, buffer))
+            return true;
+        }
+        return false;
     }
 
     void BufferManager::freeBufferReservation(Handle<BufferAddress> handle)
@@ -150,10 +203,15 @@ namespace boitatah::buffer
 
     bool BufferManager::areTransfersFinished() const
     {
-        return m_vk->checkFenceStatus(m_trasnferFence);
+        return m_vk->checkFenceStatus(m_transferFence);
     }
     void BufferManager::waitForTransferToFinish() const
     {
-        return m_vk->waitForFence(m_trasnferFence);
+        return m_vk->waitForFence(m_transferFence);
+    }
+
+    CommandBuffer BufferManager::getTransferBuffer()
+    {
+        return transferBuffer;
     }
 }
