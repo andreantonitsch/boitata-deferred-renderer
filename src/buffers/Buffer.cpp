@@ -92,19 +92,34 @@ namespace boitatah::buffer
     void Buffer::copyData(const Handle<BufferReservation> handle, void *data)
     {
         BufferReservation reservation;
-        if(!mainReservPool->get(handle, reservation)) 
-            throw std::runtime_error("failed to copy data to gpu buffer");
+            if(!mainReservPool->get(handle, reservation)) 
+                throw std::runtime_error("failed to copy data to gpu buffer");
 
-        vulkan->copyToMappedMemory({
-            .offset = reservation.offset,
-            .elementSize = reservation.size,
-            .elementCount = static_cast<uint32_t>(1),
-            .map = mappedMemory,
-            .data = data,
-        });
+        if(sharing == SHARING_MODE::CONCURRENT){
+            vulkan->copyToMappedMemory({
+                .offset = reservation.offset,
+                .elementSize = reservation.size,
+                .elementCount = static_cast<uint32_t>(1),
+                .map = mappedMemory,
+                .data = data,
+            });
+        }else{
+            std::shared_ptr<BufferManager> manager(bufferManager);
+            auto stagingAddress = manager->reserveBuffer({
+                .request = reservation.requestSize,
+                .usage = BUFFER_USAGE::TRANSFER_SRC,
+                .sharing = SHARING_MODE::CONCURRENT,
+            });
+
+            manager->uploadToBuffer({.address = stagingAddress, 
+                                     .dataSize = reservation.requestSize,
+                                     .data = data, 
+            });
+
+            queuedTransfers.emplace_back(stagingAddress, handle);
+        }
     }
 
-    //TODO IMPLEMENT
     void Buffer::queueUpdates()
     {
         std::shared_ptr<BufferManager> manager(bufferManager);
@@ -119,22 +134,19 @@ namespace boitatah::buffer
             BufferReservation dstReservation;
 
             if(!manager->getAddressBuffer(transfer.stagingBufferAddress,srcBuffer))
-                std::runtime_error("buffer transfer failed");
+                std::runtime_error("buffer transfer failed, invalid staging buffer");
             
-            if(!manager->getAddressBuffer(transfer.finalBufferAddress,dstBuffer))
-                std::runtime_error("buffer transfer failed");
+            if(mainReservPool->get(transfer.finalBufferReservation ,dstReservation))
+                std::runtime_error("buffer transfer failed, invalid final reservation");
 
             if(!manager->getAddressReservation(transfer.stagingBufferAddress,srcReservation))
-                std::runtime_error("buffer transfer failed");
-            
-            if(!manager->getAddressReservation(transfer.finalBufferAddress,dstReservation))
-                std::runtime_error("buffer transfer failed");
+                std::runtime_error("buffer transfer failed, invalid staging reservation");
 
             vulkan->CmdCopyBuffer({
                 .commandBuffer = manager->getTransferBuffer().buffer,
                 .srcBuffer = srcBuffer->getBuffer(),
                 .srcOffset = srcReservation.offset,
-                .dstBuffer = dstBuffer->getBuffer(),
+                .dstBuffer = this->getBuffer(),
                 .dstOffset = dstReservation.offset,
                 .size = dstReservation.requestSize,
             });
@@ -144,6 +156,10 @@ namespace boitatah::buffer
 
     void Buffer::clearTransferQueue()
     {
+        std::shared_ptr<BufferManager> manager(bufferManager);
+        for(auto& transfer : queuedTransfers){
+            manager ->freeBufferReservation(transfer.stagingBufferAddress);
+        }
         queuedTransfers.clear();
     }
 
@@ -179,7 +195,6 @@ namespace boitatah::buffer
         mainReservPool.reset(new Pool<BufferReservation>(
             {.size = partitions, .name = "buffer pool"}));
     
-
 
     }
 

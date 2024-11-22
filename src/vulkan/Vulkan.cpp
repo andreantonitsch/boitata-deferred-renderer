@@ -538,6 +538,7 @@ void boitatah::vk::Vulkan::submitDrawCmdBuffer(const SubmitDrawCommandVk &comman
 
 void boitatah::vk::Vulkan::submitCmdBuffer(const SubmitCommandVk &command)
 {
+    vkResetFences(device, 1, &(command.fence));
     vkEndCommandBuffer(command.commandBuffer);
 
     VkSubmitInfo submit{

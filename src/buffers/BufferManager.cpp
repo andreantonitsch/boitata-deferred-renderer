@@ -114,15 +114,6 @@ namespace boitatah::buffer
         }
     }
 
-    std::shared_ptr<Buffer> BufferManager::findOrCreateCompatibleStagingBuffer(const BufferReservationRequest &compatibility)
-    {
-        return std::shared_ptr<Buffer>();
-    }
-
-    uint32_t BufferManager::findCompatibleStagingBuffer(const BufferReservationRequest &compatibility)
-    {
-        return 0;
-    }
 
     Handle<BufferAddress> BufferManager::reserveBuffer(const BufferReservationRequest &request)
     {
@@ -153,7 +144,6 @@ namespace boitatah::buffer
     void BufferManager::queueUpdates()
     {
         //BufferReservation reservation;
-
     }
 
     void BufferManager::startBufferUpdates()

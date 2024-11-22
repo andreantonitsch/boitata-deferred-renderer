@@ -20,9 +20,15 @@ namespace boitatah::buffer
    class BufferManager;
 
    struct QueuedTransfer{
-
-        Handle<BufferAddress> stagingBufferAddress;
-        Handle<BufferAddress> finalBufferAddress;
+        const Handle<BufferAddress> stagingBufferAddress; //external address to concurrent buffer
+        const Handle<BufferReservation> finalBufferReservation; //local address to exclusive buffer
+        
+        QueuedTransfer(Handle<BufferAddress> stagingBufferAddress,
+                    Handle<BufferReservation> finalBufferReservation)
+                    : stagingBufferAddress(stagingBufferAddress),
+                    finalBufferReservation(finalBufferReservation)
+        {}
+   
    };
 
     class Buffer

@@ -13,7 +13,7 @@ namespace boitatah::buffer
 {
     class Buffer;
     using namespace boitatah::vk;
-    
+
     class BufferManager
     {
         private:
@@ -37,9 +37,6 @@ namespace boitatah::buffer
 
             Handle<Buffer *> findOrCreateCompatibleBuffer(const BufferReservationRequest &compatibility);
             uint32_t findCompatibleBuffer(const BufferReservationRequest &compatibility);
-            
-            std::shared_ptr<Buffer> findOrCreateCompatibleStagingBuffer(const BufferReservationRequest &compatibility);
-            uint32_t findCompatibleStagingBuffer(const BufferReservationRequest &compatibility);
             
 
         public:
