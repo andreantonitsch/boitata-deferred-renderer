@@ -39,7 +39,7 @@ int main()
           .sharing = SHARING_MODE::EXCLUSIVE,
       });
 
-    int quantity = 10000;
+    int quantity = 10;
     std::vector<Handle<BufferAddress>> buffers(quantity);
 
     for (int i = 0; i < quantity; i++)
@@ -50,14 +50,17 @@ int main()
           .sharing = SHARING_MODE::EXCLUSIVE,
       });
     }
-    int a = 100;
+    int a[1] = {100};
 
-    bufferManager.uploadToBuffer({.address = bufferSpace,
+    bufferManager.copyToBuffer({.address = bufferSpace,
                                   .dataSize = static_cast<uint32_t>(sizeof(a)),
-                                  .data = &a, 
+                                  .data = a, 
                                   });
     bufferManager.startBufferUpdates();
-    bufferManager.queueUpdates();
+    bufferManager.queueingBufferUpdates();
     bufferManager.endBufferUpdates();
+
+    std::cout << "finished buffer updates" << std::endl;
+
     return EXIT_SUCCESS;
 }

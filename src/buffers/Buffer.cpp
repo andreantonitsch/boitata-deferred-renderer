@@ -24,23 +24,23 @@ namespace boitatah::buffer
         usage = desc.usage;
         buffer_id = buffer_quantity;
         
-        if(sharing == SHARING_MODE::EXCLUSIVE)
-            bufferManager = desc.bufferManager;
+        // if(sharing == SHARING_MODE::EXCLUSIVE)
+        //     bufferManager = desc.bufferManager;
 
         setupBuffer(desc.estimatedElementSize, desc.partitions);
 
         blockSize = mainAllocator->getPartitionSize();
         buffer_quantity += 1;
-
+        bufferManager = desc.bufferManager;
     }
 
     Buffer::~Buffer(void)
     {
-        vulkan->destroyBuffer({.buffer = bufferData.buffer, .memory = bufferData.memory});
-
+            
         if(sharing == SHARING_MODE::CONCURRENT)
             vulkan->unmapMemory({bufferData.memory});
 
+        vulkan->destroyBuffer(bufferData);
         buffer_quantity -= 1;
     }
 
@@ -51,7 +51,7 @@ namespace boitatah::buffer
 
     bool Buffer::getReservationData(const Handle<BufferReservation> handle, BufferReservation &reservation) const
     {
-        if(mainReservPool->get(handle, reservation))
+        if(mainReservPool->tryGet(handle, reservation))
             return true;
         return false;
     }
@@ -81,7 +81,7 @@ namespace boitatah::buffer
             return false;
 
         BufferReservation bufferReservation;
-        if(!mainReservPool->get(reservation, bufferReservation))
+        if(!mainReservPool->tryGet(reservation, bufferReservation))
             throw std::runtime_error("reservation double release");
         
         mainAllocator->release(bufferReservation.reservedBlock);
@@ -92,7 +92,7 @@ namespace boitatah::buffer
     void Buffer::copyData(const Handle<BufferReservation> handle, void *data)
     {
         BufferReservation reservation;
-            if(!mainReservPool->get(handle, reservation)) 
+            if(!mainReservPool->tryGet(handle, reservation)) 
                 throw std::runtime_error("failed to copy data to gpu buffer");
 
         if(sharing == SHARING_MODE::CONCURRENT){
@@ -111,7 +111,7 @@ namespace boitatah::buffer
                 .sharing = SHARING_MODE::CONCURRENT,
             });
 
-            manager->uploadToBuffer({.address = stagingAddress, 
+            manager->copyToBuffer({.address = stagingAddress, 
                                      .dataSize = reservation.requestSize,
                                      .data = data, 
             });
@@ -136,7 +136,7 @@ namespace boitatah::buffer
             if(!manager->getAddressBuffer(transfer.stagingBufferAddress,srcBuffer))
                 std::runtime_error("buffer transfer failed, invalid staging buffer");
             
-            if(mainReservPool->get(transfer.finalBufferReservation ,dstReservation))
+            if(mainReservPool->tryGet(transfer.finalBufferReservation ,dstReservation))
                 std::runtime_error("buffer transfer failed, invalid final reservation");
 
             if(!manager->getAddressReservation(transfer.stagingBufferAddress,srcReservation))
@@ -194,7 +194,13 @@ namespace boitatah::buffer
         
         mainReservPool.reset(new Pool<BufferReservation>(
             {.size = partitions, .name = "buffer pool"}));
-    
+
+        if(sharing == SHARING_MODE::CONCURRENT){
+            std::cout << "mapping memory" << std::endl;
+            mappedMemory = vulkan->mapMemory({.memory = bufferData.memory, .offset = 0, .size= bufferData.actualSize});
+        }
+
+
 
     }
 

@@ -39,7 +39,8 @@ namespace boitatah
         Pool(PoolOptions options);
         //~Pool(void);
 
-        bool get(const Handle<T> handle, T& item) const;
+        bool tryGet(const Handle<T> handle, T& item);
+        T& get(const Handle<T> handle);
         Handle<T> set(T &elem);
         bool clear(Handle<T> handle, T& item);
 
@@ -82,7 +83,7 @@ boitatah::Pool<T>::Pool(PoolOptions options)
 }
 
 template <typename T>
-bool boitatah::Pool<T>::get(const Handle<T> handle, T& item) const
+bool boitatah::Pool<T>::tryGet(const Handle<T> handle, T& item)
 {
     if (generations[handle.i] != handle.gen)
     {
@@ -90,6 +91,16 @@ bool boitatah::Pool<T>::get(const Handle<T> handle, T& item) const
     }
     item = pool[handle.i];
     return true;
+}
+
+template <typename T>
+T& boitatah::Pool<T>::get(const Handle<T> handle)
+{
+    if (generations[handle.i] != handle.gen)
+    {
+        throw std::runtime_error("Invalid Handle.");
+    }
+    return pool[handle.i];
 }
 
 template <typename T>

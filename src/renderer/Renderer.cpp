@@ -36,7 +36,7 @@ namespace boitatah
         //                                                 .level = COMMAND_BUFFER_LEVEL::PRIMARY,
          //                                                .type = COMMAND_BUFFER_TYPE::TRANSFER});
         m_transferFence = m_vk->createFence(true);
-        m_bufferManager = new BufferManager(m_vk);
+        m_bufferManager = std::make_shared<BufferManager>(m_vk);
 
         // m_cameraUniforms = getBufferManager().reserveBuffer({
         //     .request = sizeof(FrameUniforms),
@@ -103,36 +103,36 @@ namespace boitatah
     void Renderer::renderToRenderTarget(const SceneNode &scene, const Handle<RenderTarget> &rendertarget)
     {
         RenderTarget target;
-        if (!renderTargetPool.get(rendertarget, target))
+        if (!renderTargetPool.tryGet(rendertarget, target))
         {
             throw std::runtime_error("Failed to write command buffer \n\tRender Target");
         }
         RenderPass pass;
-        if (!renderpassPool.get(target.renderpass, pass))
+        if (!renderpassPool.tryGet(target.renderpass, pass))
         {
             throw std::runtime_error("Failed to write command buffer \n\tRender Pass");
         }
 
         Image image;
-        if (!imagePool.get(target.attachments[0], image))
+        if (!imagePool.tryGet(target.attachments[0], image))
         {
             throw std::runtime_error("Failed to write command buffer \n\tImage");
         }
 
         RenderTargetCmdBuffers buffers;
-        if (!rtCmdPool.get(target.cmdBuffers, buffers))
+        if (!rtCmdPool.tryGet(target.cmdBuffers, buffers))
             throw std::runtime_error("Failed to Render to Target");
 
         // for scene in scene
         Shader shader;
-        if (!shaderPool.get(scene.shader, shader))
+        if (!shaderPool.tryGet(scene.shader, shader))
         {
             throw std::runtime_error("Failed to retrieve material");
         }
 
         // vertex and mesh data
         Geometry geom;
-        if (!geometryPool.get(scene.geometry, geom))
+        if (!geometryPool.tryGet(scene.geometry, geom))
         {
             throw std::runtime_error("Failed to retrieve geometry");
         }
@@ -194,15 +194,15 @@ namespace boitatah
         m_window->windowEvents();
 
         RenderTarget fb;
-        if (!renderTargetPool.get(rendertarget, fb))
+        if (!renderTargetPool.tryGet(rendertarget, fb))
             throw std::runtime_error("failed to framebuffer for Presentation");
 
         RenderTargetCmdBuffers buffers;
-        if (!rtCmdPool.get(fb.cmdBuffers, buffers))
+        if (!rtCmdPool.tryGet(fb.cmdBuffers, buffers))
             throw std::runtime_error("failed to framebuffer for Presentation");
 
         Image image;
-        if (!imagePool.get(fb.attachments[0], image))
+        if (!imagePool.tryGet(fb.attachments[0], image))
             throw std::runtime_error("failed to framebuffer for Presentation");
 
         m_vk->waitForFrame(buffers);
@@ -277,13 +277,13 @@ namespace boitatah
 
 
         RenderTarget renderTarget;
-        renderTargetPool.get(rendertargetHandle, renderTarget);
+        renderTargetPool.tryGet(rendertargetHandle, renderTarget);
         RenderTargetCmdBuffers renderTargetBuffers;
-        rtCmdPool.get(renderTarget.cmdBuffers, renderTargetBuffers);
+        rtCmdPool.tryGet(renderTarget.cmdBuffers, renderTargetBuffers);
         RenderPass pass;
-        renderpassPool.get(renderTarget.renderpass, pass);
+        renderpassPool.tryGet(renderTarget.renderpass, pass);
         Image image;
-        imagePool.get(renderTarget.attachments[0], image);
+        imagePool.tryGet(renderTarget.attachments[0], image);
 
 
         // update camera uniforms
@@ -336,10 +336,9 @@ namespace boitatah
     {
         m_vk->waitIdle();
         m_vk->destroyDescriptorSetLayout(m_baseLayout.layout);
-        delete m_bufferManager;
 
-        for (auto &buffer : buffers)
-            delete buffer;
+        // for (auto &buffer : buffers)
+        //     delete buffer;
 
         if(m_vk->checkFenceStatus(m_transferFence))
             m_vk->destroyFence(m_transferFence);
@@ -347,6 +346,11 @@ namespace boitatah
             m_vk->waitForFence(m_transferFence);
             m_vk->destroyFence(m_transferFence);
         }
+
+        //TODO FIX THIS JANK
+        //BufferManager* buffManagerPtr = m_bufferManager.get();
+        //delete buffManagerPtr;
+        m_bufferManager.reset();
 
         delete swapchain;
         m_window->destroySurface(m_vk->getInstance());
@@ -414,7 +418,7 @@ namespace boitatah
     void Renderer::queueTransferUniform(const TransferUniformCommand &command)
     {
         Uniform uniform;
-        uniformPool.get(command.uniform, uniform);
+        uniformPool.tryGet(command.uniform, uniform);
 
         // TODO change usage to type depending on uniform type.
         // queueUploadBuffer({
@@ -427,19 +431,19 @@ namespace boitatah
     void Renderer::transferImage(const TransferImageCommand &command)
     {
         RenderTarget dstBuffer;
-        if (!renderTargetPool.get(command.dst, dstBuffer))
+        if (!renderTargetPool.tryGet(command.dst, dstBuffer))
             throw std::runtime_error("failed to transfer buffers");
 
         RenderTarget srcBuffer;
-        if (!renderTargetPool.get(command.src, srcBuffer))
+        if (!renderTargetPool.tryGet(command.src, srcBuffer))
             throw std::runtime_error("failed to transfer buffers");
 
         Image dstImage;
-        if (!imagePool.get(dstBuffer.attachments[0], dstImage))
+        if (!imagePool.tryGet(dstBuffer.attachments[0], dstImage))
             throw std::runtime_error("failed to transfer buffers");
 
         Image srcImage;
-        if (!imagePool.get(srcBuffer.attachments[0], srcImage))
+        if (!imagePool.tryGet(srcBuffer.attachments[0], srcImage))
             throw std::runtime_error("failed to transfer buffers");
 
 
@@ -537,7 +541,7 @@ namespace boitatah
                      .entryFunction = data.vert.entryFunction}};
 
         ShaderLayout layout;
-        if (!pipelineLayoutPool.get(data.layout, layout))
+        if (!pipelineLayoutPool.tryGet(data.layout, layout))
             throw std::runtime_error("failed to get pipeline layout");
 
         // Get rendertarget and renderpass
@@ -547,14 +551,14 @@ namespace boitatah
         RenderPass pass;
         if (data.framebuffer.isNull())
         {
-            if (!renderpassPool.get(m_backBufferManager->getRenderPass(), pass))
+            if (!renderpassPool.tryGet(m_backBufferManager->getRenderPass(), pass))
                 throw std::runtime_error("failed to back buffer render pass");
         }
         else
         {
-            if (!renderTargetPool.get(data.framebuffer, buffer))
+            if (!renderTargetPool.tryGet(data.framebuffer, buffer))
                 throw std::runtime_error("failed to get framebuffer");
-            if (!renderpassPool.get(buffer.renderpass, pass))
+            if (!renderpassPool.tryGet(buffer.renderpass, pass))
                 throw std::runtime_error("failed to get renderpass");
         }
 
@@ -619,14 +623,14 @@ namespace boitatah
         if (passhandle.isNull())
         {
             passhandle = createRenderPass(data.renderpassDesc);
-            if (!renderpassPool.get(passhandle, pass))
+            if (!renderpassPool.tryGet(passhandle, pass))
             {
                 throw std::runtime_error("Failed to create renderpass.");
             }
         }
         else
         {
-            if (!renderpassPool.get(passhandle, pass))
+            if (!renderpassPool.tryGet(passhandle, pass))
             {
                 throw std::runtime_error("Failed to create renderpass.");
             }
@@ -637,7 +641,7 @@ namespace boitatah
         for (auto &imagehandle : images)
         {
             Image image;
-            if (imagePool.get(imagehandle, image))
+            if (imagePool.tryGet(imagehandle, image))
                 imageViews.push_back(image.view);
         }
 
@@ -700,7 +704,7 @@ namespace boitatah
                 .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
                 .sharing = SHARING_MODE::EXCLUSIVE,
             });
-            m_bufferManager->uploadToBuffer({
+            m_bufferManager->copyToBuffer({
                 .address = bufferHandle,
                 .dataSize = desc.vertexDataSize,
                 .data = desc.vertexData
@@ -716,7 +720,7 @@ namespace boitatah
                                                                 .usage = BUFFER_USAGE::TRANSFER_DST_INDEX,
                                                                 .sharing = SHARING_MODE::EXCLUSIVE});
 
-            m_bufferManager->uploadToBuffer({
+            m_bufferManager->copyToBuffer({
                 .address = geo.indexBuffer,
                 .dataSize = data_size,
                 .data = desc.indexData

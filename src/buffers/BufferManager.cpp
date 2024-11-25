@@ -34,6 +34,8 @@ namespace boitatah::buffer
         while(activeBuffers.size()){
             releaseBuffer(activeBuffers.back());
         }
+
+
     }
 
     Handle<Buffer *> BufferManager::createBuffer(const BufferDesc &&description)
@@ -45,16 +47,11 @@ namespace boitatah::buffer
         return bufferHandle;
     }
 
-    std::shared_ptr<Buffer> BufferManager::createStagingBuffer(const BufferDesc &&description)
-    {
-        return std::shared_ptr<Buffer>();
-    }
-
     void BufferManager::releaseBuffer(Handle<Buffer *> handle)
     {
         // get buffer
         Buffer* buffer;
-        if(!bufferPool.get(handle, buffer)){
+        if(!bufferPool.tryGet(handle, buffer)){
             std::runtime_error("doubly released buffer");
        }
         // delete buffer from pool of buffers
@@ -69,10 +66,10 @@ namespace boitatah::buffer
             std::cout << "failed to find buffer in active buffers" << std::endl;
         }
         
-        std::cout << "Deleted buffer " << buffer->getID() << std::endl;
 
         //delete buffer
         delete buffer;
+        std::cout << "Deleted buffer " << buffer->getID() << std::endl;
     }
 
     Handle<Buffer *> BufferManager::findOrCreateCompatibleBuffer(const BufferReservationRequest &compatibility)
@@ -91,6 +88,7 @@ namespace boitatah::buffer
                 .partitions = partitionsPerBuffer,
                 .usage = compatibility.usage,
                 .sharing = compatibility.sharing,
+                .bufferManager = shared_from_this()
                 // .stagingBuffer = compatibility.sharing == SHARING_MODE::CONCURRENT ?
                 //                  nullptr :
                 //                  findOrCreateCompatibleStagingBuffer(compatibility)
@@ -106,7 +104,7 @@ namespace boitatah::buffer
             for (int i = 0; i < activeBuffers.size(); i++)
             {
                 Buffer * buffer;
-                bufferPool.get(activeBuffers[i], buffer);
+                bufferPool.tryGet(activeBuffers[i], buffer);
                 if (buffer->checkCompatibility(compatibility))
                     return i;
             }            
@@ -125,7 +123,7 @@ namespace boitatah::buffer
         }
 
         Buffer * buffer;
-        bufferPool.get(bufferHandle, buffer);
+        bufferPool.tryGet(bufferHandle, buffer);
 
         BufferAddress bufferAddress{
             .buffer = bufferHandle,
@@ -136,14 +134,26 @@ namespace boitatah::buffer
         return addressPool.set(bufferAddress);
     }
 
-    bool BufferManager::uploadToBuffer(const BufferUploadDesc &desc)
+    bool BufferManager::copyToBuffer(const BufferUploadDesc &desc)
     {
+        std::cout << "starting copy to buffer" << std::endl;
+        BufferAddress& address = addressPool.get(desc.address);
+
+        Buffer*& buffer = bufferPool.get(address.buffer);
+        
+        buffer->copyData(address.reservation, desc.data);
+        std::cout << "finished copy to buffer" << std::endl;
         return true;
     }
     
-    void BufferManager::queueUpdates()
+    void BufferManager::queueingBufferUpdates()
     {
-        //BufferReservation reservation;
+        std::cout << "queue buffer updates" << std::endl;
+        for(auto& handle : activeBuffers){
+            Buffer*& buffer = bufferPool.get(handle);
+            buffer->queueUpdates();
+        }
+        std::cout << "finished queue buffer updates" << std::endl;
     }
 
     void BufferManager::startBufferUpdates()
@@ -167,9 +177,9 @@ namespace boitatah::buffer
     {
         BufferAddress address;
 
-        if(addressPool.get(handle, address)){
+        if(addressPool.tryGet(handle, address)){
             Buffer *buffer;
-            if(bufferPool.get(address.buffer, buffer)){
+            if(bufferPool.tryGet(address.buffer, buffer)){
                 buffer->getReservationData(address.reservation, reservation);
                 return true;
             }
@@ -180,8 +190,8 @@ namespace boitatah::buffer
     bool BufferManager::getAddressBuffer(const Handle<BufferAddress> handle, Buffer*& buffer)
     {
         BufferAddress address;
-        if(addressPool.get(handle, address)){
-            if(bufferPool.get(address.buffer, buffer))
+        if(addressPool.tryGet(handle, address)){
+            if(bufferPool.tryGet(address.buffer, buffer))
             return true;
         }
         return false;

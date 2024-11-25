@@ -154,7 +154,7 @@ namespace boitatah
         BackBufferManager *m_backBufferManager;
         Swapchain *swapchain;
         DescriptorPoolManager *descriptorPoolManager;
-        BufferManager *m_bufferManager;
+        std::shared_ptr<BufferManager> m_bufferManager;
  
 
         // Frame Uniforms

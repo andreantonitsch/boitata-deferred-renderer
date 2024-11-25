@@ -56,7 +56,7 @@ namespace boitatah::buffer
     bool BufferAllocator::getBlockData(Handle<Block> &handle, uint32_t &offset, uint32_t &size)
     {
         Block block;
-        if (!blockPool.get(handle, block))
+        if (!blockPool.tryGet(handle, block))
             return false;
 
         offset = block.address;

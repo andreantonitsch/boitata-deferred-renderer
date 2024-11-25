@@ -122,7 +122,7 @@ namespace boitatah::vk
 
         // Manage Memory
         VkDeviceMemory allocateMemory(const MemoryDesc &desc);
-        void* mapMemory(const MapMemoryVk &desc);
+        void* mapMemory(const MapMemoryVk &desc) const;
         void unmapMemory(const UnmapMemoryVk &desc) const;
         void bindImageMemory(VkDeviceMemory memory, VkImage image);
         void mapDataAndCopyToBuffer(CopyToBufferVk op);

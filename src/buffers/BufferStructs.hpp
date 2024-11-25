@@ -53,7 +53,7 @@ namespace boitatah::buffer
     struct BufferUploadDesc{
         Handle<BufferAddress> address;
         uint32_t dataSize;
-        const void* data;
+        void* data;
     };
 
     struct BufferAddressDesc

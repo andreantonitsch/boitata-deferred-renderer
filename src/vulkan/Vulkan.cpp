@@ -777,7 +777,7 @@ VkDeviceMemory boitatah::vk::Vulkan::allocateMemory(const MemoryDesc &desc)
     return memory;
 }
 
-void *boitatah::vk::Vulkan::mapMemory(const MapMemoryVk &desc)
+void *boitatah::vk::Vulkan::mapMemory(const MapMemoryVk &desc) const
 {
     // auto memoryUnmapper = [&, this](){
     //     unmapMemory({.memory = desc.memory});
@@ -792,7 +792,6 @@ void *boitatah::vk::Vulkan::mapMemory(const MapMemoryVk &desc)
 
 void boitatah::vk::Vulkan::unmapMemory(const UnmapMemoryVk &desc) const
 {
-
     vkUnmapMemory(device, desc.memory);
 }
 
@@ -954,7 +953,7 @@ boitatah::vk::BufferVkData boitatah::vk::Vulkan::createBuffer(const BufferDescVk
 
     vkBindBufferMemory(device, buffer, memory, 0);
 
-    return {.buffer = buffer, .memory = memory, .alignment = memReqs.alignment};
+    return {.buffer = buffer, .memory = memory, .alignment = memReqs.alignment, .actualSize =memReqs.size };
 }
 
 boitatah::vk::BufferVkData boitatah::vk::Vulkan::getBufferAlignmentMemoryType(const BufferDescVk &desc) const

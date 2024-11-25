@@ -39,7 +39,7 @@ namespace boitatah
     {
         Partition p;
 
-        if (partitionPool.get(handle, p))
+        if (partitionPool.tryGet(handle, p))
             return p;
 
         return Partition{.size = UINT32_MAX, .address = UINT32_MAX, .m_Node = nullptr};
@@ -64,7 +64,7 @@ namespace boitatah
     bool PartitionList::release(Handle<Partition> handle)
     {
         Partition p;
-        if (!partitionPool.get(handle, p))
+        if (!partitionPool.tryGet(handle, p))
             return false;
 
         totalOccupation -= p.size;
@@ -93,7 +93,7 @@ namespace boitatah
             if (filledOrEmpty == n->free)
             {
                 Partition p;
-                partitionPool.get(n->partition, p);
+                partitionPool.tryGet(n->partition, p);
                 remainder += p.size;
                 n = n->next;
             }
@@ -133,7 +133,7 @@ namespace boitatah
             {
                 Partition p;
 
-                bool success = partitionPool.get(n->partition, p);
+                bool success = partitionPool.tryGet(n->partition, p);
                 // old reference. discard iteration
                 if (!success)
                 {
