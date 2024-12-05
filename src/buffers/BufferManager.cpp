@@ -148,12 +148,12 @@ namespace boitatah::buffer
     
     void BufferManager::queueingBufferUpdates()
     {
-        std::cout << "queue buffer updates" << std::endl;
+        //std::cout << "queue buffer updates" << std::endl;
         for(auto& handle : activeBuffers){
             Buffer*& buffer = bufferPool.get(handle);
             buffer->queueUpdates();
         }
-        std::cout << "finished queue buffer updates" << std::endl;
+        //std::cout << "finished queue buffer updates" << std::endl;
     }
 
     void BufferManager::startBufferUpdates()

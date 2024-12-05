@@ -60,7 +60,7 @@ int main()
     bufferManager.queueingBufferUpdates();
     bufferManager.endBufferUpdates();
 
-    std::cout << "finished buffer updates" << std::endl;
+    //std::cout << "finished buffer updates" << std::endl;
 
     return EXIT_SUCCESS;
 }

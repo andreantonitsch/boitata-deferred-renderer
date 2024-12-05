@@ -9,6 +9,7 @@
 
 namespace boitatah::utils
 {
+
     static std::vector<char> readFile(const std::string &filename)
     {
         // ate starts from the back of the file

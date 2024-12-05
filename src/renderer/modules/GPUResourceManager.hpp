@@ -1,11 +1,14 @@
 #ifndef BOITATAH_UNIFORM_MANAGER_HPP
 #define BOITATAH_UNIFORM_MANAGER_HPP
 
+#include <memory>
+
 #include "../../vulkan/Vulkan.hpp"
 #include "../../collections/Pool.hpp"
 #include "../../buffers/Buffer.hpp"
 #include "../../buffers/BufferManager.hpp"
 #include "../../types/GPUResource.hpp"
+#include "../../types/Geometry.hpp"
 
 namespace boitatah
 {
@@ -13,26 +16,39 @@ namespace boitatah
     class GPUResourceManager{
 
         public:
-        GPUResourceManager(vk::Vulkan* vk_instance); //contructor
+            GPUResourceManager(vk::Vulkan* vk_instance, std::shared_ptr<buffer::BufferManager> bufferManager); //contructor
 
-        // Uniform Handling
-        Handle<GPUResource> createResource(void *data, uint32_t size, DESCRIPTOR_TYPE type);
-        void updateResource(void *new_data, uint32_t new_size);
-        
-        void flagResource(Handle<GPUResource> uniform);
-        void commitResource(Handle<GPUResource> uniform);
-        void freeResource(Handle<GPUResource> uniform);
+            // Uniform Handling
+            void update(Handle<GPUResource> resource, void *new_data, uint32_t new_size);
+            
+            void flagResource(Handle<GPUResource> resource);
+            void commitResource(Handle<GPUResource> resource);
+            void freeResource(Handle<GPUResource> resource);
 
-        
+            Handle<GPUResource> create(const ResourceDescriptor& description);
+            //Handle<GPUResource> update(ResourceDescriptor& update);
+
+            Handle<BufferAddress>& getBufferAddress(Handle<GPUResource>& handle);
+            ResourceMetaData& getResourceMetaData(Handle<GPUResource> &handle);
+
+            //Pointer requires enough memory.
+            bool readResourceData(Handle<GPUResource> handle, void* destinationPtr);
+            void readResourceDataAsync(Handle<GPUResource> handle, void* destinationPtr);
+            
+            void commitAll();
+            void cleanCommitQueue();
 
         private:
             vk::Vulkan* m_vulkan;
-            buffer::BufferManager* bufferManager;
+            std::weak_ptr<buffer::BufferManager> bufferManager;
             
-            std::vector<Pool<GPUResource>> pools;
-            Pool<GPUResource> uniformPool = Pool<GPUResource>({.size = 1<<16, .name = "uniforms pool"});
+            Handle<GPUResource> createResource(void *data, uint32_t size, SHARING_MODE type);
+            Pool<GPUResource> resourcePool = Pool<GPUResource>({.size = 1<<16, .name = "uniforms pool"});
+            
+            //Pending updates
+            //std::vector<Handle<GPUResource>> pendingUpdate;
 
-
+            
     };
 };
 

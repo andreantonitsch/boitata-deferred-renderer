@@ -5,6 +5,11 @@
 namespace boitatah
 {
 
+    template<class T>
+        T& as_lvalue(T&& t){
+        return static_cast<T&>(t);
+    }
+
     /// CONVERSION BETWEEN BOITATAH ENUMS AND VK ENUMS
 
     enum class COLOR_SPACE

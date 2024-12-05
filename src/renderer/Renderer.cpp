@@ -371,6 +371,13 @@ namespace boitatah
         return *m_bufferManager;
     }
 
+    RenderObjectManager &Renderer::getRenderObjectManager()
+    {
+        if(m_renderObjectManager == nullptr)
+            throw std::runtime_error("null render object manager");
+        return *m_renderObjectManager;
+    }
+
     bool Renderer::isWindowClosed()
     {
         return m_window->isWindowClosed();

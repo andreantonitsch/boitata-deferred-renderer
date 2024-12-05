@@ -1,14 +1,34 @@
 #ifndef BOITATAH_GEOMETRY_HPP
 #define BOITATAH_GEOMETRY_HPP
 
+
 #include <glm/glm.hpp>
 #include <vector>
 #include "../buffers/BufferStructs.hpp"
 #include "../buffers/Buffer.hpp"
 #include "../collections/Pool.hpp"
 #include <array>
+
 namespace boitatah
 {
+
+    struct GeometryBufferData{
+        Handle<GPUResource> buffer;
+        uint32_t count;
+        uint32_t elementSize;
+
+    };
+
+    struct GeometryBufferDataDesc{
+        uint32_t vertexCount;
+        uint32_t vertexSize;
+        void* vertexDataPtr;
+    };
+
+    struct GeometryIndexDataDesc{
+        uint32_t count;
+        uint32_t* dataPtr;
+    };
 
     struct GeometryDesc
     {
@@ -20,15 +40,34 @@ namespace boitatah
         void *indexData;
     };
 
+    struct GeometryDesc2
+    {
+        glm::ivec2 vertexInfo;
+        std::span<const GeometryBufferDataDesc> bufferData;
+        GeometryIndexDataDesc indexData;
+    };
+
     struct Geometry
     {
         std::vector<Handle<BufferAddress>> buffers;
-        Handle<BufferAddress> indexBuffer;
         glm::ivec2 vertexInfo;
         uint32_t vertexSize;
+        Handle<BufferAddress> indexBuffer;
         uint32_t indiceCount;
     };
 
+
+    struct Geometry2
+    {
+        std::vector<GeometryBufferData> buffers;
+        glm::ivec2 vertexInfo;
+        uint32_t vertexSize;
+        Handle<GPUResource> indexBuffer;
+        uint32_t indiceCount;
+    };
+
+
+    //geom data
     struct Vertex
     {
         glm::vec2 pos;
@@ -75,8 +114,8 @@ namespace boitatah
 
         float w = width / widthSegments;
         float h = height / heightSegments;
-        for(size_t j = 0; j <= heightSegments; j++){
-            for(size_t i = 0; i <= widthSegments; i ++ ){
+        for(uint32_t j = 0; j <= heightSegments; j++){
+            for(uint32_t i = 0; i <= widthSegments; i ++ ){
                 float iw = i * w;
                 float jh = j * h;
 
@@ -87,8 +126,8 @@ namespace boitatah
             }
         }
 
-        for(size_t i = 0; i < widthSegments; i ++ ){
-            for(size_t j = 0; j < heightSegments; j++){
+        for(uint32_t i = 0; i < widthSegments; i ++ ){
+            for(uint32_t j = 0; j < heightSegments; j++){
 
                 
                 indices.push_back(j * (widthSegments+1) + i);

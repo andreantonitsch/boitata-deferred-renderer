@@ -196,7 +196,7 @@ namespace boitatah::buffer
             {.size = partitions, .name = "buffer pool"}));
 
         if(sharing == SHARING_MODE::CONCURRENT){
-            std::cout << "mapping memory" << std::endl;
+            //std::cout << "mapping memory" << std::endl;
             mappedMemory = vulkan->mapMemory({.memory = bufferData.memory, .offset = 0, .size= bufferData.actualSize});
         }
 

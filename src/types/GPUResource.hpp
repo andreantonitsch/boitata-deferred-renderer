@@ -9,8 +9,19 @@
 
 namespace boitatah{
 
+    struct ResourceDescriptor{
+        SHARING_MODE sharing;
+        BUFFER_USAGE usage;
+        uint32_t size;
+    };
+
+    struct ResourceMetaData{
+        uint32_t size;
+        void* data;
+    };
+
     using namespace boitatah::buffer;
-    struct GPUResource // a uniform buffer object
+    struct GPUResource // gpu data + metadata object
     {
 
         private:
@@ -22,7 +33,6 @@ namespace boitatah{
             uint32_t size;
             uint8_t reading = 0; // one or zero
             uint8_t dirty;
-            // TODO
             //uint8_t read_only = 0; // only needs one buffer.
 
         public:
@@ -45,10 +55,8 @@ namespace boitatah{
                 return buffers[frameIndex % 2];
             };
             const void* get_data() const {return static_cast<const void*>(data);};
-             uint32_t get_size() const {return size;};
-
+            uint32_t get_size() const {return size;};
         };
-
 }
 
 #endif
