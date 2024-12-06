@@ -5,8 +5,7 @@ namespace boitatah{
                                              : m_resourceManager(resourceManager)
     {
 
-        geometryPool = std::make_unique<Pool<Geometry2>>(new Pool<Geometry2>({
-                .size = 1<<16, .name = "uniforms pool"}));
+        geometryPool = std::make_unique<Pool<Geometry2>>(PoolOptions{.size = 1<<16, .dynamic=true, .name = "uniforms pool"});
 
     }
 
@@ -55,11 +54,17 @@ namespace boitatah{
         return geometryPool->set(geo);
     }
 
+    // TODO
+    /// @brief Not Implemented YET
+    /// @param 
+    /// @return 
     bool RenderObjectManager::destroy(Handle<Geometry2> handle)
     {
-        Geometry2 geo;
-        // if(!geometryPool->tryGet(handle, geo))
-        //     if()
+        Geometry2* geo = geometryPool->tryGet(handle);
+        if(geo == nullptr)
+            throw std::runtime_error("geometry already destroyed");
+
+        geometryPool->clear(handle, *geo);
 
         return false;
     }

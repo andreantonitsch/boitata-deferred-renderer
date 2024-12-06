@@ -63,23 +63,23 @@ int main()
                       .dataPtr = geometryData.indices.data()},       
         });
         
-    SceneNode triangle({
-        .name = "triangle",
-        .geometry = geometry,
-        .shader = shader,
-        });
+    // SceneNode triangle({
+    //     .name = "triangle",
+    //     //.geometry = geometry,
+    //     .shader = shader,
+    //     });
 
     // Scene Description.
-    SceneNode scene({.name = "root scene"});
-    scene.add(&triangle);
-    boitatah::utils::Timewatch timewatch(1000);
+    // SceneNode scene({.name = "root scene"});
+    // scene.add(&triangle);
+    // boitatah::utils::Timewatch timewatch(1000);
 
-    while (!r.isWindowClosed())
-    {
-        r.render(scene);
+    // while (!r.isWindowClosed())
+    // {
+    //     r.render(scene);
 
-        std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
-    }
+    //     std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
+    // }
     r.waitIdle();
 
     r.destroyLayout(layout);

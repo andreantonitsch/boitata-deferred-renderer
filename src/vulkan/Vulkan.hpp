@@ -204,17 +204,12 @@ namespace boitatah::vk
         std::vector<const char *> deviceExtensions;
         std::vector<const char *> instanceExtensions;
 
-
-
         void beginCommands(const VkCommandBuffer &buffer);
         void endCommands(const VkCommandBuffer &buffer,
                          const VkQueue &queue,
                          const VkSemaphore &wait,
                          const VkSemaphore &signal,
                          const VkFence &fence);
-
-
-
 
 #pragma region Vulkan Setup
 

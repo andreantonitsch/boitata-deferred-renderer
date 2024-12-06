@@ -40,12 +40,12 @@ namespace boitatah
 
         private:
             vk::Vulkan* m_vulkan;
-            std::weak_ptr<buffer::BufferManager> bufferManager;
+            std::weak_ptr<buffer::BufferManager> m_bufferManager;
             
-            Handle<GPUResource> createResource(void *data, uint32_t size, SHARING_MODE type);
-            Pool<GPUResource> resourcePool = Pool<GPUResource>({.size = 1<<16, .name = "uniforms pool"});
+            std::unique_ptr<Pool<GPUResource>> m_resourcePool;
             
             //Pending updates
+            Handle<GPUResource> createResource(void *data, uint32_t size, SHARING_MODE type);
             //std::vector<Handle<GPUResource>> pendingUpdate;
 
             

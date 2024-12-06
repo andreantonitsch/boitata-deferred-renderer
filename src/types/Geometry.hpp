@@ -7,6 +7,8 @@
 #include "../buffers/BufferStructs.hpp"
 #include "../buffers/Buffer.hpp"
 #include "../collections/Pool.hpp"
+#include "GPUResource.hpp"
+
 #include <array>
 
 namespace boitatah

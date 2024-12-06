@@ -6,6 +6,8 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <optional>
+
 namespace boitatah
 {
     template <typename T>
@@ -40,6 +42,7 @@ namespace boitatah
         //~Pool(void);
 
         bool tryGet(const Handle<T> handle, T& item);
+        T* tryGet(const Handle<T> handle);
         T& get(const Handle<T> handle);
         Handle<T> set(T &elem);
         bool clear(Handle<T> handle, T& item);
@@ -94,6 +97,16 @@ bool boitatah::Pool<T>::tryGet(const Handle<T> handle, T& item)
 }
 
 template <typename T>
+inline T *boitatah::Pool<T>::tryGet(const Handle<T> handle)
+{
+    if (generations[handle.i] != handle.gen)
+    {
+        return nullptr;
+    }
+    return &pool[handle.i];
+}
+
+template <typename T>
 T& boitatah::Pool<T>::get(const Handle<T> handle)
 {
     if (generations[handle.i] != handle.gen)
@@ -107,8 +120,20 @@ template <typename T>
 boitatah::Handle<T> boitatah::Pool<T>::set(T &elem)
 {
     if (stackTop == pool.size()){
-        std::cout << options.name << " is full " << std::endl;
-        return Handle<T>{.gen = 0};
+        if(!options.dynamic){
+            std::cout << options.name << " is full " << std::endl;
+            return Handle<T>{.gen = 0};
+        }else{ //resize and keep going
+            int old_size = options.size;
+            options.size = options.size * static_cast<uint32_t>(2);
+
+            pool.resize(options.size);
+            freeStack.resize(options.size);
+            for (uint32_t i = old_size; i < freeStack.size(); i++)
+            {
+                freeStack[i] = i;
+            }
+        }
     }
 
     uint32_t i = popStack();

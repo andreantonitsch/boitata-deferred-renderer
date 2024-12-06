@@ -17,6 +17,7 @@ add_executable(test_partitionlist src/examples/test_partitionlist.cpp)
 add_executable(test_buffer_allocator src/examples/test_buffer_allocator.cpp)
 add_executable(test_camera src/examples/test_camera.cpp)
 add_executable(test_buffer_manager src/examples/test_buffer_manager.cpp)
+add_executable(test_object_manager src/examples/test_object_manager.cpp)
 
 
 #-lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
@@ -39,4 +40,5 @@ target_link_libraries(test_partitionlist ${LIBS})
 target_link_libraries(test_buffer_allocator ${LIBS})
 target_link_libraries(test_camera ${LIBS})
 target_link_libraries(test_buffer_manager ${LIBS})
+target_link_libraries(test_object_manager ${LIBS})
 
