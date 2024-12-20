@@ -525,16 +525,6 @@ void boitatah::vk::Vulkan::submitDrawCmdBuffer(const SubmitDrawCommandVk &comman
     }
 }
 
-// void boitatah::vk::Vulkan::beginCmdBuffer(const VkCommandBuffer &buffer)
-// {
-//     vkResetCommandBuffer(buffer, 0);
-
-//     VkCommandBufferBeginInfo beginInfo{
-//         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-//         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-//     };
-//     vkBeginCommandBuffer(buffer, &beginInfo);
-// }
 
 void boitatah::vk::Vulkan::submitCmdBuffer(const SubmitCommandVk &command)
 {

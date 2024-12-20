@@ -140,6 +140,8 @@ namespace boitatah::vk
 
 #pragma region Commands
 
+        
+
         // Generic Commands
         VkCommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
         void beginCmdBuffer(const BeginCommandVk &command);

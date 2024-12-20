@@ -1,24 +1,26 @@
-#ifndef BOITATAH_GEOMETRY_HPP
-#define BOITATAH_GEOMETRY_HPP
+#ifndef BOITATAH_GEOMETRY_TEMP_HPP
+#define BOITATAH_GEOMETRY_TEMP_HPP
 
+#include <memory>
 
 #include <glm/glm.hpp>
 #include <vector>
 #include "../buffers/BufferStructs.hpp"
 #include "../buffers/Buffer.hpp"
 #include "../collections/Pool.hpp"
-#include "GPUResource.hpp"
+#include "GPUResourceTEMP.hpp"
+#include "GPUResourceManagerTEMP.hpp"
 
 #include <array>
 
 namespace boitatah
 {
-
+    class GPUBuffer;
+    class GPUResourceManager;
     struct GeometryBufferData{
-        Handle<GPUResource> buffer;
+        Handle<GPUBuffer> buffer;
         uint32_t count;
         uint32_t elementSize;
-
     };
 
     struct GeometryBufferDataDesc{
@@ -49,24 +51,44 @@ namespace boitatah
         GeometryIndexDataDesc indexData;
     };
 
-    struct Geometry
-    {
-        std::vector<Handle<BufferAddress>> buffers;
+    struct VertexMetaInfo {
         glm::ivec2 vertexInfo;
         uint32_t vertexSize;
-        Handle<BufferAddress> indexBuffer;
-        uint32_t indiceCount;
     };
 
-    struct Geometry2
+    struct GeometryCreateDescription {
+
+    };
+
+
+
+    struct Geometry : ImmutableGPUResource<Geometry>
     {
-        std::vector<GeometryBufferData> buffers;
-        glm::ivec2 vertexInfo;
-        uint32_t vertexSize;
-        Handle<GPUResource> indexBuffer;
-        uint32_t indiceCount;
-    };
+        friend class GPUResource<Geometry>;
+        using ImmutableGPUResource<Geometry>::ready_for_use;
 
+        private:
+            std::vector<GeometryBufferData> buffers;
+            VertexMetaInfo vertex_info;
+            GeometryBufferData indexBuffer;
+            uint32_t indiceCount;
+
+            bool impl_ready_for_use(int frameIndex){
+                bool ready = true;
+
+                auto manager = std::shared_ptr(m_manager); 
+
+                ready &= manager->checkReady(indexBuffer.buffer, frameIndex);
+                if(!ready) return ready;
+
+                for(auto& buffer : buffers){
+                    ready &= manager->checkReady(buffer.buffer, frameIndex);
+                }
+
+                return ready;
+            }
+    };
+    
     //geom data
     struct Vertex
     {

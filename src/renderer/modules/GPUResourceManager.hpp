@@ -1,5 +1,5 @@
-#ifndef BOITATAH_UNIFORM_MANAGER_HPP
-#define BOITATAH_UNIFORM_MANAGER_HPP
+#ifndef BOITATAH_UNIFORM_MANAGER_TEMP_HPP
+#define BOITATAH_UNIFORM_MANAGER_TEMP_HPP
 
 #include <memory>
 
@@ -23,13 +23,12 @@ namespace boitatah
             
             void flagResource(Handle<GPUResource> resource);
             void commitResource(Handle<GPUResource> resource);
+            void commitResource(Handle<GPUResource> resource, uint32_t frame_index);
             void freeResource(Handle<GPUResource> resource);
 
-            Handle<GPUResource> create(const ResourceDescriptor& description);
-            //Handle<GPUResource> update(ResourceDescriptor& update);
 
-            Handle<BufferAddress>& getBufferAddress(Handle<GPUResource>& handle);
-            ResourceMetaData& getResourceMetaData(Handle<GPUResource> &handle);
+            Handle<GPUResource> create(const ResourceDescriptor& description);
+            bool destroy(const Handle<GPUResource>& handle);
 
             //Pointer requires enough memory.
             bool readResourceData(Handle<GPUResource> handle, void* destinationPtr);
@@ -37,17 +36,22 @@ namespace boitatah
             
             void commitAll();
             void cleanCommitQueue();
+            
+            GPUResource& getResource(Handle<GPUResource> &handle);
+            Handle<BufferAddress>& getBufferAddress(Handle<GPUResource>& handle, uint32_t frame_index);
+            ResourceMetaData& getResourceMetaData(Handle<GPUResource> &handle, uint32_t frame_index);
 
         private:
             vk::Vulkan* m_vulkan;
             std::weak_ptr<buffer::BufferManager> m_bufferManager;
             
-            std::unique_ptr<Pool<GPUResource>> m_resourcePool;
-            
-            //Pending updates
-            Handle<GPUResource> createResource(void *data, uint32_t size, SHARING_MODE type);
-            //std::vector<Handle<GPUResource>> pendingUpdate;
 
+            std::unique_ptr<Pool<GPUResource>> m_resourcePool;    
+
+            void initialize_buffers(GPUResource& resource, const ResourceDescriptor &descriptor);
+   
+            void commitResource(GPUResource& resource);
+            void commitResource(GPUResource& resource, uint32_t frame_index);
             
     };
 };

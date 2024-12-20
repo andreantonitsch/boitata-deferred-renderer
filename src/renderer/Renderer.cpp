@@ -165,12 +165,12 @@ namespace boitatah
                 static_cast<int>(image.dimensions.y),
             },
 
-            .vertexBuffer = vertexBufferHandle.isNull() ? VK_NULL_HANDLE : vertexBuffer->getBuffer(),
-            .vertexBufferOffset = vertexBufferReservation.offset,
+            // .vertexBuffer = vertexBufferHandle.isNull() ? VK_NULL_HANDLE : vertexBuffer->getBuffer(),
+            // .vertexBufferOffset = vertexBufferReservation.offset,
 
-            .indexBuffer = geom.indexBuffer.isNull() ? VK_NULL_HANDLE : indexBuffer->getBuffer(),
-            .indexBufferOffset = indexBufferReservation.offset,
-            .indexCount = geom.indiceCount,
+            // .indexBuffer = geom.indexBuffer.isNull() ? VK_NULL_HANDLE : indexBuffer->getBuffer(),
+            // .indexBufferOffset = indexBufferReservation.offset,
+            // .indexCount = geom.indiceCount,
 
             .vertexInfo = geom.vertexInfo,
             .instanceInfo = {1, 0}, // scene.instanceInfo
@@ -485,20 +485,20 @@ namespace boitatah
         m_vk->waitForFence(m_transferFence);
         m_vk->beginCmdBuffer({.commandBuffer = command.buffer.buffer});
 
-        m_vk->CmdCopyBuffer({
-            .commandBuffer = command.buffer.buffer,
-            .srcBuffer = srcBuffer->getBuffer(),
-            .srcOffset = srcReservation.offset,
-            .dstBuffer = dstBuffer->getBuffer(),
-            .dstOffset = dstReservation.offset,
-            .size = srcReservation.size,
-        });
+        // m_vk->CmdCopyBuffer({
+        //     .commandBuffer = command.buffer.buffer,
+        //     .srcBuffer = srcBuffer->getBuffer(),
+        //     .srcOffset = srcReservation.offset,
+        //     .dstBuffer = dstBuffer->getBuffer(),
+        //     .dstOffset = dstReservation.offset,
+        //     .size = srcReservation.size,
+        // });
 
-        m_vk->submitCmdBuffer({
-            .commandBuffer = command.buffer.buffer,
-            .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
-            .fence = m_transferFence,
-        });
+        // m_vk->submitCmdBuffer({
+        //     .commandBuffer = command.buffer.buffer,
+        //     .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
+        //     .fence = m_transferFence,
+        // });
     }
 
     void Renderer::beginBuffer(const BeginBufferCommand &command)

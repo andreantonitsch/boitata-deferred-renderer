@@ -64,8 +64,6 @@ namespace boitatah
         uint32_t frameIndex;
     };
 
-
-
     struct DrawCommand
     {
         CommandBuffer drawBuffer;

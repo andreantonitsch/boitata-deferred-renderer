@@ -145,13 +145,27 @@ namespace boitatah::buffer
         std::cout << "finished copy to buffer" << std::endl;
         return true;
     }
-    
+
+    bool BufferManager::queueCopy(const Handle<BufferAddress> src, const Handle<BufferAddress> dst)
+    {
+        Buffer* dstBuffer;
+        if(getAddressBuffer(dst, dstBuffer)){
+
+            auto dstReserv = getAddressReservation(dst);
+                dstBuffer->queueTransfer(src, dstReserv);
+            return true;
+        }
+        return false;
+    }
+
     void BufferManager::queueingBufferUpdates()
     {
         //std::cout << "queue buffer updates" << std::endl;
         for(auto& handle : activeBuffers){
             Buffer*& buffer = bufferPool.get(handle);
-            buffer->queueUpdates();
+
+            if(buffer != nullptr && buffer->hasUpdates())
+                buffer->queueTransfers();
         }
         //std::cout << "finished queue buffer updates" << std::endl;
     }
@@ -187,6 +201,18 @@ namespace boitatah::buffer
         return false;
     }
 
+    Handle<BufferReservation> BufferManager::getAddressReservation(const Handle<BufferAddress> handle)
+    {
+        BufferAddress address;
+        if(addressPool.tryGet(handle, address)){
+            Buffer *buffer;
+            if(bufferPool.tryGet(address.buffer, buffer)){
+                return address.reservation;
+            }
+        }
+        return Handle<BufferReservation>();
+    }
+
     bool BufferManager::getAddressBuffer(const Handle<BufferAddress> handle, Buffer*& buffer)
     {
         BufferAddress address;
@@ -213,5 +239,24 @@ namespace boitatah::buffer
     CommandBuffer BufferManager::getTransferBuffer()
     {
         return transferBuffer;
+    }
+
+    template <class T>
+    inline bool BufferManager::queueCopy(const Handle<BufferAddress> src, const Handle<BufferAddress> dst, CommandBufferWriter<T> &writer)
+    {
+        Buffer* dstBuffer;
+        if(getAddressBuffer(dst, dstBuffer)){
+
+            auto dstReserv = getAddressReservation(dst);
+            dstBuffer->queueTransfer(src, dstReserv, writer);
+            return true;
+        }
+        return false;
+    }
+
+    template <class T>
+    inline Handle<BufferAddress> BufferManager::stageCopy(Handle<BufferAddress> &stagedBuffer, void *data, CommandBufferWriter<T> &writer)
+    {
+        return Handle<BufferAddress>();
     }
 }

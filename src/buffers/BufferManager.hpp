@@ -8,11 +8,13 @@
 #include "Buffer.hpp"
 
 #include "../collections/Pool.hpp"
+#include "../vulkan/VkCommandBufferWriter.hpp"
 
 namespace boitatah::buffer
 {
     class Buffer;
     using namespace boitatah::vk;
+    using namespace boitatah::command_buffers;
 
     class BufferManager : public std::enable_shared_from_this<BufferManager>
     {
@@ -43,20 +45,34 @@ namespace boitatah::buffer
             Handle<BufferAddress> reserveBuffer(const BufferReservationRequest &request);
             bool copyToBuffer(const BufferUploadDesc &desc);
             
+            bool queueCopy(const Handle<BufferAddress> src, const Handle<BufferAddress> dst);
+            
+            template<class T>
+            bool queueCopy(const Handle<BufferAddress> src, const Handle<BufferAddress> dst, CommandBufferWriter<T>& writer);
+
+            //user is responsible for releasing the staged buffer
+            Handle<BufferAddress> stageCopy(uint32_t dataSize, void* data);
+            template<class T>
+            Handle<BufferAddress> stageCopy(Handle<BufferAddress>& stagedBuffer, void* data, CommandBufferWriter<T>& writer);
+
             void queueingBufferUpdates(); //queues updates
             void startBufferUpdates(); //setup queue buffer updates
             void endBufferUpdates();    // ship queue buffer updates
 
 
             bool getAddressReservation(const Handle<BufferAddress> handle, BufferReservation& reservation);
+            Handle<BufferReservation> getAddressReservation(const Handle<BufferAddress> handle);
             bool getAddressBuffer(const Handle<BufferAddress> handle, Buffer*& buffer);
+            
 
             void freeBufferReservation(Handle<BufferAddress> handle);
-            
+             
             bool areTransfersFinished() const;
             void waitForTransferToFinish() const;
             CommandBuffer getTransferBuffer();
     };
+
+
 };
 
 #endif //BOITATAH_BUFFER_MANAGER_HPP

@@ -8,7 +8,8 @@
 
 
 namespace boitatah{
-
+    using namespace boitatah::buffer;
+    class GPUResourceManager;
     struct ResourceDescriptor{
         SHARING_MODE sharing;
         BUFFER_USAGE usage;
@@ -29,29 +30,37 @@ namespace boitatah{
     using namespace boitatah::buffer;
     struct GPUResource // gpu data + metadata object
     {
-
+        friend GPUResourceManager;
         private:
             // GPU data
-            Handle<BufferAddress> buffers[2]; // one for writing and one for reading
+            //Handle<BufferAddress> buffers[2]; // one for writing and one for reading
             BufferMetaData buffers_meta_data[2];
 
             ResourceMetaData resource_data; // most current data version. align on 32/64
             ResourceDescriptor descriptor; //size;
-            uint8_t reading = 0; // one or zero
-            uint8_t dirty;
-
+            uint8_t reading = 0u; // one or zero
+            uint8_t dirty = 255u;
+            std::weak_ptr<GPUResourceManager> m_manager;
 
         public:
-            void set_descriptor(ResourceDescriptor &descriptor){
+            void set_descriptor(const ResourceDescriptor &descriptor){
                 this->descriptor = descriptor;
             }
 
-            void set_buffer(uint32_t frameIndex, Handle<BufferAddress> buffer){
-                buffers[frameIndex % 2] = buffer;
+            void set_buffer(uint32_t frameIndex, BufferMetaData buffer_data){
+                buffers_meta_data[frameIndex % 2] = buffer_data;
             }
 
+            Handle<BufferAddress> get_buffer(uint32_t frameIndex) const
+            {
+                return buffers_meta_data[frameIndex % 2].buffer;
+            };
+
+            const void* get_data() const {return static_cast<const void*>(resource_data.data);};
+            uint32_t get_size() const {return descriptor.size;};
+
             // new size has to be equal to old size.
-            void change_data(ResourceMetaData &new_data)
+            void change_data(const ResourceMetaData &new_data)
             {
                 resource_data = new_data;
                 flag_update();
@@ -62,17 +71,9 @@ namespace boitatah{
                 dirty = 255u; 
             };
             
+            void clean_frame_index(int frameIndex) { dirty = dirty & ~(static_cast<uint8_t>(1) << (frameIndex%2)); };
+            bool check_dirt(int frameIndex) { return static_cast<uint8_t>(0) < (dirty & (static_cast<uint8_t>(1) << (frameIndex%2))); };
 
-            void clean_frame_index(int index) { dirty = dirty & ~(static_cast<uint8_t>(1) << index); };
-            bool check_dirt(int index) { return static_cast<uint8_t>(0) < (dirty & (static_cast<uint8_t>(1) << index)); };
-            Handle<BufferAddress> get_buffer(uint32_t frameIndex) const
-            {
-                return buffers[frameIndex % 2];
-            };
-
-            const void* get_data() const {return static_cast<const void*>(resource_data.data);};
-            uint32_t get_size() const {return descriptor.size;};
-        
         };
 }
 
