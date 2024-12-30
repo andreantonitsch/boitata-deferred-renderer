@@ -36,7 +36,6 @@ namespace boitatah::buffer
 
     Buffer::~Buffer(void)
     {
-            
         if(sharing == SHARING_MODE::CONCURRENT)
             vulkan->unmapMemory({bufferData.memory});
 
@@ -103,101 +102,133 @@ namespace boitatah::buffer
                 .map = mappedMemory,
                 .data = data,
             });
-        }else{
-            std::shared_ptr<BufferManager> manager(bufferManager);
-            auto stagingAddress = manager->reserveBuffer({
-                .request = reservation.requestSize,
-                .usage = BUFFER_USAGE::TRANSFER_SRC,
-                .sharing = SHARING_MODE::CONCURRENT,
-            });
-
-            manager->copyToBuffer({.address = stagingAddress, 
-                                     .dataSize = reservation.requestSize,
-                                     .data = data, 
-            });
-
-            queuedTransfers.emplace_back(stagingAddress, handle);
         }
+        // else{
+        //     if(queueTransfer){
+        //         std::shared_ptr<BufferManager> manager(bufferManager);
+
+        //         auto stagingAddress = manager->reserveBuffer({
+        //             .request = reservation.requestSize,
+        //             .usage = BUFFER_USAGE::TRANSFER_SRC,
+        //             .sharing = SHARING_MODE::CONCURRENT,
+        //         });
+
+        //         manager->copyToBuffer({.address = stagingAddress, 
+        //                                 .dataSize = reservation.requestSize,
+        //                                 .data = data, 
+        //         });
+
+        //         queuedTransfers.emplace_back(stagingAddress, handle);
+        //     }
+        // }
     }
+
+    // void Buffer::copyDataFromBuffer(const Handle<BufferReservation> dst, const Handle<BufferAddress> src)
+    // {
+    //         std::shared_ptr<BufferManager> manager(bufferManager);
+
+    //         Buffer* srcBuffer;
+
+    //         BufferReservation srcReservation;
+    //         BufferReservation dstReservation;
+
+    //         if(!manager->getAddressBuffer(src, srcBuffer))
+    //             std::runtime_error("buffer transfer failed, invalid staging buffer");
+            
+    //         if(!manager->getAddressReservation(src,srcReservation))
+    //             std::runtime_error("buffer transfer failed, invalid staging reservation");
+
+    //         if(!getReservationData(dst,dstReservation))
+    //             std::runtime_error("buffer transfer failed, invalid staging reservation");
+
+    //         vulkan->CmdCopyBuffer({
+    //             .commandBuffer = manager->getTransferBuffer().buffer,
+    //             .srcBuffer = srcBuffer->getBuffer(),
+    //             .srcOffset = srcReservation.offset,
+    //             .dstBuffer = getBuffer(),
+    //             .dstOffset = dstReservation.offset,
+    //             .size = dstReservation.requestSize,
+    //         });
+    // }
 
     bool Buffer::hasUpdates()
     {
         return queuedTransfers.size() > 0;
     }
 
-    void Buffer::queueTransfers()
-    {
-        std::shared_ptr<BufferManager> manager(bufferManager);
-        //do the queues
+    // void Buffer::queueTransfers()
+    // {
+    //     std::shared_ptr<BufferManager> manager(bufferManager);
+    //     //do the queues
 
-        for(auto& transfer : queuedTransfers)
-        {
-            Buffer* srcBuffer;
-            Buffer* dstBuffer;
+    //     for(auto& transfer : queuedTransfers)
+    //     {
+    //         Buffer* srcBuffer;
+    //         Buffer* dstBuffer;
 
-            BufferReservation srcReservation;
-            BufferReservation dstReservation;
+    //         BufferReservation srcReservation;
+    //         BufferReservation dstReservation;
 
-            if(!manager->getAddressBuffer(transfer.stagingBufferAddress,srcBuffer))
-                std::runtime_error("buffer transfer failed, invalid staging buffer");
+    //         if(!manager->getAddressBuffer(transfer.stagingBufferAddress,srcBuffer))
+    //             std::runtime_error("buffer transfer failed, invalid staging buffer");
             
-            if(mainReservPool->tryGet(transfer.finalBufferReservation ,dstReservation))
-                std::runtime_error("buffer transfer failed, invalid final reservation");
+    //         if(mainReservPool->tryGet(transfer.finalBufferReservation ,dstReservation))
+    //             std::runtime_error("buffer transfer failed, invalid final reservation");
 
-            if(!manager->getAddressReservation(transfer.stagingBufferAddress,srcReservation))
-                std::runtime_error("buffer transfer failed, invalid staging reservation");
+    //         if(!manager->getAddressReservation(transfer.stagingBufferAddress,srcReservation))
+    //             std::runtime_error("buffer transfer failed, invalid staging reservation");
 
-            vulkan->CmdCopyBuffer({
-                .commandBuffer = manager->getTransferBuffer().buffer,
-                .srcBuffer = srcBuffer->getBuffer(),
-                .srcOffset = srcReservation.offset,
-                .dstBuffer = this->getBuffer(),
-                .dstOffset = dstReservation.offset,
-                .size = dstReservation.requestSize,
-            });
-        }
+    //         vulkan->CmdCopyBuffer({
+    //             .commandBuffer = manager->getTransferBuffer().buffer,
+    //             .srcBuffer = srcBuffer->getBuffer(),
+    //             .srcOffset = srcReservation.offset,
+    //             .dstBuffer = this->getBuffer(),
+    //             .dstOffset = dstReservation.offset,
+    //             .size = dstReservation.requestSize,
+    //         });
+    //     }
 
-    }
+    // }
 
-    /// @brief Transfer from src into this buffer at BufferReservation dst
-    /// @param src 
-    /// @param dst 
-    void Buffer::queueTransfer(Handle<BufferAddress> src, Handle<BufferReservation> dst)
-    {
-            std::shared_ptr<BufferManager> manager(bufferManager);
+    // /// @brief Transfer from src into this buffer at BufferReservation dst
+    // /// @param src 
+    // /// @param dst 
+    // void Buffer::queueTransfer(Handle<BufferAddress> src, Handle<BufferReservation> dst)
+    // {
+    //         std::shared_ptr<BufferManager> manager(bufferManager);
 
-            Buffer* srcBuffer;
+    //         Buffer* srcBuffer;
 
-            BufferReservation srcReservation;
-            BufferReservation dstReservation;
+    //         BufferReservation srcReservation;
+    //         BufferReservation dstReservation;
 
-            if(!manager->getAddressBuffer(src, srcBuffer))
-                std::runtime_error("buffer transfer failed, invalid staging buffer");
+    //         if(!manager->getAddressBuffer(src, srcBuffer))
+    //             std::runtime_error("buffer transfer failed, invalid staging buffer");
             
-            if(!manager->getAddressReservation(src,srcReservation))
-                std::runtime_error("buffer transfer failed, invalid staging reservation");
+    //         if(!manager->getAddressReservation(src,srcReservation))
+    //             std::runtime_error("buffer transfer failed, invalid staging reservation");
 
-            if(!getReservationData(dst,dstReservation))
-                std::runtime_error("buffer transfer failed, invalid staging reservation");
+    //         if(!getReservationData(dst,dstReservation))
+    //             std::runtime_error("buffer transfer failed, invalid staging reservation");
 
-            vulkan->CmdCopyBuffer({
-                .commandBuffer = manager->getTransferBuffer().buffer,
-                .srcBuffer = srcBuffer->getBuffer(),
-                .srcOffset = srcReservation.offset,
-                .dstBuffer = getBuffer(),
-                .dstOffset = dstReservation.offset,
-                .size = dstReservation.requestSize,
-            });
-    }
+    //         vulkan->CmdCopyBuffer({
+    //             .commandBuffer = manager->getTransferBuffer().buffer,
+    //             .srcBuffer = srcBuffer->getBuffer(),
+    //             .srcOffset = srcReservation.offset,
+    //             .dstBuffer = getBuffer(),
+    //             .dstOffset = dstReservation.offset,
+    //             .size = dstReservation.requestSize,
+    //         });
+    // }
 
-    void Buffer::clearTransferQueue()
-    {
-        std::shared_ptr<BufferManager> manager(bufferManager);
-        for(auto& transfer : queuedTransfers){
-            manager ->freeBufferReservation(transfer.stagingBufferAddress);
-        }
-        queuedTransfers.clear();
-    }
+    // void Buffer::clearTransferQueue()
+    // {
+    //     std::shared_ptr<BufferManager> manager(bufferManager);
+    //     for(auto& transfer : queuedTransfers){
+    //         manager ->freeBufferReservation(transfer.stagingBufferAddress);
+    //     }
+    //     queuedTransfers.clear();
+    // }
 
     bool Buffer::checkCompatibility(const BufferReservationRequest &compatibility)
     {
@@ -240,33 +271,32 @@ namespace boitatah::buffer
 
     }
 
+    // template <class T>
+    // inline void Buffer::queueTransfer(Handle<BufferAddress> src, Handle<BufferReservation> dst, CommandBufferWriter<T> &writer)
+    // {
+    //         std::shared_ptr<BufferManager> manager(bufferManager);
 
-    template <class T>
-    inline void Buffer::queueTransfer(Handle<BufferAddress> src, Handle<BufferReservation> dst, CommandBufferWriter<T> &writer)
-    {
-            std::shared_ptr<BufferManager> manager(bufferManager);
+    //         Buffer* srcBuffer;
 
-            Buffer* srcBuffer;
+    //         BufferReservation srcReservation;
+    //         BufferReservation dstReservation;
 
-            BufferReservation srcReservation;
-            BufferReservation dstReservation;
-
-            if(!manager->getAddressBuffer(src, srcBuffer))
-                std::runtime_error("buffer transfer failed, invalid staging buffer");
+    //         if(!manager->getAddressBuffer(src, srcBuffer))
+    //             std::runtime_error("buffer transfer failed, invalid staging buffer");
             
-            if(!manager->getAddressReservation(src,srcReservation))
-                std::runtime_error("buffer transfer failed, invalid staging reservation");
+    //         if(!manager->getAddressReservation(src,srcReservation))
+    //             std::runtime_error("buffer transfer failed, invalid staging reservation");
 
-            if(!getReservationData(dst,dstReservation))
-                std::runtime_error("buffer transfer failed, invalid staging reservation");
+    //         if(!getReservationData(dst,dstReservation))
+    //             std::runtime_error("buffer transfer failed, invalid staging reservation");
 
-            writer.copyBuffer({
-                .srcOffset = srcReservation.offset,
-                .dstOffset = dstReservation.offset,
-                .size = dstReservation.requestSize,
-                .srcBuffer = srcBuffer->getBuffer(),
-                .dstBuffer = getBuffer(),
-            });
-    }
+    //         writer.copyBuffer({
+    //             .srcOffset = srcReservation.offset,
+    //             .dstOffset = dstReservation.offset,
+    //             .size = dstReservation.requestSize,
+    //             .srcBuffer = srcBuffer->getBuffer(),
+    //             .dstBuffer = getBuffer(),
+    //         });
+    // }
 }
 

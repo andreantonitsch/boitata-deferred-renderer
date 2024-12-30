@@ -1,12 +1,14 @@
 #ifndef BOITATAH_VULKAN_COMMAND_BUFFER_WRITER_HPP
 #define BOITATAH_VULKAN_COMMAND_BUFFER_WRITER_HPP
 
+#include "../vulkan/Vulkan.hpp"
 #include "../command_buffers/CommandBufferWriter.hpp"
 #include <memory>
-#include "../vulkan/Vulkan.hpp"
 
-namespace boitatah::command_buffers{
-    using namespace boitatah::vk;
+namespace boitatah::vk{
+    using namespace boitatah::command_buffers;
+
+    class Vulkan;
 
     class VkCommandBufferWriter;
 
@@ -26,7 +28,6 @@ namespace boitatah::command_buffers{
         uint32_t size;
         VkBuffer srcBuffer;
         VkBuffer dstBuffer;
-        
     };
 
     class VkCommandBufferWriter : CommandBufferWriter<VkCommandBufferWriter>
@@ -37,7 +38,7 @@ namespace boitatah::command_buffers{
             VkCommandBufferWriter(std::shared_ptr<Vulkan> vk_instance) : vk_instance(vk_instance){};
 
         private:
-            std::shared_ptr<Vulkan> vk_instance;
+            std::weak_ptr<Vulkan> vk_instance;
             VkCommandBuffer& unwrapCommandBuffer(){
                 return static_cast<VulkanWrappedCommandBuffer&>(bufferWrapper).buffer;
             };
@@ -61,7 +62,7 @@ namespace boitatah::command_buffers{
             };
 
             void __imp_copyBuffer(VulkanWriterCopyBufferCommand& command){
-                VkBufferCopy copy{
+                    VkBufferCopy copy{
                         .srcOffset = command.srcOffset,
                         .dstOffset = command.dstOffset,
                         .size = command.size};

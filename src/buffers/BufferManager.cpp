@@ -7,7 +7,7 @@
 namespace boitatah::buffer
 {
 
-    BufferManager::BufferManager(Vulkan *vk_instance)
+    BufferManager::BufferManager(vk::Vulkan *vk_instance)
     {
         m_vk = vk_instance;
         m_transferFence = m_vk->createFence(true);
@@ -152,22 +152,48 @@ namespace boitatah::buffer
         if(getAddressBuffer(dst, dstBuffer)){
 
             auto dstReserv = getAddressReservation(dst);
-                dstBuffer->queueTransfer(src, dstReserv);
+
+            Buffer* srcBuffer;
+
+            BufferReservation srcReservation;
+            BufferReservation dstReservation;
+
+            if(!getAddressBuffer(src, srcBuffer))
+                std::runtime_error("buffer transfer failed, invalid staging buffer");
+            
+            if(!getAddressReservation(src,srcReservation))
+                std::runtime_error("buffer transfer failed, invalid staging reservation");
+
+            if(!dstBuffer->getReservationData(dstReserv,dstReservation))
+                std::runtime_error("buffer transfer failed, invalid staging reservation");
+
+            m_vk->CmdCopyBuffer({
+                .commandBuffer = getTransferBuffer().buffer,
+                .srcBuffer = srcBuffer->getBuffer(),
+                .srcOffset = srcReservation.offset,
+                .dstBuffer = dstBuffer->getBuffer(),
+                .dstOffset = dstReservation.offset,
+                .size = dstReservation.requestSize,
+            });
             return true;
         }
         return false;
     }
 
-    void BufferManager::queueingBufferUpdates()
-    {
-        //std::cout << "queue buffer updates" << std::endl;
-        for(auto& handle : activeBuffers){
-            Buffer*& buffer = bufferPool.get(handle);
+    // void BufferManager::queueingBufferUpdates()
+    // {
+    //     //std::cout << "queue buffer updates" << std::endl;
+    //     for(auto& handle : activeBuffers){
+    //         Buffer*& buffer = bufferPool.get(handle);
 
-            if(buffer != nullptr && buffer->hasUpdates())
-                buffer->queueTransfers();
-        }
-        //std::cout << "finished queue buffer updates" << std::endl;
+    //         if(buffer != nullptr && buffer->hasUpdates())
+    //             buffer->queueTransfers();
+    //     }
+    //     //std::cout << "finished queue buffer updates" << std::endl;
+    // }
+
+    void BufferManager::memoryCopy(uint32_t dataSize, void *data, Handle<BufferAddress> &handle)
+    {
     }
 
     void BufferManager::startBufferUpdates()
@@ -245,18 +271,34 @@ namespace boitatah::buffer
     inline bool BufferManager::queueCopy(const Handle<BufferAddress> src, const Handle<BufferAddress> dst, CommandBufferWriter<T> &writer)
     {
         Buffer* dstBuffer;
-        if(getAddressBuffer(dst, dstBuffer)){
+        Buffer* srcBuffer;
+        if(getAddressBuffer(dst, dstBuffer) && getAddressBuffer(src, srcBuffer)){
+ 
+            auto dstReservHandle = getAddressReservation(dst);
+            auto srcReservHandle = getAddressReservation(src);
 
-            auto dstReserv = getAddressReservation(dst);
-            dstBuffer->queueTransfer(src, dstReserv, writer);
+            BufferReservation srcReservation;
+            BufferReservation dstReservation;
+
+            if(dstBuffer->getReservationData(dstReservHandle, dstReservation))
+                std::runtime_error("buffer transfer failed, invalid final reservation");
+
+            if(srcBuffer->getReservationData(srcReservHandle, srcReservation))
+                std::runtime_error("buffer transfer failed, invalid staging reservation");
+
+            m_vk->CmdCopyBuffer({
+                .commandBuffer = getTransferBuffer().buffer,
+                .srcBuffer = srcBuffer->getBuffer(),
+                .srcOffset = srcReservation.offset,
+                .dstBuffer = dstBuffer->getBuffer(),
+                .dstOffset = dstReservation.offset,
+                .size = dstReservation.requestSize,
+            });
+            
             return true;
         }
         return false;
-    }
+    };
 
-    template <class T>
-    inline Handle<BufferAddress> BufferManager::stageCopy(Handle<BufferAddress> &stagedBuffer, void *data, CommandBufferWriter<T> &writer)
-    {
-        return Handle<BufferAddress>();
-    }
-}
+
+};

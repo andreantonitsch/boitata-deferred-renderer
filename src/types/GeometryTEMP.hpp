@@ -8,8 +8,8 @@
 #include "../buffers/BufferStructs.hpp"
 #include "../buffers/Buffer.hpp"
 #include "../collections/Pool.hpp"
-#include "GPUResourceTEMP.hpp"
-#include "GPUResourceManagerTEMP.hpp"
+#include "GPUResource.hpp"
+#include "../renderer/modules/GPUResourceManager.hpp"
 
 #include <array>
 
@@ -17,6 +17,7 @@ namespace boitatah
 {
     class GPUBuffer;
     class GPUResourceManager;
+
     struct GeometryBufferData{
         Handle<GPUBuffer> buffer;
         uint32_t count;
@@ -73,7 +74,7 @@ namespace boitatah
             GeometryBufferData indexBuffer;
             uint32_t indiceCount;
 
-            bool impl_ready_for_use(int frameIndex){
+            bool __impl_ready_for_use(int frameIndex){
                 bool ready = true;
 
                 auto manager = std::shared_ptr(m_manager); 
@@ -102,69 +103,69 @@ namespace boitatah
         std::vector<uint32_t> indices;
     };
 
-    static GeometryData triangleVertices()
-    {
-        return {
-            .vertices = {
-                {{0.0f, -0.5f}, {1.0f, 1.0f, 0.0f}},
-                {{0.5f, 0.5f}, {1.0f, 0.0f, 1.0f}},
-                {{-0.5f, 0.5f}, {0.0f, 1.0f, 1.0f}},
-            },
-            .indices = {0, 1, 2},
-        };
-    }
+    // static GeometryData triangleVertices()
+    // {
+    //     return {
+    //         .vertices = {
+    //             {{0.0f, -0.5f}, {1.0f, 1.0f, 0.0f}},
+    //             {{0.5f, 0.5f}, {1.0f, 0.0f, 1.0f}},
+    //             {{-0.5f, 0.5f}, {0.0f, 1.0f, 1.0f}},
+    //         },
+    //         .indices = {0, 1, 2},
+    //     };
+    // }
 
-    static GeometryData squareVertices()
-    {
-        return {
-            .vertices = {
-                {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-                {{0.5f, 0.5f}, {0.0f, 0.0f, 0.0f}},
-                {{-0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}}},
-            .indices = {0, 1, 2, 2, 3, 0},
-        };
-    }
+    // static GeometryData squareVertices()
+    // {
+    //     return {
+    //         .vertices = {
+    //             {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    //             {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    //             {{0.5f, 0.5f}, {0.0f, 0.0f, 0.0f}},
+    //             {{-0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}}},
+    //         .indices = {0, 1, 2, 2, 3, 0},
+    //     };
+    // }
 
-    static GeometryData planeVertices(const float width,
-                                      const float height,
-                                      const uint32_t widthSegments,
-                                      const uint32_t heightSegments)
-    {
-        std::vector<Vertex> vertices;
-        std::vector<uint32_t> indices;
+    // static GeometryData planeVertices(const float width,
+    //                                   const float height,
+    //                                   const uint32_t widthSegments,
+    //                                   const uint32_t heightSegments)
+    // {
+    //     std::vector<Vertex> vertices;
+    //     std::vector<uint32_t> indices;
 
-        float w = width / widthSegments;
-        float h = height / heightSegments;
-        for(uint32_t j = 0; j <= heightSegments; j++){
-            for(uint32_t i = 0; i <= widthSegments; i ++ ){
-                float iw = i * w;
-                float jh = j * h;
+    //     float w = width / widthSegments;
+    //     float h = height / heightSegments;
+    //     for(uint32_t j = 0; j <= heightSegments; j++){
+    //         for(uint32_t i = 0; i <= widthSegments; i ++ ){
+    //             float iw = i * w;
+    //             float jh = j * h;
 
-                vertices.push_back({
-                    {iw - (0.5 * width), jh - (0.5 * height)}, 
-                    {iw, jh, 0.0f}
-                });
-            }
-        }
+    //             vertices.push_back({
+    //                 {iw - (0.5 * width), jh - (0.5 * height)}, 
+    //                 {iw, jh, 0.0f}
+    //             });
+    //         }
+    //     }
 
-        for(uint32_t i = 0; i < widthSegments; i ++ ){
-            for(uint32_t j = 0; j < heightSegments; j++){
+    //     for(uint32_t i = 0; i < widthSegments; i ++ ){
+    //         for(uint32_t j = 0; j < heightSegments; j++){
 
                 
-                indices.push_back(j * (widthSegments+1) + i);
-                indices.push_back(j * (widthSegments+1) + i + 1);
-                indices.push_back((j+1) * (widthSegments+1) + i);
+    //             indices.push_back(j * (widthSegments+1) + i);
+    //             indices.push_back(j * (widthSegments+1) + i + 1);
+    //             indices.push_back((j+1) * (widthSegments+1) + i);
 
 
-                indices.push_back(j * (widthSegments+1) + i + 1);
-                indices.push_back((j+1) * (widthSegments+1) + i + 1);
-                indices.push_back((j+1) *(widthSegments+1) + i);
-            }
-        }
+    //             indices.push_back(j * (widthSegments+1) + i + 1);
+    //             indices.push_back((j+1) * (widthSegments+1) + i + 1);
+    //             indices.push_back((j+1) *(widthSegments+1) + i);
+    //         }
+    //     }
         
-        return {.vertices = vertices, .indices = indices,};
-    }
+    //     return {.vertices = vertices, .indices = indices,};
+    // }
 
 }
 

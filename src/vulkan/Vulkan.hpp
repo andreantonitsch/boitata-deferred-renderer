@@ -3,8 +3,9 @@
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 
+#include <GLFW/glfw3.h>
+#include <memory>
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <optional>
@@ -15,10 +16,12 @@
 #include "../types/Memory.hpp"
 #include "../types/Image.hpp"
 #include "CommandsVk.hpp"
+#include "VkCommandBufferWriter.hpp"
 #include "../renderer/modules/Window.hpp"
 
 namespace boitatah::vk
 {
+
     struct BufferDescVk
     {
         // uint32_t alignment;
@@ -83,7 +86,7 @@ namespace boitatah::vk
         GLFWwindow *window;
     };
 
-    class Vulkan
+    class Vulkan : std::enable_shared_from_this<Vulkan>
     {
     public:
         // Vulkan();
@@ -140,6 +143,8 @@ namespace boitatah::vk
 
 #pragma region Commands
 
+
+        std::shared_ptr<VkCommandBufferWriter> getCommandBufferWriter();
         
 
         // Generic Commands
@@ -200,6 +205,8 @@ namespace boitatah::vk
         // Queues and Pools
         CommandPools commandPools;
         CommandQueues queues;
+
+        std::shared_ptr<VkCommandBufferWriter> m_commandBufferWriter;
 
         // Extensions and Layers
         std::vector<const char *> validationLayers;

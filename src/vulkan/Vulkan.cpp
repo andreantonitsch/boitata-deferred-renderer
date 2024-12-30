@@ -97,6 +97,9 @@ bvk::Vulkan::Vulkan(VulkanOptions opts)
     deviceExtensions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
     initInstance();
+
+    m_commandBufferWriter = std::make_shared<VkCommandBufferWriter>(shared_from_this());
+
 }
 
 bvk::Vulkan::~Vulkan(void)

@@ -4,7 +4,17 @@
 namespace boitatah::command_buffers{
 
     template<class T>
-    struct WrappedCommandBuffer {};
+    struct WrappedType {
+        using Type = typename WrappedType::Type;
+
+        T& self(){return *static_cast<T*>(this);};
+        Type& unwrap(){
+            return self().__unwrap();
+        };
+    };
+
+    template<class T>
+    struct  WrappedCommandBuffer{};
 
     template<class T>
     struct  WriterDrawCommand{};

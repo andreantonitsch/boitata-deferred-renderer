@@ -4,77 +4,200 @@
 #include "../collections/Pool.hpp"
 #include "../buffers/BufferStructs.hpp"
 #include "../buffers/Buffer.hpp"
+#include "../renderer/modules/GPUResourceManager.hpp"
 #include "BttEnums.hpp"
-
+#include <stdexcept>
 
 namespace boitatah{
     using namespace boitatah::buffer;
     class GPUResourceManager;
+
+    enum class RESOURCE_TYPE{
+        GPU_BUFFER,
+        GEOMETRY,
+    };
+
+    enum class RESOURCE_MUTABILITY{
+        IMMUTABLE,
+        MUTABLE
+    };
+
     struct ResourceDescriptor{
         SHARING_MODE sharing;
-        BUFFER_USAGE usage;
-        //RESOURCE_TYPE type;
-        uint32_t size;
+        RESOURCE_TYPE type;
+        RESOURCE_MUTABILITY mutability;
     };
 
-    struct ResourceMetaData{
-        uint32_t data_size;
-        void* data;
+    template<typename T>
+    struct ResourceUpdateDescription{
+
     };
 
-    struct BufferMetaData{
-        Handle<BufferAddress> buffer;
-        uint32_t buffer_capacity;
+    template<typename T>
+    struct ResourceCreateDescription{
+
     };
+
+    /// @brief Resource content to be shipped to gpu buffers
+    /// @tparam type of resource 
+    template<typename T>
+    struct ResourceGPUContent{ };
+
+    /// @brief Meta Resources this resource needs or points to,
+    ///        p.e. Handles to other resources and//or buffers.
+    ///        Not shipped to GPU buffers
+    /// @tparam Final type of resource
+    template<typename T>
+    struct ResourceMetaContent{ };
 
     using namespace boitatah::buffer;
+    template<typename DerivedResource>
     struct GPUResource // gpu data + metadata object
     {
         friend GPUResourceManager;
-        private:
-            // GPU data
-            //Handle<BufferAddress> buffers[2]; // one for writing and one for reading
-            BufferMetaData buffers_meta_data[2];
+        protected:
+            GPUResource( ) = default;
 
-            ResourceMetaData resource_data; // most current data version. align on 32/64
-            ResourceDescriptor descriptor; //size;
-            uint8_t reading = 0u; // one or zero
-            uint8_t dirty = 255u;
+            ResourceDescriptor descriptor;
             std::weak_ptr<GPUResourceManager> m_manager;
 
-        public:
+            uint8_t dirty = 255u;
+            bool commited = 255u;
+
+            DerivedResource& self(){return *static_cast<DerivedResource*>(this);};
+
             void set_descriptor(const ResourceDescriptor &descriptor){
                 this->descriptor = descriptor;
             }
 
-            void set_buffer(uint32_t frameIndex, BufferMetaData buffer_data){
-                buffers_meta_data[frameIndex % 2] = buffer_data;
+            void set_content(uint32_t frameIndex, Handle<ResourceGPUContent<DerivedResource>> content_data){
+                self().__imp_set_content(frameIndex, content_data);
             }
 
-            Handle<BufferAddress> get_buffer(uint32_t frameIndex) const
+
+            uint32_t get_size() const {return self().__impl_get_size();};//descriptor.size;};
+
+            void clean_dirt(int frameIndex = 0) { dirty = dirty & ~(static_cast<uint8_t>(1u) << (frameIndex%2)); };
+
+            void clean_commit(int frameIndex = 0) { commited = 0u;};
+
+            void write(int frameIndex = 0){};
+
+        public:
+            ResourceGPUContent<DerivedResource> get_content(uint32_t frameIndex)
             {
-                return buffers_meta_data[frameIndex % 2].buffer;
+                return self().__impl_resource_get_content(frameIndex);
             };
 
-            const void* get_data() const {return static_cast<const void*>(resource_data.data);};
-            uint32_t get_size() const {return descriptor.size;};
+            void check_content_ready(int frameIndex){
+                return self().__impl_check_content_ready(frameIndex%2);
+            };
+            bool ready_for_use(uint32_t frameIndex) { return self().__impl_ready_for_use(frameIndex);};
 
-            // new size has to be equal to old size.
-            void change_data(const ResourceMetaData &new_data)
-            {
-                resource_data = new_data;
-                flag_update();
+            bool check_dirt(uint32_t frameIndex) { return static_cast<uint8_t>(0) < (dirty & (static_cast<uint8_t>(1) << (frameIndex%2))); };
+        
+            bool check_commited(uint32_t frameIndex) { return static_cast<uint8_t>(0u) == (dirty & (static_cast<uint32_t>(commited) << (frameIndex%2))); };
+        
+            void update(const ResourceUpdateDescription<DerivedResource> &updateDescription){
+                if(descriptor.mutability == RESOURCE_MUTABILITY::IMMUTABLE)
+                    throw std::runtime_error("Immutable resource update attempt");
+                
+                self().__impl_resource_update(updateDescription);
+                set_dirty();
             };
 
-            void flag_update()
+            void set_dirty()
             {
-                dirty = 255u; 
+                dirty = 255u;
             };
-            
-            void clean_frame_index(int frameIndex) { dirty = dirty & ~(static_cast<uint8_t>(1) << (frameIndex%2)); };
-            bool check_dirt(int frameIndex) { return static_cast<uint8_t>(0) < (dirty & (static_cast<uint8_t>(1) << (frameIndex%2))); };
+
+            void set_commited(uint32_t frame_index)
+            {
+                 commited = commited & ~(static_cast<uint8_t>(1u) << (frame_index%2));
+            };
+
+            /// @brief commits to update this resource next time resources are updated
+            void commit()
+            {
+                commited = true;
+                self().__impl_commit();
+            };
+
+            uint32_t get_data(void* const dstPtr, uint32_t frame_index) const {
+                if(commited)
+                    return self().__impl_get_data(dstPtr, frame_index);
+
+                if(check_dirt(0) || check_dirt(1))
+                    commit();
+
+                return self().__impl_get_data(dstPtr, frame_index);
+                //static_cast<const void*>(resource_data.data);
+            };
 
         };
+
+    using namespace boitatah::buffer;
+    template<typename DerivedResource>
+    struct MutableGPUResource : GPUResource<MutableGPUResource<DerivedResource>>// gpu data + metadata object
+    {
+        private :
+            ResourceGPUContent<DerivedResource> gpu_content[2];
+
+        public :
+
+            bool __impl_check_content_ready(uint32_t frame_index){
+                return true;
+            }
+
+            void __impl_resource_update(ResourceUpdateDescription<DerivedResource>& description){{
+
+            }};
+
+            ResourceGPUContent<DerivedResource>& __impl_resource_get_content(uint32_t frame_index){
+                return gpu_content[frame_index % 2];
+            };
+
+            uint32_t __impl_get_data(void* dstPtr, uint32_t frame_index){
+                return 0;
+            };
+
+            void __impl_set_content(uint32_t frame_index, ResourceGPUContent<DerivedResource> &content_data){
+                gpu_content[frame_index %2 ] = this->self().__imp_set_content(content_data);
+            };
+
+            bool __impl_ready_for_use(uint32_t frame_index){
+                return this->self().check_dirt(frame_index) ;
+            };
+
+    };
+
+    using namespace boitatah::buffer;
+    template<typename DerivedResource>
+    struct ImmutableGPUResource : GPUResource<ImmutableGPUResource<DerivedResource>>// gpu data + metadata object
+    {         
+        private :   
+            ResourceGPUContent<DerivedResource> gpu_content;
+        public :
+
+            void __impl_resource_update(ResourceUpdateDescription<DerivedResource>& description){{
+
+            }};
+
+            ResourceGPUContent<DerivedResource>& __impl_resource_get_content(uint32_t frame_index){
+                return gpu_content;
+            };
+
+            uint32_t __impl_get_data(void* dstPtr, uint32_t frame_index){
+                return 0;
+            };
+
+            void __impl_set_content(uint32_t frameIndex, Handle<ResourceGPUContent<DerivedResource>> content_data){
+                gpu_content = this->self().__impl_set_content(content_data);
+            };
+
+            void get_data(){};
+    };
+
 }
 
 #endif

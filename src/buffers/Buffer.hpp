@@ -73,13 +73,14 @@ namespace boitatah::buffer
             VkBuffer getBuffer() const;
             VkDeviceMemory getMemory() const;
 
-            void queueTransfers();
-            void clearTransferQueue();
+            //void queueTransfers();
+            //void clearTransferQueue();
 
             bool checkCompatibility(const BufferReservationRequest &compatibility);
 
             // for SHARINGMODE::EXCLUSIVE requires a buffer queueUpdate after
             void copyData(const Handle<BufferReservation> handle, void * data);
+            //void copyDataFromBuffer(const Handle<BufferReservation> dst, const Handle<BufferAddress> srcBuffer);
             // returns a buffer address to the staging buffer
 
             bool getReservationData(const Handle<BufferReservation> handle, BufferReservation& reservation) const;
@@ -87,10 +88,10 @@ namespace boitatah::buffer
             Handle<BufferReservation> reserve(const uint32_t request);
             bool unreserve(const Handle<BufferReservation> reservation);
 
-            void queueTransfer(Handle<BufferAddress> src, Handle<BufferReservation> dst);
+            //void queueTransfer(Handle<BufferAddress> src, Handle<BufferReservation> dst);
 
-            template<class T>
-            void queueTransfer(Handle<BufferAddress> src, Handle<BufferReservation> dst, CommandBufferWriter<T> &writer);
+            //template<class T>
+            //void queueTransfer(Handle<BufferAddress> src, Handle<BufferReservation> dst, CommandBufferWriter<T> &writer);
 
             uint32_t getID() const;
             bool hasUpdates();

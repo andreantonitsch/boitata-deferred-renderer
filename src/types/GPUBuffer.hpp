@@ -8,8 +8,8 @@
 #include "../buffers/BufferStructs.hpp"
 #include "../buffers/Buffer.hpp"
 #include "../collections/Pool.hpp"
-#include "GPUResourceTEMP.hpp"
-#include "GPUResourceManagerTEMP.hpp"
+#include "GPUResource.hpp"
+#include "../renderer/modules/GPUResourceManager.hpp"
 #include "../vulkan/VkCommandBufferWriter.hpp"
 
 #include <array>
@@ -18,7 +18,6 @@ namespace boitatah
 {
     using namespace boitatah::command_buffers;
     class GPUBuffer;
-    class GPUResourceManager;
 
 
     struct GPUBufferCreateDescription{
@@ -30,6 +29,7 @@ namespace boitatah
     struct BufferGPUData : ResourceGPUContent<GPUBuffer>{
         Handle<BufferAddress> buffer;
         uint32_t buffer_capacity;
+        bool dirty;
     };
 
     struct BufferMetaData : ResourceMetaContent<GPUBuffer>{
@@ -57,23 +57,55 @@ namespace boitatah
             //TODO release staging buffer
         };
 
-        public : 
-
-            void copyData(void * data, uint32_t size){
-                
+        public :
+            void copyData(void * data, uint32_t frameIndex = 0){
+                dirty = true;
+                //Stages a transfer
                 if(descriptor.sharing == SHARING_MODE::EXCLUSIVE){
                     auto manager = std::shared_ptr(m_manager); 
                     auto bufferManager = manager->getBufferManager();
 
-                    if(!stagingBuffer.isNull())
-                        stagingBuffer = bufferManager->stageCopy(size, data);
-                    else
-                        stagingBuffer = bufferManager->stageCopy(stagingBuffer, data);
-                }
 
+                    if(!stagingBuffer.isNull())
+                        stagingBuffer = bufferManager->reserveBuffer({
+                            .request = size,
+                            .usage = usage,
+                            .sharing = SHARING_MODE::CONCURRENT,
+                        });
+
+                    bufferManager->memoryCopy(size, data, stagingBuffer);
+                }
+                else{
+                    auto manager = std::shared_ptr(m_manager); 
+                    auto bufferManager = manager->getBufferManager();
+
+                    auto& frame_buffer = std::static_cast<BufferGPUData>(self().get_content(frameIndex));
+                    bufferManager->memoryCopy(size, data, frame_buffer.buffer);
+                }
             };
 
+            //TODO: Implement
+            bool readData(void* dstPtr){
+                if(descriptor.sharing == SHARING_MODE::CONCURRENT){
 
+                }
+                else{
+
+                }
+                return false;
+            };
+
+            //TODO: Implement
+            bool asyncReadData(void* dstPtr){
+                if(descriptor.sharing == SHARING_MODE::CONCURRENT){
+
+                }
+                else{
+
+                }
+                return false;
+            };
+            
         private:
             uint32_t size;
             BUFFER_USAGE usage;
@@ -85,33 +117,31 @@ namespace boitatah
             /// @return that this buffer is ready for use.
             bool __impl_ready_for_use(ResourceGPUContent<GPUBuffer>& content){
 
-                // auto manager = std::shared_ptr(m_manager); 
-                // auto buffer_manager = manager->getBufferManager();
-                // Buffer* buffer;
-                // auto allocation = buffer_manager->getAddressBuffer(content.buffer, buffer);
-
-                return true;
+                if(descriptor.sharing == SHARING_MODE::CONCURRENT)
+                    return true;
+                
+                return static_cast<BufferGPUData>(content).dirty;
             }
 
             // create Resource
             BufferGPUData __impl_create_managed_resource(){
                 auto manager = std::shared_ptr(m_manager); 
-                return {.buffer =  manager->getBufferManager()->reserveBuffer({
+                return BufferGPUData{.buffer =  manager->getBufferManager()->reserveBuffer({
                                                                 .request = size,
                                                                 .usage = usage,
                                                                 .sharing = SHARING_MODE::EXCLUSIVE,}),
-                    .buffer_capacity = size};
+                        .buffer_capacity = this->size};
             }
 
             void __impl_write_transfer(BufferGPUData& data, CommandBufferWriter<VkCommandBufferWriter> &writer){
-                auto manager = std::shared_ptr(m_manager);
-                auto bufferManager = manager->getBufferManager();
-                
-                bufferManager->queueCopy(stagingBuffer, data.buffer);
-
+                if(descriptor.sharing == SHARING_MODE::EXCLUSIVE){
+                    auto manager = std::shared_ptr(m_manager);
+                    auto bufferManager = manager->getBufferManager();
+                    data.dirty = false;
+                    
+                    bufferManager->queueCopy(stagingBuffer, data.buffer);
+                }
             }
-
-
 
     };
     

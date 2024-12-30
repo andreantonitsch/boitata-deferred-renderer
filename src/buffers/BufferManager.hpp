@@ -21,7 +21,7 @@ namespace boitatah::buffer
         private:
             uint32_t partitionsPerBuffer = 1u << 10;
 
-            Vulkan* m_vk;
+            vk::Vulkan* m_vk;
             std::vector<Handle<Buffer *>> activeBuffers;
 
             Pool<Buffer *> bufferPool = Pool<Buffer *>({.size = 1<<16, .name = "uniforms pool"});
@@ -40,7 +40,7 @@ namespace boitatah::buffer
             
 
         public:
-            BufferManager(Vulkan* vk_instance);
+            BufferManager(vk::Vulkan* vk_instance);
             ~BufferManager(void);
             Handle<BufferAddress> reserveBuffer(const BufferReservationRequest &request);
             bool copyToBuffer(const BufferUploadDesc &desc);
@@ -51,9 +51,7 @@ namespace boitatah::buffer
             bool queueCopy(const Handle<BufferAddress> src, const Handle<BufferAddress> dst, CommandBufferWriter<T>& writer);
 
             //user is responsible for releasing the staged buffer
-            Handle<BufferAddress> stageCopy(uint32_t dataSize, void* data);
-            template<class T>
-            Handle<BufferAddress> stageCopy(Handle<BufferAddress>& stagedBuffer, void* data, CommandBufferWriter<T>& writer);
+            void memoryCopy(uint32_t dataSize, void* data, Handle<BufferAddress>& handle);
 
             void queueingBufferUpdates(); //queues updates
             void startBufferUpdates(); //setup queue buffer updates
