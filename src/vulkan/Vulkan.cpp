@@ -1,7 +1,6 @@
 #include "Vulkan.hpp"
 #include <iostream>
 #include <stdexcept>
-#include <string>
 #include <cstring>
 #include <algorithm>
 #include <map>
@@ -1481,7 +1480,7 @@ bool bvk::Vulkan::checkRequiredExtensions(const std::vector<VkExtensionPropertie
         bool found = false;
         for (const auto &property : available)
         {
-            if (strcmp(ext, property.extensionName) == 0)
+            if (std::strcmp(ext, property.extensionName) == 0)
             {
                 found = true;
             }
@@ -1527,7 +1526,7 @@ bool boitatah::vk::Vulkan::checkValidationLayerSupport(const std::vector<const c
         for (const auto &available : availableLayers)
         {
             std::cout << "\t" << available.layerName << "\n";
-            if (strcmp(req, available.layerName) == 0)
+            if (std::strcmp(req, available.layerName) == 0)
             {
                 found = true;
                 break;

@@ -10,6 +10,7 @@
 namespace boitatah
 {
 
+    using std::size_t;
     using namespace vk;
 
     struct DescriptorSetPool

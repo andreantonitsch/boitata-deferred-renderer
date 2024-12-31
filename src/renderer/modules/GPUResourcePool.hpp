@@ -3,39 +3,21 @@
 
 #include <memory>
 #include "../../collections/Pool.hpp"
-#include "../../types/GPUBuffer.hpp"
-#include "../../types/GeometryTEMP.hpp"
 
+#include "../resources/GPUBuffer.hpp"
 
 namespace boitatah{
 
-
+    class GPUBuffer;
+    //class Geometry;
     class GPUResourcePool{
 
         public:
 
-            GPUResourcePool(){
-                
-                m_geometryPool = std::make_unique<Pool<Geometry>>(PoolOptions{
-                    .size = 1024,
-                    .dynamic = true,
-                    .name = "geometry pool",
-                });
+            GPUResourcePool() = default;
 
-                m_gpuBufferPool = std::make_unique<Pool<GPUBuffer>>(PoolOptions{
-                    .size = 1024,
-                    .dynamic = true,
-                    .name = "gpu buffer pool",
-                });
-
-
-            };
-
-            template<typename T> 
-            T& get(Handle<T> handle);
-            
-            template<typename T> 
-            Handle<T>  set(T& item);
+            GPUBuffer& get(Handle<GPUBuffer*> handle);
+            Handle<GPUBuffer*>  set(GPUBuffer& item);
             
             template<typename T> 
             bool update(Handle<T> handle, T& item);
@@ -44,24 +26,11 @@ namespace boitatah{
             bool clear(Handle<T> handle, T& item);
 
         private:
-            std::unique_ptr<Pool<Geometry>> m_geometryPool;
-            std::unique_ptr<Pool<GPUBuffer>> m_gpuBufferPool;    
-
+            //std::unique_ptr<Pool<Geometry>> m_geometryPool;
+            std::unique_ptr<Pool<GPUBuffer*>> m_gpuBufferPool;    
 
     };
 
-    template <>
-    inline  GPUBuffer& GPUResourcePool::get(Handle<GPUBuffer> handle)
-    {
-        return m_gpuBufferPool->get(handle);
-    }
-
-    template<>
-    inline  Handle<GPUBuffer>  GPUResourcePool::set(GPUBuffer& item)
-    {
-        return m_gpuBufferPool->set(item);
-    }
-
-}
+};
 
 #endif

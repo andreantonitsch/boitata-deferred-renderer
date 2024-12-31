@@ -29,8 +29,6 @@
 #include "modules/DescriptorPoolManager.hpp"
 #include "modules/Camera.hpp"
 
-#include "modules/RenderObjectManager.hpp"
-
 #include "../collections/Pool.hpp"
 
 #include "../scene/Scene.hpp"
@@ -76,7 +74,7 @@ namespace boitatah
 
         // Manangers
         BufferManager& getBufferManager();
-        RenderObjectManager& getRenderObjectManager();
+        //RenderObjectManager& getRenderObjectManager();
 
         // Window methods
         bool isWindowClosed();
@@ -157,7 +155,7 @@ namespace boitatah
         Swapchain *swapchain;
         DescriptorPoolManager *descriptorPoolManager;
         std::shared_ptr<BufferManager> m_bufferManager;
-        std::shared_ptr<RenderObjectManager> m_renderObjectManager;
+        //std::shared_ptr<RenderObjectManager> m_renderObjectManager;
 
         // Frame Uniforms
         Handle<BufferAddress> m_cameraUniforms;

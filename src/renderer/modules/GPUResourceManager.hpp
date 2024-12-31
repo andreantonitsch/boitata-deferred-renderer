@@ -8,27 +8,34 @@
 #include "../../collections/Pool.hpp"
 #include "../../buffers/Buffer.hpp"
 #include "../../buffers/BufferManager.hpp"
+#include "../resources/ResourceStructs.hpp"
+#include "../resources/GPUResource.hpp"
 
 #include "GPUResourcePool.hpp"
 
-#include "../../types/GPUResource.hpp"
 #include "../../command_buffers/CommandBufferWriter.hpp"
 
 namespace boitatah
 {
-    template<typename T>
-    using ResourceType = typename std::enable_if<std::is_base_of<GPUResource<T>, T>::value>::type;
+    class GPUBuffer;
+    class Geometry;
+
+    // template<typename T>
+    // using ResourceType = typename std::enable_if<std::is_base_of<GPUResource<T>, T>::value>::type;
     
     class GPUResourceManager{
         
-        template <class T> friend class GPUResource;
+        template<template <typename > class T, typename Y> friend class GPUResource;
 
         public:
             GPUResourceManager(vk::Vulkan* vk_instance, std::shared_ptr<buffer::BufferManager> bufferManager); //contructor
 
             // Uniform Handling
-            template<typename ResourceType>
-            void update(Handle<ResourceType> handle, ResourceUpdateDescription<ResourceType>& updateDescription );
+            template<class ResourceType>
+            void update(Handle<ResourceType> handle, ResourceUpdateDescription<ResourceType>& updateDescription ){
+                auto& resource = getResource(resource);
+                resource.self().update(updateDescription);
+            };
             
             template<typename ResourceType>
             bool checkReady(Handle<ResourceType> handle, uint32_t frame_index);
@@ -67,12 +74,10 @@ namespace boitatah
             template<typename ResourceType>
             ResourceGPUContent<ResourceType>& getResourceGPUData(Handle<ResourceType> &handle, uint32_t frame_index);
 
-            std::shared_ptr<buffer::BufferManager> getBufferManager(){
-                return std::shared_ptr(m_bufferManager);
-            }
+            std::shared_ptr<buffer::BufferManager> getBufferManager();
 
             Handle<GPUBuffer> create(const GPUBufferCreateDescription& description);
-            Handle<Geometry> create(const GeometryCreateDescription& description);
+            //Handle<Geometry> create(const ResourceCreateDescription<Geometry>& description);
         
 
         private:
@@ -94,15 +99,8 @@ namespace boitatah
             ResourceType& getResource(Handle<ResourceType> handle);
 
             template<typename ResourceType>
-            void setResource(ResourceType resource);
+            Handle<ResourceType> setResource(ResourceType& resource);
         };
-
-        template <typename ResourceType>
-        inline void GPUResourceManager::update(Handle<ResourceType> handle, ResourceUpdateDescription<ResourceType> &updateDescription)
-        {
-            auto& resource = getResource(resource);
-            resource.self().update(updateDescription);
-        }
 
 
         template <typename ResourceType>
@@ -114,9 +112,9 @@ namespace boitatah
 
 
         template <typename ResourceType>
-        inline void GPUResourceManager::setResource(ResourceType resource)
+        inline Handle<ResourceType> GPUResourceManager::setResource(ResourceType& resource)
         {
-            return ResourceType();
+            return m_resourcePool->set(resource);
         }
 
         template <typename ResourceType>

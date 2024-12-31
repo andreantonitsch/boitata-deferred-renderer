@@ -1,5 +1,6 @@
 #include "GPUResourceManager.hpp"
 
+
 namespace boitatah{
     GPUResourceManager::GPUResourceManager(vk::Vulkan* vk_instance, std::shared_ptr<buffer::BufferManager> bufferManager)
     {
@@ -10,6 +11,23 @@ namespace boitatah{
 
 
     }
+
+    std::shared_ptr<buffer::BufferManager> GPUResourceManager::getBufferManager()
+    {
+        return std::shared_ptr(m_bufferManager);      
+    }
+
+    Handle<GPUBuffer> GPUResourceManager::create(const GPUBufferCreateDescription &description)
+    {
+        
+        return Handle<GPUBuffer>();
+        //return m_resourcePool->set(new GPUBuffer(std::static_cast<GPUBufferCreateDescription>(description) ));
+    }
+
+    // Handle<Geometry> GPUResourceManager::create(const ResourceCreateDescription<Geometry> &description)
+    // {
+    //     return Handle<Geometry>();
+    // }
 
     // void GPUResourceManager::initialize_buffers(GPUResource &resource, const ResourceDescriptor &descriptor)
     // {

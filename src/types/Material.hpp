@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include "../buffers/Buffer.hpp"
 #include "../collections/Pool.hpp"
-#include "GPUResource.hpp"
+#include "../renderer/resources/GPUBuffer.hpp"
 #include "Descriptors.hpp"
 #include "Shader.hpp"
 
@@ -26,7 +26,7 @@ namespace boitatah{
         uint32_t layout;
         uint32_t set;
         uint32_t binding;
-        Handle<GPUResource> uniform;
+        Handle<GPUBuffer> uniform;
     };
 
     struct Bindings

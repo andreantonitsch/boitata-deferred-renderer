@@ -7,7 +7,7 @@
 #include "../buffers/BufferStructs.hpp"
 #include "../buffers/Buffer.hpp"
 #include "../collections/Pool.hpp"
-#include "GPUResource.hpp"
+//#include "GPUResource.hpp"
 
 #include <array>
 
@@ -15,7 +15,7 @@ namespace boitatah
 {
 
     struct GeometryBufferData{
-        Handle<GPUResource> buffer;
+        Handle<GPUBuffer> buffer;
         uint32_t count;
         uint32_t elementSize;
 
@@ -63,7 +63,7 @@ namespace boitatah
         std::vector<GeometryBufferData> buffers;
         glm::ivec2 vertexInfo;
         uint32_t vertexSize;
-        Handle<GPUResource> indexBuffer;
+        Handle<GPUBuffer> indexBuffer;
         uint32_t indiceCount;
     };
 
