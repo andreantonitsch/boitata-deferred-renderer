@@ -6,12 +6,12 @@
 
 #include "../../vulkan/Vulkan.hpp"
 #include "../../collections/Pool.hpp"
+#include "GPUResourcePool.hpp"
 #include "../../buffers/Buffer.hpp"
 #include "../../buffers/BufferManager.hpp"
 #include "../resources/ResourceStructs.hpp"
 #include "../resources/GPUResource.hpp"
 
-#include "GPUResourcePool.hpp"
 
 #include "../../command_buffers/CommandBufferWriter.hpp"
 
@@ -20,15 +20,17 @@ namespace boitatah
     class GPUBuffer;
     class Geometry;
 
+
     // template<typename T>
     // using ResourceType = typename std::enable_if<std::is_base_of<GPUResource<T>, T>::value>::type;
     
-    class GPUResourceManager{
+    class GPUResourceManager : public std::enable_shared_from_this<GPUResourceManager>
+    {
         
         template<template <typename > class T, typename Y> friend class GPUResource;
-
+        
         public:
-            GPUResourceManager(vk::Vulkan* vk_instance, std::shared_ptr<buffer::BufferManager> bufferManager); //contructor
+            GPUResourceManager(std::shared_ptr<vk::Vulkan> vk_instance, std::shared_ptr<buffer::BufferManager> bufferManager); //contructor
 
             // Uniform Handling
             template<class ResourceType>
@@ -52,9 +54,6 @@ namespace boitatah
             template<typename ResourceType>
             void freeResource(Handle<ResourceType> resource);
 
-            template<typename ResourceType>
-            bool destroy(const Handle<ResourceType>& handle);
-
             //Pointer requires enough memory.
             template<typename ResourceType>
             bool readResourceData(Handle<ResourceType> handle, void* destinationPtr);
@@ -65,8 +64,7 @@ namespace boitatah
             void commitAll();
             void cleanCommitQueue();
             
-            template<typename ResourceType>
-            ResourceType& getResource(Handle<ResourceType> &handle);
+
             
             template<typename ResourceType>
             ResourceMetaContent<ResourceType>& getResourceMetaData(Handle<ResourceType> &handle, uint32_t frame_index);
@@ -78,10 +76,14 @@ namespace boitatah
 
             Handle<GPUBuffer> create(const GPUBufferCreateDescription& description);
             //Handle<Geometry> create(const ResourceCreateDescription<Geometry>& description);
-        
+            
+            template <typename ResourceType>
+            void destroy(const Handle<ResourceType>& handle);
+
+            GPUBuffer& getResource(Handle<GPUBuffer> &handle);
 
         private:
-            vk::Vulkan* m_vulkan;
+            std::shared_ptr<vk::Vulkan> m_vulkan;
             std::weak_ptr<buffer::BufferManager> m_bufferManager;
             
             std::unique_ptr<GPUResourcePool> m_resourcePool;
@@ -110,15 +112,16 @@ namespace boitatah
             return resource.self().ready_for_use(frame_index);
         }
 
-
         template <typename ResourceType>
-        inline Handle<ResourceType> GPUResourceManager::setResource(ResourceType& resource)
+        inline void GPUResourceManager::destroy(const Handle<ResourceType> &handle)
         {
-            return m_resourcePool->set(resource);
+            auto& resource = getResource(handle);
+            resource.release(shared_from_this());
+            m_resourcePool->clear(handle);
         }
 
         template <typename ResourceType>
-        ResourceType &GPUResourceManager::getResource(Handle<ResourceType> &handle)
+        inline ResourceType &GPUResourceManager::getResource(Handle<ResourceType> handle)
         {
             return m_resourcePool->get(handle);
         }

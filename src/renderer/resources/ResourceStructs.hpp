@@ -28,6 +28,10 @@ namespace boitatah{
     };
 
     template<class T>
+    struct ResourceTraits{
+    };
+
+    template<class T>
     struct ResourceUpdateDescription{
     };
 
@@ -40,8 +44,17 @@ namespace boitatah{
     /// @tparam type of resource 
     template<class T>
     struct ResourceGPUContent{ 
-        using ContentType = typename ResourceGPUContent<T>::ContentType;
-        auto getContent() const -> const ContentType&;
+        using ContentType = typename ResourceTraits<T>::ContentType;
+
+        // auto getContent() const -> const ContentType&
+        // {
+        //     return *static_cast<ContentType>(this);
+        // };
+        auto getContent() -> ContentType&
+        {
+            return *static_cast<ContentType *>(this);
+            //return static_cast<ContentType>(*this);
+        };
     };
 
     /// @brief Meta Resources this resource needs or points to,
@@ -51,11 +64,6 @@ namespace boitatah{
     template<typename T>
     struct ResourceMetaContent{ };
 
-    template <class T>
-    inline auto ResourceGPUContent<T>::getContent() const -> const ContentType&
-    {
-        return static_cast<ContentType>(this);
-    }
 }
 
 #endif

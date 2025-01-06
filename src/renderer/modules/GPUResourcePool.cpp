@@ -1,7 +1,8 @@
 #include "GPUResourcePool.hpp"
+#include "../resources/GPUBuffer.hpp"
 
 namespace boitatah{
-
+    
     GPUResourcePool::GPUResourcePool()
     {
         
@@ -12,23 +13,31 @@ namespace boitatah{
         //     .name = "geometry pool",
         // });
 
-        m_gpuBufferPool = std::make_unique<Pool<GPUBuffer*>>(PoolOptions{
+        m_gpuBufferPool = std::make_unique<Pool<GPUBuffer>>(PoolOptions{
             .size = 1024,
             .dynamic = true,
             .name = "gpu buffer pool",
         });
     }
 
-    GPUBuffer & GPUResourcePool::get(Handle<GPUBuffer*> handle)
+    GPUBuffer& GPUResourcePool::get(Handle<GPUBuffer> handle)
     {
-        m_gpuBufferPool->get(handle);
+        return m_gpuBufferPool->get(handle);
     }
 
-    Handle<GPUBuffer*> GPUResourcePool::set(GPUBuffer &item)
+    Handle<GPUBuffer> GPUResourcePool::set(GPUBuffer &item)
     {
-        
-        //return m_gpuBufferPool->set(item);
+        return m_gpuBufferPool->set(item);
+    }
+
+    bool GPUResourcePool::clear(Handle<GPUBuffer> handle, GPUBuffer &item)
+    {
+        return m_gpuBufferPool->clear(handle, item);
+    }
+
+    bool GPUResourcePool::clear(Handle<GPUBuffer> handle)
+    {
+        return m_gpuBufferPool->clear(handle);
     }
 
 };
-

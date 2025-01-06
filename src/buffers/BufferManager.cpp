@@ -7,7 +7,7 @@
 namespace boitatah::buffer
 {
 
-    BufferManager::BufferManager(vk::Vulkan *vk_instance)
+    BufferManager::BufferManager(std::shared_ptr<vk::Vulkan> vk_instance)
     {
         m_vk = vk_instance;
         m_transferFence = m_vk->createFence(true);
@@ -35,12 +35,11 @@ namespace boitatah::buffer
             releaseBuffer(activeBuffers.back());
         }
 
-
     }
 
     Handle<Buffer *> BufferManager::createBuffer(const BufferDesc &&description)
     {
-        Buffer * buffer = new Buffer(description, m_vk);
+        Buffer * buffer = new Buffer(description, m_vk.get());
         Handle<Buffer *> bufferHandle = bufferPool.set(buffer);
         activeBuffers.push_back(bufferHandle);
         std::cout << "Created Buffer" << buffer->getID() <<std::endl;
@@ -194,6 +193,11 @@ namespace boitatah::buffer
 
     void BufferManager::memoryCopy(uint32_t dataSize, void *data, Handle<BufferAddress> &handle)
     {
+    }
+
+    void BufferManager::queueingBufferUpdates()
+    {
+        
     }
 
     void BufferManager::startBufferUpdates()

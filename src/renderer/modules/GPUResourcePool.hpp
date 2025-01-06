@@ -4,7 +4,6 @@
 #include <memory>
 #include "../../collections/Pool.hpp"
 
-#include "../resources/GPUBuffer.hpp"
 
 namespace boitatah{
 
@@ -14,20 +13,18 @@ namespace boitatah{
 
         public:
 
-            GPUResourcePool() = default;
+            GPUResourcePool();
 
-            GPUBuffer& get(Handle<GPUBuffer*> handle);
-            Handle<GPUBuffer*>  set(GPUBuffer& item);
-            
-            template<typename T> 
-            bool update(Handle<T> handle, T& item);
+            GPUBuffer& get(Handle<GPUBuffer> handle);
+            Handle<GPUBuffer>  set(GPUBuffer& item);
+            bool update(Handle<GPUBuffer> handle, GPUBuffer& item); 
+            bool clear(Handle<GPUBuffer> handle, GPUBuffer& item);
+            bool clear(Handle<GPUBuffer> handle);
 
-            template<typename T> 
-            bool clear(Handle<T> handle, T& item);
 
         private:
             //std::unique_ptr<Pool<Geometry>> m_geometryPool;
-            std::unique_ptr<Pool<GPUBuffer*>> m_gpuBufferPool;    
+            std::unique_ptr<Pool<GPUBuffer>> m_gpuBufferPool;
 
     };
 

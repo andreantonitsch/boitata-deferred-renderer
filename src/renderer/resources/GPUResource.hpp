@@ -14,11 +14,12 @@ namespace boitatah{
     class GPUResourceManager;
 
     using namespace boitatah::buffer;
-    template<template <typename > class DerivedResource, typename DerivedResourceType>
+    template<template <typename > class DerivedResource, typename Resource>
     class GPUResource // gpu data + metadata object
     {
         friend GPUResourceManager;
         protected:
+            Handle<Resource> m_resourceHandle;
 
             ResourceDescriptor descriptor;
             std::weak_ptr<GPUResourceManager> m_manager;
@@ -26,12 +27,16 @@ namespace boitatah{
             uint8_t dirty = 255u;
             bool commited = 255u;
 
-            DerivedResource<DerivedResourceType>& self(){return *static_cast<DerivedResource<DerivedResourceType> *>(this);};
+            DerivedResource<Resource>& self(){return *static_cast<DerivedResource<Resource> *>(this);};
 
+            GPUResource() = default;
+            GPUResource(const ResourceDescriptor &descriptor){
+                this->descriptor = descriptor;
+            };
+             
             void set_descriptor(const ResourceDescriptor &descriptor){
                 this->descriptor = descriptor;
             }
-
 
             uint32_t get_size() const {return self().__impl_get_size();};
 
@@ -41,9 +46,13 @@ namespace boitatah{
 
             void write(int frameIndex = 0){};
 
+            void release(std::shared_ptr<GPUResourceManager> manager){
+                self().__impl_release(manager);
+            };
+
         public:
 
-            ResourceGPUContent<DerivedResourceType>::ContentType& get_content(uint32_t frameIndex)
+            ResourceTraits<Resource>::ContentType& get_content(uint32_t frameIndex)
             {
                 return self().__impl_get_resource_content(frameIndex);
             };
@@ -57,7 +66,7 @@ namespace boitatah{
         
             bool check_commited(uint32_t frameIndex) { return static_cast<uint8_t>(0u) == (dirty & (static_cast<uint32_t>(commited) << (frameIndex%2))); };
         
-            void update(const ResourceUpdateDescription<DerivedResourceType> &updateDescription){
+            void update(const ResourceUpdateDescription<Resource> &updateDescription){
                 if(descriptor.mutability == RESOURCE_MUTABILITY::IMMUTABLE)
                     throw std::runtime_error("Immutable resource update attempt");
                 
@@ -96,27 +105,32 @@ namespace boitatah{
 
 
     using namespace boitatah::buffer;
-    template<typename DerivedResourceType>
-    class  MutableGPUResource : public GPUResource<MutableGPUResource, DerivedResourceType>// gpu data + metadata object
+    template<typename Resource>
+    class  MutableGPUResource : public GPUResource<MutableGPUResource, Resource>// gpu data + metadata object
     {
-        friend class GPUResource<MutableGPUResource, DerivedResourceType>;
+        friend class GPUResource<MutableGPUResource, Resource>;
 
         protected :
-            ResourceGPUContent<DerivedResourceType> gpu_content[2];
+            ResourceGPUContent<Resource> gpu_content[2]; //<< clear up on release
+
+            MutableGPUResource() = default;
+            MutableGPUResource(const ResourceDescriptor &descriptor) : GPUResource<MutableGPUResource, Resource>(descriptor){}; //Constructor
 
         public :
-            using GPUResource<MutableGPUResource, DerivedResourceType>::get_content;
-            DerivedResourceType& resource(){return *static_cast<DerivedResourceType *>((this->self()));};
+            using GPUResource<MutableGPUResource, Resource>::get_content;
+            using GPUResource<MutableGPUResource, Resource>::self;
+
+            Resource& resource(){return *static_cast<Resource *>(this); };
 
             bool __impl_check_content_ready(uint32_t frame_index){
                 return true;
             }
 
-            void __impl_resource_update(ResourceUpdateDescription<DerivedResourceType>& description){{
+            void __impl_resource_update(ResourceUpdateDescription<Resource>& description){{
 
             }};
 
-            ResourceGPUContent<DerivedResourceType>::ContentType& __impl_get_resource_content(uint32_t frame_index){
+            ResourceTraits<Resource>::ContentType& __impl_get_resource_content(uint32_t frame_index){
                 return gpu_content[frame_index % 2].getContent();
             };
 
@@ -124,12 +138,18 @@ namespace boitatah{
                 return 0;
             };
 
-            void __impl_set_content(uint32_t frame_index, ResourceGPUContent<DerivedResourceType> &content_data){
-                gpu_content[frame_index %2 ] = resource().__ImpSetContent(content_data);
+            void __impl_set_content(uint32_t frame_index, ResourceGPUContent<Resource> &content_data){
+                gpu_content[frame_index %2 ] = resource().__impl_set_content(content_data);
             };
 
             bool __impl_ready_for_use(uint32_t frame_index){
-                return this->self().check_dirt(frame_index) ;
+                return self().check_dirt(frame_index) ;
+            };
+
+            void __impl_release(std::shared_ptr<GPUResourceManager> manager){
+                resource().ReleaseData(gpu_content[0].getContent());
+                resource().ReleaseData(gpu_content[1].getContent());
+                resource().Release();
             };
 
     };
@@ -147,7 +167,7 @@ namespace boitatah{
 
             }};
 
-            ResourceGPUContent<DerivedResource>& __impl_resource_get_content(uint32_t frame_index){
+            ResourceTraits<DerivedResource>& __impl_resource_get_content(uint32_t frame_index){
                 return gpu_content;
             };
 
@@ -161,6 +181,8 @@ namespace boitatah{
 
             void get_data(){};
     };
+
+
 
 }
 

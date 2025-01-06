@@ -10,7 +10,7 @@
 #include "../../buffers/Buffer.hpp"
 #include "../../collections/Pool.hpp"
 #include "GPUResource.hpp"
-#include "../modules/GPUResourceManager.hpp"
+//#include "../modules/GPUResourceManager.hpp"
 #include "../../vulkan/VkCommandBufferWriter.hpp"
 
 #include <array>
@@ -22,16 +22,17 @@ namespace boitatah
     class GPUResourceManager;
 
     struct BufferGPUData;
+
     template<>
-    struct ResourceGPUContent<GPUBuffer>{
+    struct ResourceTraits<GPUBuffer>{
         using ContentType = BufferGPUData;
     };
+
     struct BufferGPUData : public ResourceGPUContent<GPUBuffer>{
         Handle<BufferAddress> buffer;
         uint32_t buffer_capacity;
         bool dirty;
     };
-
 
     struct BufferMetaData : ResourceMetaContent<GPUBuffer>{
         void* buffer_ptr;
@@ -39,47 +40,37 @@ namespace boitatah
  
     class GPUBuffer : public MutableGPUResource<GPUBuffer>
     {
-        friend class GPUResource<MutableGPUResource, GPUBuffer>;
-        using MutableGPUResource<GPUBuffer>::__impl_ready_for_use;
-        
-        GPUBuffer(GPUBufferCreateDescription &createDescription, std::shared_ptr<GPUResourceManager> manager){ 
-            m_manager = manager;
-            size = createDescription.size;
-            usage = createDescription.usage;
-            set_descriptor({
-                            .sharing = createDescription.sharing_mode,
-                            .type = RESOURCE_TYPE::GPU_BUFFER,
-                            .mutability = RESOURCE_MUTABILITY::MUTABLE,
-            });
-        };
-
-        ~GPUBuffer(void) = default;
+        friend class MutableGPUResource<GPUBuffer>;
+        //~GPUBuffer(void){};
 
         public :
+            GPUBuffer() = default;
+            ~GPUBuffer() = default;
+            GPUBuffer(const GPUBuffer& other) = default;
+ 
+            // Constructor
+            GPUBuffer(const GPUBufferCreateDescription &createDescription, std::shared_ptr<GPUResourceManager> manager) 
+                : MutableGPUResource<GPUBuffer>({ //Base Constructor
+                                                .sharing = createDescription.sharing_mode,
+                                                .type = RESOURCE_TYPE::GPU_BUFFER,
+                                                .mutability = RESOURCE_MUTABILITY::MUTABLE,
+                                                })
+            {
+                m_manager = manager;
+                size = createDescription.size;
+                usage = createDescription.usage;
+            };
+
             void copyData(void * data, uint32_t frameIndex = 0);
 
             //TODO: Implement
-            bool readData(void* dstPtr){
-                if(descriptor.sharing == SHARING_MODE::CONCURRENT){
-
-                }
-                else{
-
-                }
-                return false;
-            };
+            bool readData(void* dstPtr);
 
             //TODO: Implement
-            bool asyncReadData(void* dstPtr){
-                if(descriptor.sharing == SHARING_MODE::CONCURRENT){
-
-                }
-                else{
-
-                }
-                return false;
-            };
+            bool asyncReadData(void* dstPtr);
             
+
+
         private:
             uint32_t size;
             BUFFER_USAGE usage;
@@ -89,14 +80,15 @@ namespace boitatah
             /// @brief ready for use for buffers is trivially handled by MutableGPUResource<T>
             /// @param content 
             /// @return that this buffer is ready for use.
-            bool __impl_ready_for_use(ResourceGPUContent<GPUBuffer>& content);
-            void __ImpSetContent(ResourceGPUContent<GPUBuffer>& content);
+            bool ReadyForUse(ResourceGPUContent<GPUBuffer>& content);
+            void SetContent(ResourceGPUContent<GPUBuffer>& content);
 
             // create Resource
-            BufferGPUData __impl_create_managed_resource();
+            BufferGPUData CreateGPUData();
+            void ReleaseData(BufferGPUData& data);
+            void Release();
 
-            void __impl_write_transfer(BufferGPUData& data, CommandBufferWriter<VkCommandBufferWriter> &writer);
-
+            void WriteTransfer(BufferGPUData& data, CommandBufferWriter<VkCommandBufferWriter> &writer);
     };
     
 

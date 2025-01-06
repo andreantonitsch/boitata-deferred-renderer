@@ -34,9 +34,11 @@ namespace boitatah
 
         //m_transferCommandBuffer = allocateCommandBuffer({.count = 1,
         //                                                 .level = COMMAND_BUFFER_LEVEL::PRIMARY,
-         //                                                .type = COMMAND_BUFFER_TYPE::TRANSFER});
+         //                                                .type = COMMAND_BUFFER_TYPE::TRANSFER});\
+        
         m_transferFence = m_vk->createFence(true);
         m_bufferManager = std::make_shared<BufferManager>(m_vk);
+        m_resourceManager = std::make_shared<GPUResourceManager>(m_vk, m_bufferManager);
 
         // m_cameraUniforms = getBufferManager().reserveBuffer({
         //     .request = sizeof(FrameUniforms),
@@ -76,7 +78,7 @@ namespace boitatah
     {
         swapchain = new Swapchain({.format = m_options.swapchainFormat,
                                    .useValidationLayers = m_options.debug});
-        swapchain->attach(m_vk, this, m_window);
+        swapchain->attach(m_vk.get(), this, m_window);
         swapchain->createSwapchain(); // options.windowDimensions, false, false);
     }
 
@@ -84,7 +86,7 @@ namespace boitatah
     {
         uint32_t extensionCount = 0;
 
-        m_vk = new Vulkan({
+        m_vk = Vulkan::create(VulkanOptions{
             .appName = (char *)m_options.appName,
             .extensions = m_window->requiredWindowExtensions(),
             .useValidationLayers = m_options.debug,
@@ -350,12 +352,13 @@ namespace boitatah
         //TODO FIX THIS JANK
         //BufferManager* buffManagerPtr = m_bufferManager.get();
         //delete buffManagerPtr;
-        m_bufferManager.reset();
+        //m_bufferManager.reset();
 
         delete swapchain;
         m_window->destroySurface(m_vk->getInstance());
         delete m_backBufferManager;
-        delete m_vk;
+        //m_vk.reset();
+        
         delete m_window;
     }
 
@@ -371,12 +374,14 @@ namespace boitatah
         return *m_bufferManager;
     }
 
-    // RenderObjectManager &Renderer::getRenderObjectManager()
-    // {
-    //     if(m_renderObjectManager == nullptr)
-    //         throw std::runtime_error("null render object manager");
-    //     return *m_renderObjectManager;
-    // }
+    GPUResourceManager &Renderer::getResourceManager()
+    {
+        if(m_resourceManager == nullptr){
+            throw std::runtime_error("null resource manager");
+        }
+        return *m_resourceManager;
+    }
+
 
     bool Renderer::isWindowClosed()
     {

@@ -1,11 +1,6 @@
 #include "GPUBuffer.hpp"
+#include "../modules/GPUResourceManager.hpp"
 namespace boitatah{
-
-    // auto BufferGPUData::getContentImp() const -> const BufferGPUData&
-    // {
-    //     return static_cast<const BufferGPUData&>(*this);
-    // }
-
 
     void GPUBuffer::copyData(void *data, uint32_t frameIndex)
     {
@@ -35,14 +30,18 @@ namespace boitatah{
             // bufferManager->memoryCopy(size, data, frame_buffer.buffer);
         }
     }
-    bool GPUBuffer::__impl_ready_for_use(ResourceGPUContent<GPUBuffer> &content)
+    bool GPUBuffer::ReadyForUse(ResourceGPUContent<GPUBuffer> &content)
     {
                         if(descriptor.sharing == SHARING_MODE::CONCURRENT)
                     return true;
                 return true;
                 //return static_cast<MutableGPUResource<GPUBuffer>>(content).dirty;
     }
-    BufferGPUData GPUBuffer::__impl_create_managed_resource()
+    void GPUBuffer::SetContent(ResourceGPUContent<GPUBuffer> &content)
+    {
+    }
+    
+    BufferGPUData GPUBuffer::CreateGPUData()
     {     
         auto manager = std::shared_ptr(m_manager); 
         return BufferGPUData{.buffer =  manager->getBufferManager()->reserveBuffer({
@@ -51,7 +50,8 @@ namespace boitatah{
                             .sharing = SHARING_MODE::EXCLUSIVE,}),
                             .buffer_capacity = this->size};;
     }
-    void GPUBuffer::__impl_write_transfer(BufferGPUData &data, CommandBufferWriter<VkCommandBufferWriter> &writer) {
+
+    void GPUBuffer::WriteTransfer(BufferGPUData &data, CommandBufferWriter<VkCommandBufferWriter> &writer) {
         
         if(descriptor.sharing == SHARING_MODE::EXCLUSIVE){
             auto manager = std::shared_ptr(m_manager);
@@ -59,7 +59,21 @@ namespace boitatah{
             data.dirty = false;
             
             bufferManager->queueCopy(stagingBuffer, data.buffer);
-    }
+        }
     };
 
+    void GPUBuffer::ReleaseData(BufferGPUData &data) {
+        auto manager = std::shared_ptr(m_manager);
+        auto bufferManager = manager->getBufferManager();
+        bufferManager->freeBufferReservation(data.buffer);
+    };
+
+    void GPUBuffer::Release() {
+        auto manager = std::shared_ptr(m_manager);
+        auto bufferManager = manager->getBufferManager();
+
+        bufferManager->freeBufferReservation(stagingBuffer);
+
+    
+    };
 };

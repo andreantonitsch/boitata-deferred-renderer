@@ -17,12 +17,16 @@ namespace boitatah
         uint32_t gen = 0;
 
         bool isNull() const { return gen == 0; }
-        bool operator == (const Handle &other)
+        bool operator == (const Handle &other) const
         {
             if( i == other.i && gen == other.gen)
                 return true;
             else
                 return false;
+        } 
+
+        explicit operator bool() const{
+            return isNull();
         }
 
     };
@@ -43,9 +47,10 @@ namespace boitatah
 
         bool tryGet(const Handle<T> handle, T& item);
         T* tryGet(const Handle<T> handle);
-        T& get(const Handle<T> handle);
+        T& get(const Handle<T> handle) noexcept(false);
         Handle<T> set(T &elem);
         bool clear(Handle<T> handle, T& item);
+        bool clear(Handle<T> handle);
 
     private:
         PoolOptions options;
@@ -107,7 +112,7 @@ inline T *boitatah::Pool<T>::tryGet(const Handle<T> handle)
 }
 
 template <typename T>
-T& boitatah::Pool<T>::get(const Handle<T> handle)
+T& boitatah::Pool<T>::get(const Handle<T> handle) noexcept(false)
 {
     if (generations[handle.i] != handle.gen)
     {
@@ -152,11 +157,19 @@ bool boitatah::Pool<T>::clear(Handle<T> handle, T& item)
     {
         return false;
     }
+    item = get(handle);
+    return clear(handle);
+}
 
-    // increament in case of removal
+template <typename T>
+inline bool boitatah::Pool<T>::clear(Handle<T> handle)
+{   
+    if (generations[handle.i] != handle.gen)
+    {
+        return false;
+    }
     generations[handle.i] = generations[handle.i] + 1;
     pushStack(handle.i);
-    item = pool[handle.i];
     quantity -=1;
     destroyed += 1;
     return true;

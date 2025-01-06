@@ -87,11 +87,14 @@ namespace boitatah::vk
         GLFWwindow *window;
     };
 
-    class Vulkan : std::enable_shared_from_this<Vulkan>
+    class Vulkan : public std::enable_shared_from_this<Vulkan>
     {
     public:
-        // Vulkan();
         Vulkan(VulkanOptions opts);
+        
+        static std::shared_ptr<Vulkan> create(VulkanOptions opts);
+        // Vulkan();
+
         ~Vulkan(void);
         void completeInit();
 
@@ -192,6 +195,7 @@ namespace boitatah::vk
 
 
     private:
+
         VulkanOptions options;
         window::WindowManager *window;
 
@@ -208,6 +212,7 @@ namespace boitatah::vk
         CommandQueues queues;
 
         std::shared_ptr<VkCommandBufferWriter> m_commandBufferWriter;
+        void createCommandBufferWriter();
 
         // Extensions and Layers
         std::vector<const char *> validationLayers;

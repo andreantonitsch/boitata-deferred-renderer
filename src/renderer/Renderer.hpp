@@ -23,6 +23,8 @@
 #include "../buffers/Buffer.hpp"
 #include "../buffers/BufferManager.hpp"
 
+#include "modules/GPUResourceManager.hpp"
+
 #include "modules/BackBuffer.hpp"
 #include "modules/Window.hpp"
 #include "modules/Swapchain.hpp"
@@ -74,6 +76,7 @@ namespace boitatah
 
         // Manangers
         BufferManager& getBufferManager();
+        GPUResourceManager& getResourceManager();
         //RenderObjectManager& getRenderObjectManager();
 
         // Window methods
@@ -149,13 +152,14 @@ namespace boitatah
         // if this is a value member, then i have to deal with member initialization
         // This being a reference makes the code simpler for now
         // this however is not ideal
-        Vulkan *m_vk;
         WindowManager *m_window;
         BackBufferManager *m_backBufferManager;
         Swapchain *swapchain;
         DescriptorPoolManager *descriptorPoolManager;
         std::shared_ptr<BufferManager> m_bufferManager;
-        //std::shared_ptr<RenderObjectManager> m_renderObjectManager;
+        std::shared_ptr<GPUResourceManager> m_resourceManager;
+        std::shared_ptr<Vulkan> m_vk;
+
 
         // Frame Uniforms
         Handle<BufferAddress> m_cameraUniforms;

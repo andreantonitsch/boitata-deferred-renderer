@@ -21,7 +21,7 @@ namespace boitatah::buffer
         private:
             uint32_t partitionsPerBuffer = 1u << 10;
 
-            vk::Vulkan* m_vk;
+            std::shared_ptr<vk::Vulkan>  m_vk;
             std::vector<Handle<Buffer *>> activeBuffers;
 
             Pool<Buffer *> bufferPool = Pool<Buffer *>({.size = 1<<16, .name = "uniforms pool"});
@@ -40,7 +40,7 @@ namespace boitatah::buffer
             
 
         public:
-            BufferManager(vk::Vulkan* vk_instance);
+            BufferManager(std::shared_ptr<vk::Vulkan>  vk_instance);
             ~BufferManager(void);
             Handle<BufferAddress> reserveBuffer(const BufferReservationRequest &request);
             bool copyToBuffer(const BufferUploadDesc &desc);
