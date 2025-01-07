@@ -15,8 +15,8 @@ set(LIB_DR_SOURCES
             renderer/modules/BackBuffer.cpp
             renderer/Renderer.cpp
             renderer/modules/Camera.cpp
-            renderer/modules/Window.cpp
             vulkan/Vulkan.cpp
+            vulkan/Window.cpp
 )
 
 add_library(boitatah STATIC ${LIB_DR_SOURCES})

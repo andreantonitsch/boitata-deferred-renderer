@@ -11,6 +11,7 @@
 #include <glm/vec2.hpp>
 
 #include "../vulkan/Vulkan.hpp"
+#include "../vulkan/Window.hpp"
 
 #include "../types/BackBufferDesc.hpp"
 #include "../types/BttEnums.hpp"
@@ -26,7 +27,7 @@
 #include "modules/GPUResourceManager.hpp"
 
 #include "modules/BackBuffer.hpp"
-#include "modules/Window.hpp"
+
 #include "modules/Swapchain.hpp"
 #include "modules/DescriptorPoolManager.hpp"
 #include "modules/Camera.hpp"
@@ -47,7 +48,6 @@
 namespace boitatah
 {
     using namespace vk;
-    using namespace window;
     using namespace buffer;
 
     template class Pool<Shader>;
@@ -152,13 +152,13 @@ namespace boitatah
         // if this is a value member, then i have to deal with member initialization
         // This being a reference makes the code simpler for now
         // this however is not ideal
-        WindowManager *m_window;
-        BackBufferManager *m_backBufferManager;
-        Swapchain *swapchain;
         DescriptorPoolManager *descriptorPoolManager;
         std::shared_ptr<BufferManager> m_bufferManager;
+        std::shared_ptr<Swapchain> m_swapchain;
+        std::shared_ptr<BackBufferManager> m_backBufferManager;
         std::shared_ptr<GPUResourceManager> m_resourceManager;
         std::shared_ptr<Vulkan> m_vk;
+        std::shared_ptr<WindowManager> m_window;
 
 
         // Frame Uniforms

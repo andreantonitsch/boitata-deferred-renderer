@@ -33,8 +33,9 @@ namespace boitatah::buffer
 
         while(activeBuffers.size()){
             releaseBuffer(activeBuffers.back());
+            activeBuffers.pop_back();
         }
-
+        std::cout << "Cleared active buffers in Buffer Manager" << std::endl;
     }
 
     Handle<Buffer *> BufferManager::createBuffer(const BufferDesc &&description)

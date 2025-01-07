@@ -1,8 +1,8 @@
 #include "Window.hpp"
 #include <stdexcept>
-#include "../../vulkan/Vulkan.hpp"
+
 #include <iostream>
-namespace boitatah::window
+namespace boitatah::vk
 {
     WindowManager::WindowManager(WindowDesc &desc)
     {
@@ -23,10 +23,10 @@ namespace boitatah::window
         glfwDestroyWindow(window);
         glfwTerminate();
     }
-    void WindowManager::initSurface(VkInstance instance)
-    {
-
-        if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
+    void WindowManager::initSurface(std::shared_ptr<boitatah::vk::Vulkan> vk)
+    {   
+        m_vk = vk;
+        if (glfwCreateWindowSurface(m_vk->getInstance(), window, nullptr, &surface) != VK_SUCCESS)
             throw std::runtime_error("Failed to create Window Surface");
     
     }

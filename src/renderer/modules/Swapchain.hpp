@@ -6,11 +6,13 @@
 #include <GLFW/glfw3.h>
 
 #include <glm/vec2.hpp>
+#include <memory>
+
 
 #include <vulkan/vulkan.h>
 #include "../../vulkan/Vulkan.hpp"
+#include "../../vulkan/Window.hpp"
 #include "../Renderer.hpp"
-#include "Window.hpp"
 #include "../../collections/Pool.hpp"
 #include <vector>
 #include <string>
@@ -42,16 +44,16 @@ namespace boitatah
         ~Swapchain(void);
         SwapchainImage getNext(VkSemaphore &semaphore);
         SwapchainImage getCurrent();
-        void attach(vk::Vulkan *vulkan, Renderer *renderer, window::WindowManager *window);
+        void attach(std::shared_ptr<Vulkan> vulkan, Renderer *renderer, std::shared_ptr<WindowManager> window);
         void createSwapchain();//Vector2<uint32_t> dimensions, bool vsync, bool fullscreen);
         // void populateBuffers();
 
     private:
         SwapchainOptions options;
         //VkSurfaceKHR surface;
-        vk::Vulkan *vulkan;
+        std::shared_ptr<vk::Vulkan> vulkan;
         Renderer *renderer;
-        window::WindowManager *window;
+        std::shared_ptr<WindowManager> window;
         uint32_t currentIndex;
 
         // Swapchain responsabilities

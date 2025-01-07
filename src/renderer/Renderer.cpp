@@ -20,21 +20,21 @@ namespace boitatah
         WindowDesc desc{.dimensions = m_options.windowDimensions,
                         .windowName = m_options.appName};
 
-        m_window = new WindowManager(desc);
+        m_window = std::make_shared<WindowManager>(desc);
         createVulkan();
 
-        m_window->initSurface(m_vk->getInstance());
+        m_window->initSurface(m_vk);
         m_vk->attachWindow(m_window);
         m_vk->completeInit();
 
         createSwapchain();
 
-        //m_backBufferManager = new BackBufferManager(this);
-        //m_backBufferManager->setup(m_options.backBufferDesc);
+        m_backBufferManager = std::make_shared<BackBufferManager>(this);
+        m_backBufferManager->setup(m_options.backBufferDesc);
 
-        //m_transferCommandBuffer = allocateCommandBuffer({.count = 1,
-        //                                                 .level = COMMAND_BUFFER_LEVEL::PRIMARY,
-         //                                                .type = COMMAND_BUFFER_TYPE::TRANSFER});\
+        m_transferCommandBuffer = allocateCommandBuffer({.count = 1,
+                                                         .level = COMMAND_BUFFER_LEVEL::PRIMARY,
+                                                         .type = COMMAND_BUFFER_TYPE::TRANSFER});\
         
         m_transferFence = m_vk->createFence(true);
         m_bufferManager = std::make_shared<BufferManager>(m_vk);
@@ -62,7 +62,7 @@ namespace boitatah
     {
         m_vk->waitIdle();
 
-        swapchain->createSwapchain();
+        m_swapchain->createSwapchain();
 
         auto newWindowSize = m_window->getWindowDimensions();
 
@@ -76,10 +76,10 @@ namespace boitatah
 
     void Renderer::createSwapchain()
     {
-        swapchain = new Swapchain({.format = m_options.swapchainFormat,
+        m_swapchain = std::make_shared<Swapchain>(SwapchainOptions{.format = m_options.swapchainFormat,
                                    .useValidationLayers = m_options.debug});
-        swapchain->attach(m_vk.get(), this, m_window);
-        swapchain->createSwapchain(); // options.windowDimensions, false, false);
+        m_swapchain->attach(m_vk, this, m_window);
+        m_swapchain->createSwapchain(); // options.windowDimensions, false, false);
     }
 
     void Renderer::createVulkan()
@@ -209,7 +209,7 @@ namespace boitatah
 
         m_vk->waitForFrame(buffers);
         // SubmitDrawCommand command{.bufferData = buffers, .submitType = COMMAND_BUFFER_TYPE::PRESENT};
-        auto swapchainImage = swapchain->getNext(buffers.schainAcqSem);
+        auto swapchainImage = m_swapchain->getNext(buffers.schainAcqSem);
 
         // failed to find swapchain image.
         if (swapchainImage.index == UINT32_MAX) // Fail case.
@@ -339,27 +339,12 @@ namespace boitatah
         m_vk->waitIdle();
         m_vk->destroyDescriptorSetLayout(m_baseLayout.layout);
 
-        // for (auto &buffer : buffers)
-        //     delete buffer;
-
         if(m_vk->checkFenceStatus(m_transferFence))
             m_vk->destroyFence(m_transferFence);
         else{
             m_vk->waitForFence(m_transferFence);
             m_vk->destroyFence(m_transferFence);
         }
-
-        //TODO FIX THIS JANK
-        //BufferManager* buffManagerPtr = m_bufferManager.get();
-        //delete buffManagerPtr;
-        //m_bufferManager.reset();
-
-        delete swapchain;
-        m_window->destroySurface(m_vk->getInstance());
-        delete m_backBufferManager;
-        //m_vk.reset();
-        
-        delete m_window;
     }
 
     Renderer::~Renderer(void)

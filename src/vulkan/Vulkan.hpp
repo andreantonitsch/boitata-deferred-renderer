@@ -18,11 +18,12 @@
 #include "../types/Image.hpp"
 #include "CommandsVk.hpp"
 #include "VkCommandBufferWriter.hpp"
-#include "../renderer/modules/Window.hpp"
+#include "Window.hpp"
 
 namespace boitatah::vk
 {
-
+    class WindowManager;
+    
     struct BufferDescVk
     {
         // uint32_t alignment;
@@ -101,7 +102,7 @@ namespace boitatah::vk
         VkInstance getInstance() const;
         VkDevice getDevice() const;
         VkPhysicalDevice getPhysicalDevice();
-        void attachWindow(boitatah::window::WindowManager *window);
+        void attachWindow(std::shared_ptr<WindowManager> window);
 
         QueueFamilyIndices familyIndices;
 
@@ -197,7 +198,7 @@ namespace boitatah::vk
     private:
 
         VulkanOptions options;
-        window::WindowManager *window;
+        std::shared_ptr<WindowManager> window;
 
         // Instances and Devices
         VkInstance instance;

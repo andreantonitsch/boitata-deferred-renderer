@@ -49,7 +49,7 @@ namespace boitatah
                 .sc = swapchain};
     }
 
-    void Swapchain::attach(Vulkan *vulkan, Renderer *renderer, window::WindowManager *window)
+    void Swapchain::attach(std::shared_ptr<Vulkan> vulkan, Renderer *renderer, std::shared_ptr<WindowManager> window)
     {
         this->vulkan = vulkan;
         this->renderer = renderer;

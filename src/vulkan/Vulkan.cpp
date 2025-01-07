@@ -146,7 +146,7 @@ VkPhysicalDevice boitatah::vk::Vulkan::getPhysicalDevice()
     return physicalDevice;
 }
 
-void boitatah::vk::Vulkan::attachWindow(window::WindowManager *window)
+void boitatah::vk::Vulkan::attachWindow(std::shared_ptr<WindowManager> window)
 {
     this->window = window;
 }
