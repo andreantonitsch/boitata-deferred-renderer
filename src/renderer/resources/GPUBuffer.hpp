@@ -37,8 +37,18 @@ namespace boitatah
     struct BufferMetaData : ResourceMetaContent<GPUBuffer>{
         void* buffer_ptr;
     };
+
+    //TODO solve this issue in a more elegant manner
+    class GPUBufferHelper{
+        public:
+            uint32_t size;
+            BUFFER_USAGE usage;
+            GPUBufferHelper() = default;
+            GPUBufferHelper(const GPUBufferCreateDescription &createDescription)  :       size(createDescription.size),
+                    usage(createDescription.usage){};
+    };
  
-    class GPUBuffer : public MutableGPUResource<GPUBuffer>
+    class GPUBuffer : public GPUBufferHelper, public MutableGPUResource<GPUBuffer>
     {
         friend class MutableGPUResource<GPUBuffer>;
         //~GPUBuffer(void){};
@@ -49,19 +59,16 @@ namespace boitatah
             GPUBuffer(const GPUBuffer& other) = default;
  
             // Constructor
-            GPUBuffer(const GPUBufferCreateDescription &createDescription, std::shared_ptr<GPUResourceManager> manager) 
-                : MutableGPUResource<GPUBuffer>({ //Base Constructor
-                                                .sharing = createDescription.sharing_mode,
-                                                .type = RESOURCE_TYPE::GPU_BUFFER,
-                                                .mutability = RESOURCE_MUTABILITY::MUTABLE,
-                                                })
-            {
-                m_manager = manager;
-                size = createDescription.size;
-                usage = createDescription.usage;
-            };
+            GPUBuffer(const GPUBufferCreateDescription &createDescription, std::shared_ptr<GPUResourceManager> manager) :   
+                    GPUBufferHelper(createDescription),
+                    MutableGPUResource<GPUBuffer>({ //Base Constructor
+                                                    .sharing = createDescription.sharing_mode,
+                                                    .type = RESOURCE_TYPE::GPU_BUFFER,
+                                                    .mutability = RESOURCE_MUTABILITY::MUTABLE,
+                                                  }, manager) 
+                                                  { };
 
-            void copyData(void * data, uint32_t frameIndex = 0);
+            void copyData(void * data);
 
             //TODO: Implement
             bool readData(void* dstPtr);
@@ -72,8 +79,7 @@ namespace boitatah
 
 
         private:
-            uint32_t size;
-            BUFFER_USAGE usage;
+
             Handle<BufferAddress> stagingBuffer;
             BufferMetaData meta_data;
 

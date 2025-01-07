@@ -21,7 +21,7 @@ namespace boitatah{
         protected:
             Handle<Resource> m_resourceHandle;
 
-            ResourceDescriptor descriptor;
+            ResourceDescriptor m_descriptor;
             std::weak_ptr<GPUResourceManager> m_manager;
 
             uint8_t dirty = 255u;
@@ -30,12 +30,13 @@ namespace boitatah{
             DerivedResource<Resource>& self(){return *static_cast<DerivedResource<Resource> *>(this);};
 
             GPUResource() = default;
-            GPUResource(const ResourceDescriptor &descriptor){
-                this->descriptor = descriptor;
-            };
+            GPUResource(const ResourceDescriptor &descriptor, std::shared_ptr<GPUResourceManager> manager)
+                : m_manager(manager),
+                  m_descriptor(descriptor)
+            {};
              
             void set_descriptor(const ResourceDescriptor &descriptor){
-                this->descriptor = descriptor;
+                this->m_descriptor = descriptor;
             }
 
             uint32_t get_size() const {return self().__impl_get_size();};
@@ -67,7 +68,7 @@ namespace boitatah{
             bool check_commited(uint32_t frameIndex) { return static_cast<uint8_t>(0u) == (dirty & (static_cast<uint32_t>(commited) << (frameIndex%2))); };
         
             void update(const ResourceUpdateDescription<Resource> &updateDescription){
-                if(descriptor.mutability == RESOURCE_MUTABILITY::IMMUTABLE)
+                if(m_descriptor.mutability == RESOURCE_MUTABILITY::IMMUTABLE)
                     throw std::runtime_error("Immutable resource update attempt");
                 
                 self().__impl_resource_update(updateDescription);
@@ -114,7 +115,12 @@ namespace boitatah{
             ResourceGPUContent<Resource> gpu_content[2]; //<< clear up on release
 
             MutableGPUResource() = default;
-            MutableGPUResource(const ResourceDescriptor &descriptor) : GPUResource<MutableGPUResource, Resource>(descriptor){}; //Constructor
+            MutableGPUResource(const ResourceDescriptor &descriptor, std::shared_ptr<GPUResourceManager> manager) 
+                              : GPUResource<MutableGPUResource, Resource>(descriptor, manager){
+
+                gpu_content[0] = resource().CreateGPUData();
+                gpu_content[1] = resource().CreateGPUData();
+            }; //Constructor
 
         public :
             using GPUResource<MutableGPUResource, Resource>::get_content;

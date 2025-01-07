@@ -22,13 +22,13 @@ namespace boitatah::buffer
             uint32_t partitionsPerBuffer = 1u << 10;
 
             std::shared_ptr<vk::Vulkan>  m_vk;
-            std::vector<Handle<Buffer *>> activeBuffers;
+            std::vector<Handle<Buffer *>> m_activeBuffers;
 
-            Pool<Buffer *> bufferPool = Pool<Buffer *>({.size = 1<<16, .name = "uniforms pool"});
-            Pool<std::shared_ptr<Buffer>> stagingBufferPool = Pool<std::shared_ptr<Buffer>>({.size = 1<<16, .name = "uniforms pool"});
+            Pool<Buffer *> m_bufferPool = Pool<Buffer *>({.size = 1<<16, .name = "uniforms pool"});
+            Pool<std::shared_ptr<Buffer>> m_stagingBufferPool = Pool<std::shared_ptr<Buffer>>({.size = 1<<16, .name = "uniforms pool"});
             
-            Pool<BufferAddress> addressPool = Pool<BufferAddress>({.size = 1<<20, .name = "uniforms pool"});
-            CommandBuffer transferBuffer;
+            Pool<BufferAddress> m_addressPool = Pool<BufferAddress>({.size = 1<<20, .name = "uniforms pool"});
+            CommandBuffer m_transferBuffer;
             VkFence m_transferFence;
 
             Handle<Buffer*> createBuffer(const BufferDesc &&description);

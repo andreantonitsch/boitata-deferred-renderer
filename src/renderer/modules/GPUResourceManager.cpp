@@ -7,6 +7,7 @@ namespace boitatah{
         m_vulkan = vk_instance;
         m_bufferManager = bufferManager;
 
+
         m_resourcePool = std::make_unique<GPUResourcePool>();
 
 

@@ -8,7 +8,6 @@ namespace boitatah::buffer
 
     Buffer::Buffer(const BufferDesc &desc, const vk::Vulkan *vulkan) : vulkan(vulkan)
     {
-
         description = desc;
 
         // get the vulkan buffer
@@ -93,6 +92,9 @@ namespace boitatah::buffer
         BufferReservation reservation;
             if(!mainReservPool->tryGet(handle, reservation)) 
                 throw std::runtime_error("failed to copy data to gpu buffer");
+
+        std::cout << "Buffer " << getID() << " copy data reseevation offset" << reservation.offset <<
+                     " size " << reservation.size << std::endl;
 
         if(sharing == SHARING_MODE::CONCURRENT){
             vulkan->copyToMappedMemory({
@@ -265,6 +267,7 @@ namespace boitatah::buffer
         if(sharing == SHARING_MODE::CONCURRENT){
             //std::cout << "mapping memory" << std::endl;
             mappedMemory = vulkan->mapMemory({.memory = bufferData.memory, .offset = 0, .size= bufferData.actualSize});
+            if(mappedMemory == nullptr) throw std::runtime_error("Failed to map memory");
         }
 
 

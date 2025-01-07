@@ -13,10 +13,10 @@ namespace boitatah::buffer
         m_transferFence = m_vk->createFence(true);
 
 
-        transferBuffer.buffer = m_vk->allocateCommandBuffer({.count = 1, 
+        m_transferBuffer.buffer = m_vk->allocateCommandBuffer({.count = 1, 
                         .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                         .type = COMMAND_BUFFER_TYPE::TRANSFER });
-        transferBuffer.type = COMMAND_BUFFER_TYPE::TRANSFER;
+        m_transferBuffer.type = COMMAND_BUFFER_TYPE::TRANSFER;
     }
 
     BufferManager::~BufferManager(void)
@@ -31,9 +31,8 @@ namespace boitatah::buffer
 
         std::cout << "Cleared buffer manager fence" << std::endl;
 
-        while(activeBuffers.size()){
-            releaseBuffer(activeBuffers.back());
-            activeBuffers.pop_back();
+        while(m_activeBuffers.size()){
+            releaseBuffer(m_activeBuffers.back());
         }
         std::cout << "Cleared active buffers in Buffer Manager" << std::endl;
     }
@@ -41,8 +40,8 @@ namespace boitatah::buffer
     Handle<Buffer *> BufferManager::createBuffer(const BufferDesc &&description)
     {
         Buffer * buffer = new Buffer(description, m_vk.get());
-        Handle<Buffer *> bufferHandle = bufferPool.set(buffer);
-        activeBuffers.push_back(bufferHandle);
+        Handle<Buffer *> bufferHandle = m_bufferPool.set(buffer);
+        m_activeBuffers.push_back(bufferHandle);
         std::cout << "Created Buffer" << buffer->getID() <<std::endl;
         return bufferHandle;
     }
@@ -51,16 +50,16 @@ namespace boitatah::buffer
     {
         // get buffer
         Buffer* buffer;
-        if(!bufferPool.tryGet(handle, buffer)){
+        if(!m_bufferPool.tryGet(handle, buffer)){
             std::runtime_error("doubly released buffer");
        }
         // delete buffer from pool of buffers
-        bufferPool.clear(handle, buffer);
+        m_bufferPool.clear(handle, buffer);
         
         // delete it from buffer list of active buffers
-        auto position = std::find(activeBuffers.begin(), activeBuffers.end(), handle);
-        if(position != activeBuffers.end()){
-            activeBuffers.erase(position);
+        auto position = std::find(m_activeBuffers.begin(), m_activeBuffers.end(), handle);
+        if(position != m_activeBuffers.end()){
+            m_activeBuffers.erase(position);
         }
         else{
             std::cout << "failed to find buffer in active buffers" << std::endl;
@@ -79,7 +78,7 @@ namespace boitatah::buffer
         if (bufferIndex != UINT32_MAX)
         {
             // return handle copy
-            return activeBuffers[bufferIndex];
+            return m_activeBuffers[bufferIndex];
         }
         else
         {
@@ -88,11 +87,9 @@ namespace boitatah::buffer
                 .partitions = partitionsPerBuffer,
                 .usage = compatibility.usage,
                 .sharing = compatibility.sharing,
-                .bufferManager = shared_from_this()
-                // .stagingBuffer = compatibility.sharing == SHARING_MODE::CONCURRENT ?
-                //                  nullptr :
-                //                  findOrCreateCompatibleStagingBuffer(compatibility)
-            });
+                .bufferManager = shared_from_this(),
+                });
+            
             // return handle copy
             return buffer;
         }
@@ -101,10 +98,10 @@ namespace boitatah::buffer
     uint32_t BufferManager::findCompatibleBuffer(const BufferReservationRequest &compatibility)
     {
         {
-            for (int i = 0; i < activeBuffers.size(); i++)
+            for (int i = 0; i < m_activeBuffers.size(); i++)
             {
                 Buffer * buffer;
-                bufferPool.tryGet(activeBuffers[i], buffer);
+                m_bufferPool.tryGet(m_activeBuffers[i], buffer);
                 if (buffer->checkCompatibility(compatibility))
                     return i;
             }            
@@ -117,13 +114,15 @@ namespace boitatah::buffer
     {
 
         Handle<Buffer *> bufferHandle = findOrCreateCompatibleBuffer(request);
-        if(bufferHandle.isNull()){
+        if(!bufferHandle){
             std::cout << "reserve buffer failed. no buffer created." << std::endl;
             return Handle<BufferAddress>();
         }
 
         Buffer * buffer;
-        bufferPool.tryGet(bufferHandle, buffer);
+        if(!m_bufferPool.tryGet(bufferHandle, buffer)){
+            std::runtime_error("failed to get buffer from buffer pool");
+        }
 
         BufferAddress bufferAddress{
             .buffer = bufferHandle,
@@ -131,15 +130,15 @@ namespace boitatah::buffer
             .size = static_cast<uint32_t>(request.request)
         };
             
-        return addressPool.set(bufferAddress);
+        return m_addressPool.set(bufferAddress);
     }
 
     bool BufferManager::copyToBuffer(const BufferUploadDesc &desc)
     {
         std::cout << "starting copy to buffer" << std::endl;
-        BufferAddress& address = addressPool.get(desc.address);
+        BufferAddress& address = m_addressPool.get(desc.address);
 
-        Buffer*& buffer = bufferPool.get(address.buffer);
+        Buffer*& buffer = m_bufferPool.get(address.buffer);
         
         buffer->copyData(address.reservation, desc.data);
         std::cout << "finished copy to buffer" << std::endl;
@@ -194,6 +193,19 @@ namespace boitatah::buffer
 
     void BufferManager::memoryCopy(uint32_t dataSize, void *data, Handle<BufferAddress> &handle)
     {
+        //TODO handle except
+        auto& bufferAddr = m_addressPool.get(handle);
+        std::cout << "buffer address fetched" << std::endl;
+        auto buffer = m_bufferPool.get(bufferAddr.buffer);
+        std::cout << "buffer fetched" << std::endl;
+        BufferReservation reserv;
+        if(!buffer->getReservationData(bufferAddr.reservation, reserv));
+            std::runtime_error("failed to get reservation data in buffer manager memory copy");
+        if(reserv.size < dataSize)
+            std::runtime_error("Buffer is smaller than required space in buffermanager copy.");
+
+        buffer->copyData(bufferAddr.reservation, data);
+        
     }
 
     void BufferManager::queueingBufferUpdates()
@@ -203,15 +215,15 @@ namespace boitatah::buffer
 
     void BufferManager::startBufferUpdates()
     {
-        m_vk->resetCmdBuffer(transferBuffer.buffer);
-        m_vk->beginCmdBuffer({.commandBuffer = transferBuffer.buffer});
+        m_vk->resetCmdBuffer(m_transferBuffer.buffer);
+        m_vk->beginCmdBuffer({.commandBuffer = m_transferBuffer.buffer});
     }
 
     void BufferManager::endBufferUpdates()
     {
         m_vk->submitCmdBuffer(
             {
-                .commandBuffer = transferBuffer.buffer,
+                .commandBuffer = m_transferBuffer.buffer,
                 .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
                 .fence = m_transferFence
             }
@@ -222,9 +234,9 @@ namespace boitatah::buffer
     {
         BufferAddress address;
 
-        if(addressPool.tryGet(handle, address)){
+        if(m_addressPool.tryGet(handle, address)){
             Buffer *buffer;
-            if(bufferPool.tryGet(address.buffer, buffer)){
+            if(m_bufferPool.tryGet(address.buffer, buffer)){
                 buffer->getReservationData(address.reservation, reservation);
                 return true;
             }
@@ -235,9 +247,9 @@ namespace boitatah::buffer
     Handle<BufferReservation> BufferManager::getAddressReservation(const Handle<BufferAddress> handle)
     {
         BufferAddress address;
-        if(addressPool.tryGet(handle, address)){
+        if(m_addressPool.tryGet(handle, address)){
             Buffer *buffer;
-            if(bufferPool.tryGet(address.buffer, buffer)){
+            if(m_bufferPool.tryGet(address.buffer, buffer)){
                 return address.reservation;
             }
         }
@@ -247,8 +259,8 @@ namespace boitatah::buffer
     bool BufferManager::getAddressBuffer(const Handle<BufferAddress> handle, Buffer*& buffer)
     {
         BufferAddress address;
-        if(addressPool.tryGet(handle, address)){
-            if(bufferPool.tryGet(address.buffer, buffer))
+        if(m_addressPool.tryGet(handle, address)){
+            if(m_bufferPool.tryGet(address.buffer, buffer))
             return true;
         }
         return false;
@@ -269,7 +281,7 @@ namespace boitatah::buffer
 
     CommandBuffer BufferManager::getTransferBuffer()
     {
-        return transferBuffer;
+        return m_transferBuffer;
     }
 
     template <class T>

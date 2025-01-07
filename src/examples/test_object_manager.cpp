@@ -29,15 +29,32 @@ int main()
     auto& objManager = r.getResourceManager();
 
 
-    auto bufferHandle = objManager.create(GPUBufferCreateDescription{
+    auto exclusiveBufferHandle = objManager.create(GPUBufferCreateDescription{
         .size = 1024u,
         .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
         .sharing_mode = SHARING_MODE::EXCLUSIVE,
     });
 
-    auto& buffer = objManager.getResource(bufferHandle);
+        std::cout << "created exclusive gpu buffer" << std::endl;
 
-    objManager.destroy(bufferHandle);
+    auto sharedBufferHandle = objManager.create(GPUBufferCreateDescription{
+        .size = 1024u,
+        .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
+        .sharing_mode = SHARING_MODE::CONCURRENT,
+    });
+
+    std::cout << "created inclusive gpu buffer" << std::endl;
+
+    auto& exclusiveBuffer = objManager.getResource(exclusiveBufferHandle);
+    auto& sharedBuffer = objManager.getResource(sharedBufferHandle);
+    
+    int a[] = {1,2,3};
+    
+    exclusiveBuffer.copyData(a);
+    //sharedBuffer.copyData(a);
+
+    objManager.destroy(exclusiveBufferHandle);
+    objManager.destroy(sharedBufferHandle);
 
     return EXIT_SUCCESS;
 }

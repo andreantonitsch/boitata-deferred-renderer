@@ -793,6 +793,7 @@ void *boitatah::vk::Vulkan::mapMemory(const MapMemoryVk &desc) const
     if(vkMapMemory(device, desc.memory, desc.offset, desc.size, 0, &mappedTarget) != VK_SUCCESS){
         return nullptr;
     }
+    std::cout<< "Vulkan mapped memory" << std::endl;
     //std::unique_ptr<void> mapped_pointer = std::make_unique<void>(mappedTarget);
     return mappedTarget;
 }
@@ -822,8 +823,11 @@ void boitatah::vk::Vulkan::mapDataAndCopyToBuffer(CopyToBufferVk op)
 
 void boitatah::vk::Vulkan::copyToMappedMemory(const CopyMappedMemoryVk &op) const
 {
-    std::byte* start = static_cast<std::byte*>(op.data) + op.offset * op.elementSize;
+    std::byte* start = static_cast<std::byte*>(op.data) + op.offset;
     std::byte* end = start + op.elementSize * op.elementCount;
+    
+    std::cout << "Vulkan copy data " << start << " " << end << op.map << std::endl;
+
     std::copy(
         start,
         end,

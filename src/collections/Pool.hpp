@@ -26,7 +26,7 @@ namespace boitatah
         } 
 
         explicit operator bool() const{
-            return isNull();
+            return !isNull();
         }
 
     };
