@@ -38,7 +38,9 @@ namespace boitatah
         
         m_transferFence = m_vk->createFence(true);
         m_bufferManager = std::make_shared<BufferManager>(m_vk);
-        m_resourceManager = std::make_shared<GPUResourceManager>(m_vk, m_bufferManager);
+        m_ResourceManagerTransferWriter = std::make_shared<VkCommandBufferWriter>(m_vk);
+        m_ResourceManagerTransferWriter->setCommandBuffer(m_transferCommandBuffer.buffer);
+        m_resourceManager = std::make_shared<GPUResourceManager>(m_vk, m_bufferManager, m_ResourceManagerTransferWriter);
 
         // m_cameraUniforms = getBufferManager().reserveBuffer({
         //     .request = sizeof(FrameUniforms),

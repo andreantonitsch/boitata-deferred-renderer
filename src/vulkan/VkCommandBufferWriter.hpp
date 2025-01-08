@@ -2,75 +2,70 @@
 #define BOITATAH_VULKAN_COMMAND_BUFFER_WRITER_HPP
 
 #include "../vulkan/Vulkan.hpp"
-#include "../command_buffers/CommandBufferWriter.hpp"
+#include <vulkan/vulkan.h>
+#include "VkCommandBufferWriterStructs.hpp"
+#include "../command_buffers/CommandBufferWriterStructs.hpp"
 #include <memory>
+#include "../command_buffers/CommandBufferWriter.hpp"
+
+
+
 
 namespace boitatah::vk{
     using namespace boitatah::command_buffers;
-
-    class Vulkan;
-
-    class VkCommandBufferWriter;
-
-    struct VulkanWrappedCommandBuffer : WrappedCommandBuffer<VkCommandBufferWriter>
-    {
-        VkCommandBuffer buffer;
-    };
-
-    struct VulkanWriterBeginCommand : WriterBeginCommand<VkCommandBufferWriter>{};
-
-    struct VulkanWriterResetCommand : WriterResetCommand<VkCommandBufferWriter> {};
-
-    struct VulkanWriterCopyBufferCommand : WriterCopyBufferCommand<VkCommandBufferWriter>
-    {
-        uint32_t srcOffset;
-        uint32_t dstOffset;
-        uint32_t size;
-        VkBuffer srcBuffer;
-        VkBuffer dstBuffer;
-    };
 
     class VkCommandBufferWriter : CommandBufferWriter<VkCommandBufferWriter>
     {
         friend class  CommandBufferWriter<VkCommandBufferWriter>;
         public:
+            using  CommandBufferWriter<VkCommandBufferWriter>::setCommandBuffer;
             using  CommandBufferWriter<VkCommandBufferWriter>::begin;
+            using  CommandBufferWriter<VkCommandBufferWriter>::reset;
+            using  CommandBufferWriter<VkCommandBufferWriter>::end;
+            using  CommandBufferWriter<VkCommandBufferWriter>::submit;
+
             VkCommandBufferWriter(std::shared_ptr<Vulkan> vk_instance) : vk_instance(vk_instance){};
 
         private:
-            std::weak_ptr<Vulkan> vk_instance;
-            VkCommandBuffer& unwrapCommandBuffer(){
-                return static_cast<VulkanWrappedCommandBuffer&>(bufferWrapper).buffer;
-            };
 
-            void __imp_begin(VulkanWriterBeginCommand &command){
-                    auto buffer = unwrapCommandBuffer();
+
+            std::weak_ptr<Vulkan> vk_instance;
+            // CommandWriterTraits<VkCommandBufferWriter>::CommandBufferType& unwrapCommandBuffer(){
+            //     return bufferWrapper.unwrap();
+            // };
+
+            void __imp_begin(const VulkanWriterBeginCommand &command, VkCommandBuffer buffer){
+                    //auto buffer = wrappedBuffer;//unwrapCommandBuffer();
 
                     VkCommandBufferBeginInfo beginInfo{
                         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
                         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
                         .pInheritanceInfo = nullptr};
-                    if (vkBeginCommandBuffer(unwrapCommandBuffer(), 
+                    if (vkBeginCommandBuffer(buffer, 
                                              &beginInfo) != VK_SUCCESS)
                     {
                         throw std::runtime_error("failed to initialize buffer");
                     }
             };
 
-            void __imp_reset(VulkanWriterResetCommand &command){
-                vkResetCommandBuffer(unwrapCommandBuffer(), 0);
+            void __imp_reset(const VulkanWriterResetCommand &command, VkCommandBuffer buffer){
+                vkResetCommandBuffer(buffer, 0);
             };
 
-            void __imp_copyBuffer(VulkanWriterCopyBufferCommand& command){
+            void __imp_copyBuffer(const VulkanWriterCopyBufferCommand& command, VkCommandBuffer buffer){
                     VkBufferCopy copy{
                         .srcOffset = command.srcOffset,
                         .dstOffset = command.dstOffset,
                         .size = command.size};
-                    vkCmdCopyBuffer(unwrapCommandBuffer(),
+                    vkCmdCopyBuffer(buffer,
                                     command.srcBuffer,
                                     command.dstBuffer,
                                     1,
                                     &copy);
+            };
+
+            void __imp_submit(const VulkanWriterSubmitCommand& command, VkCommandBuffer buffer){
+
             };
     };
 

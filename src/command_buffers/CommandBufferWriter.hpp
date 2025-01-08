@@ -1,41 +1,9 @@
 #ifndef BOITATAH_COMMAND_BUFFER_WRITER_HPP
 #define BOITATAH_COMMAND_BUFFER_WRITER_HPP
 
+#include "CommandBufferWriterStructs.hpp"
+
 namespace boitatah::command_buffers{
-
-    template<class T>
-    struct WrappedType {
-        using Type = typename WrappedType::Type;
-
-        T& self(){return *static_cast<T*>(this);};
-        Type& unwrap(){
-            return self().__unwrap();
-        };
-    };
-
-    template<class T>
-    struct  WrappedCommandBuffer{};
-
-    template<class T>
-    struct  WriterDrawCommand{};
-
-    template<class T>
-    struct WriterBeginCommand {};
-
-    template<class T>
-    struct WriterResetCommand {};
-
-    template<class T>
-    struct WriterBindPipelineCommand {};
-
-    template<class T>
-    struct WriterCopyImageCommand {};
-
-    template<class T>
-    struct WriterCopyBufferCommand {};
-
-    template<class T>
-    struct WriterTransitionLayoutCommand {};
 
 
     template<class T>
@@ -44,41 +12,61 @@ namespace boitatah::command_buffers{
         friend T;
 
         protected:
-            WrappedCommandBuffer<T> bufferWrapper;
+            CommandWriterTraits<T>::CommandBufferType m_buffer;
 
         public:
+            using CommandBufferType =       typename CommandWriterTraits<T>::CommandBufferType;
+            using BeginCommand =            typename CommandWriterTraits<T>::BeginCommand;
+            using ResetCommand =            typename CommandWriterTraits<T>::ResetCommand;
+            using EndCommand =              typename CommandWriterTraits<T>::EndCommand;
+            using SubmitCommand =           typename CommandWriterTraits<T>::SubmitCommand;
+            using DrawCommand =             typename CommandWriterTraits<T>::DrawCommand;
+            using BindPipelineCommand =     typename CommandWriterTraits<T>::BindPipelineCommand;
+            using CopyImageCommand =        typename CommandWriterTraits<T>::CopyImageCommand;
+            using CopyBufferCommand =       typename CommandWriterTraits<T>::CopyBufferCommand;
+            using TransitionLayoutCommand = typename CommandWriterTraits<T>::TransitionLayoutCommand;
+
+
             T& self(){return *static_cast<T*>(this);};
 
-            void setCommandBuffer(WrappedCommandBuffer<T> buffer){
-                bufferWrapper = buffer;
+            void setCommandBuffer(CommandBufferType buffer){
+                m_buffer = buffer;
             };
 
-            void begin(WriterBeginCommand<T> &command){
-                self().__imp_begin(command);
+            void begin(const BeginCommand &command){
+                self().__imp_begin(command, m_buffer);
             };
 
-            void reset(WriterResetCommand<T> &command){
-                self().__imp_reset(command);
+            void reset(const ResetCommand &command){
+                self().__imp_reset(command, m_buffer);
             };
 
-            void draw(WriterDrawCommand<T> &command){
-                self().__imp_draw(command, bufferWrapper);
+            void end(const EndCommand &command){
+                self().__imp_end(command, m_buffer);
             };
 
-            void bindPipeline(WriterBindPipelineCommand<T> &command){
-                self().__imp_bindPipeline(command, bufferWrapper);
+            void submit(const SubmitCommand &command){
+                self().__imp_submit(command, m_buffer);
+            };
+
+            void draw(const DrawCommand &command){
+                self().__imp_draw(command, m_buffer);
+            };
+
+            void bindPipeline(const BindPipelineCommand &command){
+                self().__imp_bindPipeline(command, m_buffer);
             };
             
-            void copyImage(WriterCopyImageCommand<T> &command){
-                self().__imp_copyImage(command, bufferWrapper);
+            void copyImage(const CopyImageCommand &command){
+                self().__imp_copyImage(command, m_buffer);
             };
 
-            void copyBuffer(WriterCopyBufferCommand<T> &command){
-                self().__imp_copyBuffer(command, bufferWrapper);
+            void copyBuffer(const CopyBufferCommand &command){
+                self().__imp_copyBuffer(command, m_buffer);
             };
             
-            void transitionLayout(WriterTransitionLayoutCommand<T> &command){
-                self().__imp_transitionLayout(command, bufferWrapper);
+            void transitionLayout(const TransitionLayoutCommand  &command){
+                self().__imp_transitionLayout(command, m_buffer);
             };
 
     };

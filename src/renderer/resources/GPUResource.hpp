@@ -33,7 +33,8 @@ namespace boitatah{
             GPUResource(const ResourceDescriptor &descriptor, std::shared_ptr<GPUResourceManager> manager)
                 : m_manager(manager),
                   m_descriptor(descriptor)
-            {};
+            {
+            };
              
             void set_descriptor(const ResourceDescriptor &descriptor){
                 this->m_descriptor = descriptor;
@@ -67,12 +68,12 @@ namespace boitatah{
         
             bool check_commited(uint32_t frameIndex) { return static_cast<uint8_t>(0u) == (dirty & (static_cast<uint32_t>(commited) << (frameIndex%2))); };
         
-            void update(const ResourceUpdateDescription<Resource> &updateDescription){
+            void update(){
                 if(m_descriptor.mutability == RESOURCE_MUTABILITY::IMMUTABLE)
                     throw std::runtime_error("Immutable resource update attempt");
                 
-                self().__impl_resource_update(updateDescription);
-                set_dirty();
+                self().__impl_resource_update();
+                set_dirty();    
             };
 
             void set_dirty()
@@ -120,6 +121,7 @@ namespace boitatah{
 
                 gpu_content[0] = resource().CreateGPUData();
                 gpu_content[1] = resource().CreateGPUData();
+                
             }; //Constructor
 
         public :
@@ -132,8 +134,8 @@ namespace boitatah{
                 return true;
             }
 
-            void __impl_resource_update(ResourceUpdateDescription<Resource>& description){{
-
+            void __impl_resource_update(){{
+                
             }};
 
             ResourceTraits<Resource>::ContentType& __impl_get_resource_content(uint32_t frame_index){
@@ -156,6 +158,7 @@ namespace boitatah{
                 resource().ReleaseData(gpu_content[0].getContent());
                 resource().ReleaseData(gpu_content[1].getContent());
                 resource().Release();
+                
             };
 
     };

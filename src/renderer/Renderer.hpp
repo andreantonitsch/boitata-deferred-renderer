@@ -154,6 +154,7 @@ namespace boitatah
         // this however is not ideal
         DescriptorPoolManager *descriptorPoolManager;
         std::shared_ptr<BufferManager> m_bufferManager;
+        std::shared_ptr<VkCommandBufferWriter> m_ResourceManagerTransferWriter;
         std::shared_ptr<Swapchain> m_swapchain;
         std::shared_ptr<BackBufferManager> m_backBufferManager;
         std::shared_ptr<GPUResourceManager> m_resourceManager;

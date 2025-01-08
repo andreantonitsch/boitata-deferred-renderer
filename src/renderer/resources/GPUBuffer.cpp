@@ -62,7 +62,7 @@ namespace boitatah{
         return data;
     }
 
-    void GPUBuffer::WriteTransfer(BufferGPUData &data, CommandBufferWriter<VkCommandBufferWriter> &writer) {
+    void GPUBuffer::WriteTransfer(BufferGPUData &data, CommandBufferWriter<vk::VkCommandBufferWriter> &writer) {
         
         if(m_descriptor.sharing == SHARING_MODE::EXCLUSIVE){
             auto manager = std::shared_ptr(m_manager);

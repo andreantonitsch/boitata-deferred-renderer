@@ -2,15 +2,24 @@
 #include "../resources/GPUBuffer.hpp"
 
 namespace boitatah{
-    GPUResourceManager::GPUResourceManager(std::shared_ptr<vk::Vulkan>  vk_instance, std::shared_ptr<buffer::BufferManager> bufferManager)
+    GPUResourceManager::GPUResourceManager( std::shared_ptr<vk::Vulkan>  vk_instance,
+                                            std::shared_ptr<buffer::BufferManager> bufferManager,
+                                            std::shared_ptr<vk::VkCommandBufferWriter> commandBufferWriter)
+                                            : m_commandBufferWriter(commandBufferWriter),
+                                              m_vulkan(vk_instance),
+                                              m_bufferManager(bufferManager),
+                                              m_resourcePool(std::make_unique<GPUResourcePool>())
+    { }
+
+    void GPUResourceManager::beginCommitCommands()
     {
-        m_vulkan = vk_instance;
-        m_bufferManager = bufferManager;
+        m_commandBufferWriter->reset({});
+        m_commandBufferWriter->begin({});
+    }
 
-
-        m_resourcePool = std::make_unique<GPUResourcePool>();
-
-
+    void GPUResourceManager::submitCommitCommands()
+    {
+        m_commandBufferWriter->submit({});
     }
 
     std::shared_ptr<buffer::BufferManager> GPUResourceManager::getBufferManager()
@@ -25,10 +34,10 @@ namespace boitatah{
     }
 
 
-    GPUBuffer&  GPUResourceManager::getResource(Handle<GPUBuffer> &handle)
-    {
-        return  m_resourcePool->get(handle);
-    }
+    // GPUBuffer&  GPUResourceManager::getResource(Handle<GPUBuffer> &handle)
+    // {
+    //     return  m_resourcePool->get(handle);
+    // }
 
     // Handle<Geometry> GPUResourceManager::create(const ResourceCreateDescription<Geometry> &description)
     // {

@@ -28,6 +28,7 @@ int main()
 
     auto& objManager = r.getResourceManager();
 
+    uint32_t currentFrame = 0u;
 
     auto exclusiveBufferHandle = objManager.create(GPUBufferCreateDescription{
         .size = 1024u,
@@ -49,9 +50,26 @@ int main()
     auto& sharedBuffer = objManager.getResource(sharedBufferHandle);
     
     int a[] = {1,2,3};
-    
+
     exclusiveBuffer.copyData(a);
-    //sharedBuffer.copyData(a);
+    sharedBuffer.copyData(a);
+
+
+    objManager.forceCommitResource(exclusiveBufferHandle, currentFrame);
+
+    a[0], a[1], a[2] = 4, 5, 7;
+
+    exclusiveBuffer.copyData(a);
+
+    objManager.commitAll(currentFrame);
+
+    a[0], a[1], a[2] = 8, 9, 10;
+
+
+    objManager.beginCommitCommands();
+    objManager.commitResourceCommand(exclusiveBufferHandle, currentFrame);
+    objManager.submitCommitCommands();
+
 
     objManager.destroy(exclusiveBufferHandle);
     objManager.destroy(sharedBufferHandle);

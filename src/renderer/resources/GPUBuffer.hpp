@@ -94,7 +94,7 @@ namespace boitatah
             void ReleaseData(BufferGPUData& data);
             void Release();
 
-            void WriteTransfer(BufferGPUData& data, CommandBufferWriter<VkCommandBufferWriter> &writer);
+            void WriteTransfer(BufferGPUData& data, CommandBufferWriter<vk::VkCommandBufferWriter> &writer);
     };
     
 

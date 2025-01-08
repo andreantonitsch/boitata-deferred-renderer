@@ -5,6 +5,9 @@
 #include <type_traits>
 
 #include "../../vulkan/Vulkan.hpp"
+#include "../../command_buffers/CommandBufferWriter.hpp"
+#include "../../vulkan/VkCommandBufferWriter.hpp" 
+
 #include "../../collections/Pool.hpp"
 #include "GPUResourcePool.hpp"
 #include "../../buffers/Buffer.hpp"
@@ -30,7 +33,9 @@ namespace boitatah
         template<template <typename > class T, typename Y> friend class GPUResource;
         
         public:
-            GPUResourceManager(std::shared_ptr<vk::Vulkan> vk_instance, std::shared_ptr<buffer::BufferManager> bufferManager); //contructor
+            GPUResourceManager(std::shared_ptr<vk::Vulkan> vk_instance,
+                               std::shared_ptr<buffer::BufferManager> bufferManager,
+                               std::shared_ptr<vk::VkCommandBufferWriter> commandBufferWriter); //contructor
 
             // Uniform Handling
             template<class ResourceType>
@@ -46,10 +51,10 @@ namespace boitatah
             void flagResource(Handle<ResourceType> resource);
 
             template<typename ResourceType>
-            void commitResource(Handle<ResourceType> resource);
+            void forceCommitResource(Handle<ResourceType> resource);
             
             template<typename ResourceType>
-            void commitResource(Handle<ResourceType> resource, uint32_t frame_index);
+            void forceCommitResource(Handle<ResourceType> resource, uint32_t frame_index);
             
             template<typename ResourceType>
             void freeResource(Handle<ResourceType> resource);
@@ -61,9 +66,15 @@ namespace boitatah
             template<typename ResourceType>
             void readResourceDataAsync(Handle<ResourceType> handle, void* destinationPtr);
             
-            void commitAll();
+            void commitAll(uint32_t frameIndex);
             void cleanCommitQueue();
-            
+
+            void beginCommitCommands();
+
+            template<typename ResourceType>
+            void commitResourceCommand(Handle<ResourceType> handle, uint32_t frameIndex);
+
+            void submitCommitCommands();
 
             
             template<typename ResourceType>
@@ -80,28 +91,20 @@ namespace boitatah
             template <typename ResourceType>
             void destroy(const Handle<ResourceType>& handle);
 
-            GPUBuffer& getResource(Handle<GPUBuffer> &handle);
+            template <typename ResourceType>
+            inline ResourceType& getResource(Handle<ResourceType> handle)
+            {
+                return m_resourcePool->get(handle);
+            }
+
 
         private:
             std::shared_ptr<vk::Vulkan> m_vulkan;
             std::weak_ptr<buffer::BufferManager> m_bufferManager;
             
             std::unique_ptr<GPUResourcePool> m_resourcePool;
+            std::shared_ptr<vk::VkCommandBufferWriter> m_commandBufferWriter;
 
-
-            // template<typename ResourceType>
-            // void commitResource(ResourceType& resource);
-
-
-
-            template<typename ResourceType>
-            void commitResource(ResourceType& resource, uint32_t frame_index);
-
-            template<typename ResourceType>
-            ResourceType& getResource(Handle<ResourceType> handle);
-
-            template<typename ResourceType>
-            Handle<ResourceType> setResource(ResourceType& resource);
         };
 
 
@@ -113,6 +116,26 @@ namespace boitatah
         }
 
         template <typename ResourceType>
+        inline void GPUResourceManager::forceCommitResource(Handle<ResourceType> resource)
+        {
+            forceCommitResource(resource, 0);
+        }
+
+        template <typename ResourceType>
+        inline void GPUResourceManager::forceCommitResource(Handle<ResourceType> resource, uint32_t frame_index)
+        {
+            beginCommitCommands();
+            commitResourceCommand(resource, frame_index);
+            submitCommitCommands();
+        }
+
+        template <typename ResourceType>
+        inline void GPUResourceManager::commitResourceCommand(Handle<ResourceType> handle, uint32_t frameIndex)
+        {
+            auto& resource = m_resourcePool->get(handle);
+        }
+
+        template <typename ResourceType>
         inline void GPUResourceManager::destroy(const Handle<ResourceType> &handle)
         {
             auto& resource = getResource(handle);
@@ -120,11 +143,7 @@ namespace boitatah
             m_resourcePool->clear(handle);
         }
 
-        template <typename ResourceType>
-        inline ResourceType &GPUResourceManager::getResource(Handle<ResourceType> handle)
-        {
-            return m_resourcePool->get(handle);
-        }
+
 };
 
 #endif //BOITATAH_RESOURCE_MANAGER_TEMP_HPP
