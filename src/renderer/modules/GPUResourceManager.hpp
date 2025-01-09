@@ -13,7 +13,6 @@
 #include "../../buffers/Buffer.hpp"
 #include "../../buffers/BufferManager.hpp"
 #include "../resources/ResourceStructs.hpp"
-#include "../resources/GPUResource.hpp"
 
 
 #include "../../command_buffers/CommandBufferWriter.hpp"
@@ -22,7 +21,8 @@ namespace boitatah
 {
     class GPUBuffer;
     class Geometry;
-
+    template<template <typename > class DerivedResource, typename Resource>
+    class GPUResource;
 
     // template<typename T>
     // using ResourceType = typename std::enable_if<std::is_base_of<GPUResource<T>, T>::value>::type;
@@ -36,6 +36,11 @@ namespace boitatah
             GPUResourceManager(std::shared_ptr<vk::Vulkan> vk_instance,
                                std::shared_ptr<buffer::BufferManager> bufferManager,
                                std::shared_ptr<vk::VkCommandBufferWriter> commandBufferWriter); //contructor
+
+
+            vk::VkCommandBufferWriter& getCommandBufferWriter(){
+                return *m_commandBufferWriter;
+            }
 
             // Uniform Handling
             template<class ResourceType>
@@ -76,7 +81,10 @@ namespace boitatah
 
             void submitCommitCommands();
 
-            
+            bool checkTransfers();
+            void waitForTransfers();
+
+
             template<typename ResourceType>
             ResourceMetaContent<ResourceType>& getResourceMetaData(Handle<ResourceType> &handle, uint32_t frame_index);
             
@@ -133,6 +141,7 @@ namespace boitatah
         inline void GPUResourceManager::commitResourceCommand(Handle<ResourceType> handle, uint32_t frameIndex)
         {
             auto& resource = m_resourcePool->get(handle);
+            resource.commit(frameIndex);
         }
 
         template <typename ResourceType>

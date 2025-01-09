@@ -1,5 +1,7 @@
 #include "GPUResourceManager.hpp"
 #include "../resources/GPUBuffer.hpp"
+#include "../resources/GPUResource.hpp"
+#include "../../types/BttEnums.hpp"
 
 namespace boitatah{
     GPUResourceManager::GPUResourceManager( std::shared_ptr<vk::Vulkan>  vk_instance,
@@ -11,6 +13,11 @@ namespace boitatah{
                                               m_resourcePool(std::make_unique<GPUResourcePool>())
     { }
 
+    void GPUResourceManager::commitAll(uint32_t frameIndex)
+    {
+
+    }
+
     void GPUResourceManager::beginCommitCommands()
     {
         m_commandBufferWriter->reset({});
@@ -19,7 +26,20 @@ namespace boitatah{
 
     void GPUResourceManager::submitCommitCommands()
     {
-        m_commandBufferWriter->submit({});
+        std::cout << "submiting transfer commands" << std::endl;
+        m_commandBufferWriter->submit({
+            .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
+        });
+    }
+
+    bool GPUResourceManager::checkTransfers()
+    {
+        return m_commandBufferWriter->checkTransfers();
+    }
+
+    void GPUResourceManager::waitForTransfers()
+    {
+        m_commandBufferWriter->waitForTransfers();
     }
 
     std::shared_ptr<buffer::BufferManager> GPUResourceManager::getBufferManager()

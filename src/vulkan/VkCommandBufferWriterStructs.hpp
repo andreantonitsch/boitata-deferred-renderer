@@ -3,10 +3,10 @@
 
 #include <vulkan/vulkan.h>
 #include "../command_buffers/CommandBufferWriterStructs.hpp"
+#include "../types/BttEnums.hpp"
 
 namespace boitatah::vk{
 
-    class Vulkan;
     class VkCommandBufferWriter;
     struct VulkanWriterBeginCommand {} ;
 
@@ -15,7 +15,12 @@ namespace boitatah::vk{
 
     struct VulkanWriterEndCommand {} ;
 
-    struct VulkanWriterSubmitCommand {};
+    struct VulkanWriterSubmitCommand {
+        //VkFence fence;
+        //VkSemaphore signal;
+        //VkSemaphore wait;
+        COMMAND_BUFFER_TYPE submitType;
+    };
 
     struct VulkanWriterDrawCommand {};
     struct VulkanWriterBindPipelineCommand {};
@@ -24,11 +29,11 @@ namespace boitatah::vk{
 
     struct VulkanWriterCopyBufferCommand 
     {
+        VkBuffer srcBuffer;
         uint32_t srcOffset;
+        VkBuffer dstBuffer;
         uint32_t dstOffset;
         uint32_t size;
-        VkBuffer srcBuffer;
-        VkBuffer dstBuffer;
     };
 };
 
@@ -48,6 +53,8 @@ namespace boitatah::command_buffers{
             using CopyBufferCommand = boitatah::vk::VulkanWriterCopyBufferCommand;
             using TransitionLayoutCommand = boitatah::vk::VulkanWriterTransitionLayoutCommand;
             using CommandBufferType = VkCommandBuffer;
+            using SemaphoreType = VkSemaphore;
+            using FenceType = VkFence;
     };
 
 };

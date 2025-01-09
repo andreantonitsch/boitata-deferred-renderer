@@ -5,10 +5,10 @@
 
 #include <glm/glm.hpp>
 #include <vector>
-#include "ResourceStructs.hpp"
 #include "../../buffers/BufferStructs.hpp"
 #include "../../buffers/Buffer.hpp"
 #include "../../collections/Pool.hpp"
+#include "ResourceStructs.hpp"
 #include "GPUResource.hpp"
 //#include "../modules/GPUResourceManager.hpp"
 #include "../../vulkan/VkCommandBufferWriter.hpp"
@@ -26,6 +26,7 @@ namespace boitatah
     template<>
     struct ResourceTraits<GPUBuffer>{
         using ContentType = BufferGPUData;
+        using CommandBufferWriter = vk::VkCommandBufferWriter;
     };
 
     struct BufferGPUData : public ResourceGPUContent<GPUBuffer>{
@@ -86,8 +87,8 @@ namespace boitatah
             /// @brief ready for use for buffers is trivially handled by MutableGPUResource<T>
             /// @param content 
             /// @return that this buffer is ready for use.
-            bool ReadyForUse(ResourceGPUContent<GPUBuffer>& content);
-            void SetContent(ResourceGPUContent<GPUBuffer>& content);
+            bool ReadyForUse(BufferGPUData& content);
+            void SetContent(BufferGPUData& content);
 
             // create Resource
             BufferGPUData CreateGPUData();

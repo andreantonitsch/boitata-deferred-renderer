@@ -40,6 +40,9 @@ namespace boitatah
         m_bufferManager = std::make_shared<BufferManager>(m_vk);
         m_ResourceManagerTransferWriter = std::make_shared<VkCommandBufferWriter>(m_vk);
         m_ResourceManagerTransferWriter->setCommandBuffer(m_transferCommandBuffer.buffer);
+        m_ResourceManagerTransferWriter->setFence(m_transferFence);
+        m_ResourceManagerTransferWriter->setSignal(nullptr);
+        
         m_resourceManager = std::make_shared<GPUResourceManager>(m_vk, m_bufferManager, m_ResourceManagerTransferWriter);
 
         // m_cameraUniforms = getBufferManager().reserveBuffer({
@@ -341,7 +344,7 @@ namespace boitatah
         m_vk->waitIdle();
         m_vk->destroyDescriptorSetLayout(m_baseLayout.layout);
 
-        if(m_vk->checkFenceStatus(m_transferFence))
+        if(!m_vk->checkFenceStatus(m_transferFence))
             m_vk->destroyFence(m_transferFence);
         else{
             m_vk->waitForFence(m_transferFence);

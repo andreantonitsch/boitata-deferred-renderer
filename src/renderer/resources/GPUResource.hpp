@@ -11,9 +11,7 @@
 
 namespace boitatah{
     using namespace boitatah::buffer;
-    class GPUResourceManager;
 
-    using namespace boitatah::buffer;
     template<template <typename > class DerivedResource, typename Resource>
     class GPUResource // gpu data + metadata object
     {
@@ -52,7 +50,10 @@ namespace boitatah{
                 self().__impl_release(manager);
             };
 
+            //ResourceTraits<Resource>::CommandBufferWriter getWriterFromManager
+
         public:
+
 
             ResourceTraits<Resource>::ContentType& get_content(uint32_t frameIndex)
             {
@@ -87,10 +88,12 @@ namespace boitatah{
             };
 
             /// @brief commits to update this resource next time resources are updated
-            void commit()
+            void commit(uint32_t frame_index)
             {
                 commited = true;
-                self().__impl_commit();
+                auto manager = std::shared_ptr<GPUResourceManager>(m_manager);
+                self().__impl_commit(frame_index, manager->getCommandBufferWriter());
+                set_commited(frame_index);
             };
 
             uint32_t get_data(void* const dstPtr, uint32_t frame_index) const {
@@ -127,6 +130,7 @@ namespace boitatah{
         public :
             using GPUResource<MutableGPUResource, Resource>::get_content;
             using GPUResource<MutableGPUResource, Resource>::self;
+            using GPUResource<MutableGPUResource, Resource>::commit;
 
             Resource& resource(){return *static_cast<Resource *>(this); };
 
@@ -160,6 +164,11 @@ namespace boitatah{
                 resource().Release();
                 
             };
+
+            void __impl_commit(uint32_t frame_index, ResourceTraits<Resource>::CommandBufferWriter& writer){
+
+                resource().WriteTransfer(gpu_content[frame_index&2].getContent(), writer.self());
+            }
 
     };
 

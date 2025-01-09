@@ -56,20 +56,21 @@ int main()
 
 
     objManager.forceCommitResource(exclusiveBufferHandle, currentFrame);
+    objManager.waitForTransfers();
 
     a[0], a[1], a[2] = 4, 5, 7;
 
     exclusiveBuffer.copyData(a);
 
     objManager.commitAll(currentFrame);
-
+    objManager.waitForTransfers();
     a[0], a[1], a[2] = 8, 9, 10;
 
 
     objManager.beginCommitCommands();
     objManager.commitResourceCommand(exclusiveBufferHandle, currentFrame);
     objManager.submitCommitCommands();
-
+    objManager.waitForTransfers();
 
     objManager.destroy(exclusiveBufferHandle);
     objManager.destroy(sharedBufferHandle);

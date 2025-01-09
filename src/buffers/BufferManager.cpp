@@ -285,7 +285,7 @@ namespace boitatah::buffer
     }
 
     template <class T>
-    inline bool BufferManager::queueCopy(const Handle<BufferAddress> src, const Handle<BufferAddress> dst, CommandBufferWriter<T> &writer)
+    bool BufferManager::queueCopy(CommandBufferWriter<T> &writer, const Handle<BufferAddress> src, const Handle<BufferAddress> dst)
     {
         Buffer* dstBuffer;
         Buffer* srcBuffer;
@@ -303,8 +303,7 @@ namespace boitatah::buffer
             if(srcBuffer->getReservationData(srcReservHandle, srcReservation))
                 std::runtime_error("buffer transfer failed, invalid staging reservation");
 
-            m_vk->CmdCopyBuffer({
-                .commandBuffer = getTransferBuffer().buffer,
+            writer.copyBuffer({
                 .srcBuffer = srcBuffer->getBuffer(),
                 .srcOffset = srcReservation.offset,
                 .dstBuffer = dstBuffer->getBuffer(),
@@ -316,6 +315,6 @@ namespace boitatah::buffer
         }
         return false;
     };
-
+    template bool BufferManager::queueCopy(CommandBufferWriter<VkCommandBufferWriter> &writer, const Handle<BufferAddress> src, const Handle<BufferAddress> dst);
 
 };

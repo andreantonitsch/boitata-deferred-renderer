@@ -12,10 +12,14 @@ namespace boitatah::command_buffers{
         friend T;
 
         protected:
-            CommandWriterTraits<T>::CommandBufferType m_buffer;
+            CommandWriterTraits<T>::CommandBufferType   m_buffer;
+            CommandWriterTraits<T>::SemaphoreType       m_signal;
+            CommandWriterTraits<T>::FenceType           m_fence;
 
         public:
             using CommandBufferType =       typename CommandWriterTraits<T>::CommandBufferType;
+            using SemaphoreType =           typename CommandWriterTraits<T>::SemaphoreType;
+            using FenceType =               typename CommandWriterTraits<T>::FenceType;
             using BeginCommand =            typename CommandWriterTraits<T>::BeginCommand;
             using ResetCommand =            typename CommandWriterTraits<T>::ResetCommand;
             using EndCommand =              typename CommandWriterTraits<T>::EndCommand;
@@ -31,6 +35,14 @@ namespace boitatah::command_buffers{
 
             void setCommandBuffer(CommandBufferType buffer){
                 m_buffer = buffer;
+            };
+
+            void setFence(FenceType fence){
+                m_fence = fence;
+            };
+
+            void setSignal(SemaphoreType signal){
+                m_signal = signal;
             };
 
             void begin(const BeginCommand &command){
@@ -68,6 +80,14 @@ namespace boitatah::command_buffers{
             void transitionLayout(const TransitionLayoutCommand  &command){
                 self().__imp_transitionLayout(command, m_buffer);
             };
+
+            bool checkTransfers(){
+                return self().__imp_checkTransfers();
+            }
+
+            void waitForTransfers(){
+                self().__imp_waitForTransfers();
+            }
 
     };
 

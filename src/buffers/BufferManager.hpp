@@ -48,7 +48,7 @@ namespace boitatah::buffer
             bool queueCopy(const Handle<BufferAddress> src, const Handle<BufferAddress> dst);
             
             template<class T>
-            bool queueCopy(const Handle<BufferAddress> src, const Handle<BufferAddress> dst, CommandBufferWriter<T>& writer);
+            bool queueCopy( CommandBufferWriter<T>& writer, const Handle<BufferAddress> src, const Handle<BufferAddress> dst);
 
             //user is responsible for releasing the staged buffer
             void memoryCopy(uint32_t dataSize, void* data, Handle<BufferAddress>& handle);

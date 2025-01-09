@@ -6,10 +6,11 @@
 
 #include <GLFW/glfw3.h>
 #include <cstring>
+#include <optional>
 #include <memory>
 #include <vulkan/vulkan.h>
 #include <vector>
-#include <optional>
+
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
 #include "../types/commands/CommandBuffer.hpp"
@@ -17,8 +18,8 @@
 #include "../types/Memory.hpp"
 #include "../types/Image.hpp"
 #include "CommandsVk.hpp"
-#include "VkCommandBufferWriter.hpp"
-#include "Window.hpp"
+//#include "VkCommandBufferWriter.hpp"
+
 
 namespace boitatah::vk
 {
@@ -102,6 +103,9 @@ namespace boitatah::vk
         VkInstance getInstance() const;
         VkDevice getDevice() const;
         VkPhysicalDevice getPhysicalDevice();
+        VkQueue getTransferQueue();
+        VkQueue getPresentQueue();
+        VkQueue getGraphicsQueue();
         void attachWindow(std::shared_ptr<WindowManager> window);
 
         QueueFamilyIndices familyIndices;
@@ -149,7 +153,7 @@ namespace boitatah::vk
 #pragma region Commands
 
 
-        std::shared_ptr<VkCommandBufferWriter> getCommandBufferWriter();
+        //std::shared_ptr<VkCommandBufferWriter> getCommandBufferWriter();
         
 
         // Generic Commands
@@ -212,8 +216,8 @@ namespace boitatah::vk
         CommandPools commandPools;
         CommandQueues queues;
 
-        std::shared_ptr<VkCommandBufferWriter> m_commandBufferWriter;
-        void createCommandBufferWriter();
+        //std::shared_ptr<VkCommandBufferWriter> m_commandBufferWriter;
+        //void createCommandBufferWriter();
 
         // Extensions and Layers
         std::vector<const char *> validationLayers;

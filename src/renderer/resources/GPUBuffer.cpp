@@ -1,5 +1,7 @@
 #include "GPUBuffer.hpp"
 #include "../modules/GPUResourceManager.hpp"
+#include  "../../buffers/BufferManager.hpp"
+
 namespace boitatah{
 
     void GPUBuffer::copyData(void *data)
@@ -36,14 +38,13 @@ namespace boitatah{
         }
     }
     
-    bool GPUBuffer::ReadyForUse(ResourceGPUContent<GPUBuffer> &content)
+    bool GPUBuffer::ReadyForUse(BufferGPUData &content)
     {
-                        if(m_descriptor.sharing == SHARING_MODE::CONCURRENT)
-                    return true;
-                return true;
-                //return static_cast<MutableGPUResource<GPUBuffer>>(content).dirty;
+        if(m_descriptor.sharing == SHARING_MODE::CONCURRENT)
+            return true;
+        return (content).dirty;
     }
-    void GPUBuffer::SetContent(ResourceGPUContent<GPUBuffer> &content)
+    void GPUBuffer::SetContent(BufferGPUData &content)
     {
     }
     
@@ -62,14 +63,14 @@ namespace boitatah{
         return data;
     }
 
-    void GPUBuffer::WriteTransfer(BufferGPUData &data, CommandBufferWriter<vk::VkCommandBufferWriter> &writer) {
+    void GPUBuffer::WriteTransfer(BufferGPUData &data, CommandBufferWriter<VkCommandBufferWriter> &writer) {
         
+        std::cout << "Writing Transfer for GPU Buffer" << std::endl;
         if(m_descriptor.sharing == SHARING_MODE::EXCLUSIVE){
             auto manager = std::shared_ptr(m_manager);
-            auto bufferManager = manager->getBufferManager();
             data.dirty = false;
             
-            bufferManager->queueCopy(stagingBuffer, data.buffer);
+            manager->getBufferManager()->queueCopy<VkCommandBufferWriter>(writer, stagingBuffer, data.buffer);
         }
     };
 
