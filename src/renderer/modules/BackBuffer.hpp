@@ -1,6 +1,4 @@
-#ifndef BOITATAH_BACKBUFFER_HPP
-#define BOITATAH_BACKBUFFER_HPP
-
+#pragma once
 // #define GLM_FORCE_RADIANS
 // #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/vec2.hpp>
@@ -26,6 +24,7 @@ namespace boitatah{
         Handle<RenderTarget> getNext();
         Handle<RenderTarget> getCurrent();
         std::vector<Handle<RenderTarget>> buffers;
+        uint32_t getCurrentIndex();
 
         private:
             Renderer* renderer;
@@ -34,5 +33,3 @@ namespace boitatah{
             void clearBackBuffer();
     };
 }
-
-#endif //BOITATAH_BACKBUFFER_HPP

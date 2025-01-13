@@ -1,5 +1,4 @@
-#ifndef BOITATAH_IMAGE_HPP
-#define BOITATAH_IMAGE_HPP
+#pragma once
 
 #include <vulkan/vulkan.h>
 #include <glm/vec2.hpp>
@@ -29,4 +28,3 @@ namespace boitatah
 
 }
 
-#endif // BOITATAH_IMAGE_HPP

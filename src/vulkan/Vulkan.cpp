@@ -496,6 +496,15 @@ void boitatah::vk::Vulkan::beginRenderpassCommand(const BeginRenderpassCommandVk
 
 }
 
+void boitatah::vk::Vulkan::endRenderpassCommand(const EndRenderpassCommandVk &command)
+{
+    vkCmdEndRenderPass(command.commandBuffer);
+    // if (vkEndCommandBuffer(command.commandBuffer) != VK_SUCCESS)
+    // {
+    //     throw std::runtime_error("Failed to record a draw command buffer");
+    // }
+}
+
 void boitatah::vk::Vulkan::recordDrawCommand(const DrawCommandVk &command)
 {
     vkCmdBindPipeline(command.drawBuffer,
@@ -522,11 +531,7 @@ void boitatah::vk::Vulkan::recordDrawCommand(const DrawCommandVk &command)
                 command.firstVertex, command.firstInstance);
     }
 
-    vkCmdEndRenderPass(command.drawBuffer);
-    if (vkEndCommandBuffer(command.drawBuffer) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to record a draw command buffer");
-    }
+
 }
 
 void boitatah::vk::Vulkan::resetCmdBuffer(const VkCommandBuffer buffer)
@@ -536,6 +541,8 @@ void boitatah::vk::Vulkan::resetCmdBuffer(const VkCommandBuffer buffer)
 
 void boitatah::vk::Vulkan::submitDrawCmdBuffer(const SubmitDrawCommandVk &command)
 {
+    vkResetFences(device, 1, &(command.fence));
+    vkEndCommandBuffer(command.commandBuffer);
     // TODO buffer available.
     // std::vector<VkSemaphore> semaphores{SemImageAvailable};
     std::vector<VkPipelineStageFlags> stageFlags{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -550,7 +557,7 @@ void boitatah::vk::Vulkan::submitDrawCmdBuffer(const SubmitDrawCommandVk &comman
         //.signalSemaphoreCount = 1,
         //.pSignalSemaphores = signals.data()
     };
-
+    
     if (vkQueueSubmit(queues.graphicsQueue, 1, &submitInfo, command.fence) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit graphics queue");

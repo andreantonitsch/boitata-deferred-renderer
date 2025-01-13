@@ -80,6 +80,11 @@ namespace boitatah
         return buffers[current];
     }
 
+    uint32_t BackBufferManager::getCurrentIndex()
+    {
+        return current;
+    }
+
     void BackBufferManager::clearBackBuffer()
     {
         for (auto &attach : buffers)

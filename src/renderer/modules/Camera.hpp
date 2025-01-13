@@ -1,5 +1,4 @@
-#ifndef BOITATAH_CAMERA_HPP
-#define BOITATAH_CAMERA_HPP
+#pragma once
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -56,5 +55,3 @@ namespace boitatah{
 
 }
 
-
-#endif //BOITATAH_CAMERA_HPP

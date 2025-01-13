@@ -1,6 +1,4 @@
-#ifndef BOITATAH_MEMORY_HPP
-#define BOITATAH_MEMORY_HPP
-
+#pragma once
 
 #include <vulkan/vulkan.h>
 #include "BttEnums.hpp"
@@ -21,4 +19,3 @@ namespace boitatah{
 }
 
 
-#endif //BOITATAH_MEMORY_HPP

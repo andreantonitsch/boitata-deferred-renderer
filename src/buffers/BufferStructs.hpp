@@ -1,5 +1,4 @@
-#ifndef BOITATAH_BUFFER_STRUCTS_HPP
-#define BOITATAH_BUFFER_STRUCTS_HPP
+#pragma once
 
 #include <memory>
 #include "../collections/Pool.hpp"
@@ -63,5 +62,3 @@ namespace boitatah::buffer
         SHARING_MODE sharing;
     };
 }
-
-#endif // BOITATAH_BUFFER_STRUCTS_HPP

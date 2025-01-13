@@ -1,5 +1,4 @@
-#ifndef BOITATAH_FREELIST_HPP
-#define BOITATAH_FREELIST_HPP
+#pragma once
 
 #include <cstdint>
 #include <vector>
@@ -81,6 +80,3 @@ namespace boitatah{
     };
 
 }
-
-
-#endif // BOITATAH_FREELIST_HPP

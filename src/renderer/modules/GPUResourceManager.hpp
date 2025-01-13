@@ -1,5 +1,4 @@
-#ifndef BOITATAH_RESOURCE_MANAGER_HPP
-#define BOITATAH_RESOURCE_MANAGER_HPP
+#pragma once
 
 #include <memory>
 #include <type_traits>
@@ -89,12 +88,12 @@ namespace boitatah
             ResourceMetaContent<ResourceType>& getResourceMetaData(Handle<ResourceType> &handle, uint32_t frame_index);
             
             template<typename ResourceType>
-            ResourceGPUContent<ResourceType>& getResourceGPUData(Handle<ResourceType> &handle, uint32_t frame_index);
+            ResourceTraits<ResourceType>::ContentType& getResourceGPUData(Handle<ResourceType> &handle, uint32_t frame_index);
 
             std::shared_ptr<buffer::BufferManager> getBufferManager();
 
             Handle<GPUBuffer> create(const GPUBufferCreateDescription& description);
-            //Handle<Geometry> create(const ResourceCreateDescription<Geometry>& description);
+            Handle<Geometry> create(const GeometryCreateDescription& description);
             
             template <typename ResourceType>
             void destroy(const Handle<ResourceType>& handle);
@@ -108,7 +107,7 @@ namespace boitatah
 
         private:
             std::shared_ptr<vk::Vulkan> m_vulkan;
-            std::weak_ptr<buffer::BufferManager> m_bufferManager;
+            std::shared_ptr<buffer::BufferManager> m_bufferManager;
             
             std::unique_ptr<GPUResourcePool> m_resourcePool;
             std::shared_ptr<vk::VkCommandBufferWriter> m_commandBufferWriter;
@@ -154,5 +153,3 @@ namespace boitatah
 
 
 };
-
-#endif //BOITATAH_RESOURCE_MANAGER_TEMP_HPP

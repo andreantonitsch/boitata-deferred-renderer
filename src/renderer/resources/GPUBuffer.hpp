@@ -1,5 +1,4 @@
-#ifndef BOITATAH_GPU_BUFFER_HPP
-#define BOITATAH_GPU_BUFFER_HPP
+#pragma once
 
 #include <memory>
 
@@ -29,7 +28,8 @@ namespace boitatah
         using CommandBufferWriter = vk::VkCommandBufferWriter;
     };
 
-    struct BufferGPUData : public ResourceGPUContent<GPUBuffer>{
+    struct BufferGPUData //: public ResourceGPUContent<GPUBuffer>
+    {
         Handle<BufferAddress> buffer;
         uint32_t buffer_capacity;
         bool dirty;
@@ -77,8 +77,6 @@ namespace boitatah
             //TODO: Implement
             bool asyncReadData(void* dstPtr);
             
-
-
         private:
 
             Handle<BufferAddress> stagingBuffer;
@@ -101,4 +99,3 @@ namespace boitatah
 
 }
 
-#endif

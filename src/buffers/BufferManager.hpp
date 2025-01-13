@@ -1,5 +1,4 @@
-#ifndef BOITATAH_BUFFER_MANAGER_HPP
-#define BOITATAH_BUFFER_MANAGER_HPP
+#pragma once
 
 #include <vector>
 
@@ -68,9 +67,9 @@ namespace boitatah::buffer
             bool areTransfersFinished() const;
             void waitForTransferToFinish() const;
             CommandBuffer getTransferBuffer();
+
+            VkBuffer getVkBuffer(const Handle<BufferAddress> handle);
     };
 
 
 };
-
-#endif //BOITATAH_BUFFER_MANAGER_HPP

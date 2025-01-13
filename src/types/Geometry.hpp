@@ -1,24 +1,30 @@
-#ifndef BOITATAH_GEOMETRY_HPP
-#define BOITATAH_GEOMETRY_HPP
-
+#pragma once
 
 #include <glm/glm.hpp>
 #include <vector>
 #include "../buffers/BufferStructs.hpp"
 #include "../buffers/Buffer.hpp"
 #include "../collections/Pool.hpp"
-//#include "GPUResource.hpp"
+#include <renderer/resources/GPUResource.hpp>
+#include <renderer/resources/ResourceStructs.hpp>
 
 #include <array>
 
 namespace boitatah
 {
+    class Geometry;
+    struct GeometryGPUData {};
+    template<>
+    struct ResourceTraits<Geometry>{
+        using ContentType = GeometryGPUData;
+        using CommandBufferWriter = vk::VkCommandBufferWriter;
+    };
+
 
     struct GeometryBufferData{
         Handle<GPUBuffer> buffer;
         uint32_t count;
         uint32_t elementSize;
-
     };
 
     struct GeometryBufferDataDesc{
@@ -32,39 +38,63 @@ namespace boitatah
         uint32_t* dataPtr;
     };
 
-    struct GeometryDesc
-    {
-        glm::ivec2 vertexInfo;
-        uint32_t vertexSize;
-        uint32_t vertexDataSize;
-        void *vertexData;
-        uint32_t indexCount;
-        void *indexData;
-    };
+    // struct GeometryDesc
+    // {
+    //     glm::ivec2 vertexInfo;
+    //     uint32_t vertexSize;
+    //     uint32_t vertexDataSize;
+    //     void *vertexData;
+    //     uint32_t indexCount;
+    //     void *indexData;
+    // };
 
-    struct GeometryDesc2
+    struct GeometryCreateDescription
     {
         glm::ivec2 vertexInfo;
         std::span<const GeometryBufferDataDesc> bufferData;
         GeometryIndexDataDesc indexData;
     };
 
-    struct Geometry
-    {
-        std::vector<Handle<BufferAddress>> buffers;
-        glm::ivec2 vertexInfo;
-        uint32_t vertexSize;
-        Handle<BufferAddress> indexBuffer;
-        uint32_t indiceCount;
-    };
+    // struct Geometry
+    // {
+    //     std::vector<Handle<BufferAddress>> buffers;
+    //     glm::ivec2 vertexInfo; //begin, count
+    //     uint32_t vertexSize;
+    //     Handle<BufferAddress> indexBuffer;
+    //     uint32_t indiceCount; 
+    // };
 
-    struct Geometry2
+    class Geometry : public MutableGPUResource<Geometry>
     {
-        std::vector<GeometryBufferData> buffers;
-        glm::ivec2 vertexInfo;
-        uint32_t vertexSize;
-        Handle<GPUBuffer> indexBuffer;
-        uint32_t indiceCount;
+        public:
+            Geometry() = default;
+            Geometry(std::shared_ptr<GPUResourceManager> manager):
+                MutableGPUResource<Geometry>({ //Base Constructor
+                                                    .sharing = SHARING_MODE::EXCLUSIVE,
+                                                    .type = RESOURCE_TYPE::GPU_BUFFER,
+                                                    .mutability = RESOURCE_MUTABILITY::MUTABLE,
+                                                  }, manager) 
+                                                  { };;
+            ~Geometry() = default;
+            Geometry(const Geometry& other) = default;
+
+            std::vector<GeometryBufferData> buffers;
+            glm::ivec2 vertexInfo;
+            Handle<GPUBuffer> indexBuffer;
+            uint32_t indiceCount;
+            GeometryGPUData CreateGPUData() {return GeometryGPUData{};}
+            bool ReadyForUse(GeometryGPUData& content){ return true; };
+            void SetContent(GeometryGPUData& content){ };
+            void ReleaseData(GeometryGPUData& content){};
+            void Release() {
+                
+                auto manager = std::shared_ptr<GPUResourceManager>(m_manager);
+
+                for(auto& bufferData : buffers ){
+                    manager->destroy(bufferData.buffer);
+                }
+                manager->destroy(indexBuffer);
+             }
     };
 
     //geom data
@@ -146,4 +176,3 @@ namespace boitatah
 
 }
 
-#endif

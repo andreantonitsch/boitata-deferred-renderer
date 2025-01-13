@@ -1,5 +1,4 @@
-#ifndef BOITATAH_BTT_ENUMS_HPP
-#define BOITATAH_BTT_ENUMS_HPP
+#pragma once
 
 #include <vulkan/vulkan.h>
 namespace boitatah
@@ -450,5 +449,3 @@ namespace boitatah
     }
 
 }
-
-#endif // BOITATAH_BTT_ENUMS_HPP

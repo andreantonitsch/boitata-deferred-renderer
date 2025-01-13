@@ -1,5 +1,4 @@
-#ifndef BOITATAH_BACKBUFFERDESC_HPP
-#define BOITATAH_BACKBUFFERDESC_HPP
+#pragma once
 
 #include <glm/vec2.hpp>
 #include <vector>
@@ -16,5 +15,3 @@ namespace boitatah{
     };
 
 }
-
-#endif //BOITATAH_BACKBUFFERDESC_HPP

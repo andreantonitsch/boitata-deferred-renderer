@@ -1,5 +1,4 @@
-#ifndef BOITATAH_RENDERER_HPP
-#define BOITATAH_RENDERER_HPP
+#pragma once
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
@@ -86,7 +85,7 @@ namespace boitatah
         void waitIdle();
 
         // Render Methods
-        void renderToRenderTarget(const SceneNode &scene, const Handle<RenderTarget> &rendertarget);
+        void renderToRenderTarget(const SceneNode &scene, const Handle<RenderTarget> &rendertarget, uint32_t frameIndex);
         void render(SceneNode &scene);
         void render(SceneNode &scene, Camera &camera);
         void presentRenderTarget(Handle<RenderTarget> &rendertarget);
@@ -103,7 +102,7 @@ namespace boitatah
         Handle<Image> addImage(Image image);
         Handle<Image> createImage(const ImageDesc &desc);
         Handle<ShaderLayout> createShaderLayout(const ShaderLayoutDesc &desc);
-        Handle<Geometry> createGeometry(const GeometryDesc &desc);
+        Handle<Geometry> createGeometry(const GeometryCreateDescription &desc);
 
         // Command Buffers
         CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
@@ -206,4 +205,4 @@ namespace boitatah
         void cleanup();
     };
 }
-#endif // BOITATAH_RENDERER_HPP
+//#endif // BOITATAH_RENDERER_HPP

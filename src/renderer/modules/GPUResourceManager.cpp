@@ -1,6 +1,7 @@
 #include "GPUResourceManager.hpp"
 #include "../resources/GPUBuffer.hpp"
 #include "../resources/GPUResource.hpp"
+#include <types/Geometry.hpp>
 #include "../../types/BttEnums.hpp"
 
 namespace boitatah{
@@ -44,25 +45,64 @@ namespace boitatah{
 
     std::shared_ptr<buffer::BufferManager> GPUResourceManager::getBufferManager()
     {
-        return std::shared_ptr(m_bufferManager);      
+        return m_bufferManager;
     }
 
     Handle<GPUBuffer> GPUResourceManager::create(const GPUBufferCreateDescription &description)
     {
         auto buffer = GPUBuffer(description, shared_from_this());
-        return  m_resourcePool->set(buffer);
+        auto added = m_resourcePool->set(buffer);
+        if(!added) std::cout << "failed to add to resource pool after creation" << std::endl;
+        return  added;
+    };
+
+    Handle<Geometry> GPUResourceManager::create(const GeometryCreateDescription& description)
+    {
+        beginCommitCommands();
+
+        Geometry geo{};
+        for(auto& bufferDesc : description.bufferData)
+        {
+            std::cout << "added buffer to geoemtry" << std::endl;
+            auto bufferHandle = create(GPUBufferCreateDescription{
+                .size = bufferDesc.vertexCount * bufferDesc.vertexSize,
+                .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
+                .sharing_mode = SHARING_MODE::EXCLUSIVE,
+            });
+            auto buffer = getResource(bufferHandle);
+            buffer.copyData(bufferDesc.vertexDataPtr);
+
+            geo.buffers.push_back({.buffer = bufferHandle, .count = bufferDesc.vertexCount, .elementSize = bufferDesc.vertexSize});
+            commitResourceCommand(bufferHandle, 0);
+            commitResourceCommand(bufferHandle, 1);
+        }
+
+        if (description.indexData.count != 0)
+        {
+            std::cout << "created indexbuffer" << std::endl;
+            uint32_t data_size = static_cast<uint32_t>(description.indexData.count  * sizeof(uint32_t));
+            auto bufferHandle = create(GPUBufferCreateDescription{
+                .size = data_size,
+                .usage = BUFFER_USAGE::TRANSFER_DST_INDEX,
+                .sharing_mode = SHARING_MODE::EXCLUSIVE,
+            });
+            auto buffer = getResource(bufferHandle);
+            buffer.copyData(description.indexData.dataPtr);
+            commitResourceCommand(bufferHandle,0);
+            commitResourceCommand(bufferHandle,1);
+            
+            geo.indexBuffer = bufferHandle;
+            geo.indiceCount = description.indexData.count;
+        }
+        
+        submitCommitCommands();
+        
+        std::cout << "copied index buffer " << std::endl;
+        geo.vertexInfo = description.vertexInfo;
+        geo.indiceCount = description.indexData.count;
+
+        return m_resourcePool->set(geo);
     }
-
-
-    // GPUBuffer&  GPUResourceManager::getResource(Handle<GPUBuffer> &handle)
-    // {
-    //     return  m_resourcePool->get(handle);
-    // }
-
-    // Handle<Geometry> GPUResourceManager::create(const ResourceCreateDescription<Geometry> &description)
-    // {
-    //     return Handle<Geometry>();
-    // }
 
     // void GPUResourceManager::initialize_buffers(GPUResource &resource, const ResourceDescriptor &descriptor)
     // {

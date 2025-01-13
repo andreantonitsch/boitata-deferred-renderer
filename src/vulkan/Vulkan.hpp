@@ -1,5 +1,4 @@
-#ifndef BOITATAH_VK_VULKAN_HPP
-#define BOITATAH_VK_VULKAN_HPP
+#pragma once
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
@@ -165,6 +164,7 @@ namespace boitatah::vk
         // Render Commands
         //void beginBufferCommand(const BeginCommandVk &command);
         void beginRenderpassCommand(const BeginRenderpassCommandVk &command);
+        void endRenderpassCommand(const EndRenderpassCommandVk &command);
         void recordDrawCommand(const DrawCommandVk &command);
         void submitDrawCmdBuffer(const SubmitDrawCommandVk &command);
         void bindPipelineCommand(const BindPipelineCommandVk &command);
@@ -264,5 +264,3 @@ namespace boitatah::vk
     };
 
 }
-
-#endif // BOITATAH_VK_VULKAN_HPP

@@ -1,5 +1,4 @@
-#ifndef BOITATAH_MATERIAL_HPP
-#define BOITATAH_MATERIAL_HPP
+#pragma once
 
 #include <glm/glm.hpp>
 #include "../buffers/Buffer.hpp"
@@ -36,4 +35,3 @@ namespace boitatah{
 
 }
 
-#endif //BOITATAH_MATERIAL_HPP

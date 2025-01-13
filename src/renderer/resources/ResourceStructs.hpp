@@ -1,9 +1,10 @@
-#ifndef BOITATAH_RESOURCE_STRUCTS_HPP
-#define BOITATAH_RESOURCE_STRUCTS_HPP
+#pragma once
 
 #include "../../types/BttEnums.hpp"
 
 namespace boitatah{
+
+    struct GeometryCreateDescription;
 
     struct GPUBufferCreateDescription{
         uint32_t size;
@@ -42,20 +43,20 @@ namespace boitatah{
 
     /// @brief Resource content to be shipped to gpu buffers
     /// @tparam type of resource 
-    template<class T>
-    struct ResourceGPUContent{ 
-        using ContentType = typename ResourceTraits<T>::ContentType;
+    // template<class T>
+    // struct ResourceGPUContent{ 
+    //     using ContentType = typename ResourceTraits<T>::ContentType;
 
-        // auto getContent() const -> const ContentType&
-        // {
-        //     return *static_cast<ContentType>(this);
-        // };
-        auto getContent() -> ContentType&
-        {
-            return *static_cast<ContentType *>(this);
-            //return static_cast<ContentType>(*this);
-        };
-    };
+    //     // auto getContent() const -> const ContentType&
+    //     // {
+    //     //     return *static_cast<ContentType>(this);
+    //     // };
+    //     auto getContent() -> ContentType&
+    //     {
+    //         return *static_cast<ContentType *>(this);
+    //         //return static_cast<ContentType>(*this);
+    //     };
+    // };
 
     /// @brief Meta Resources this resource needs or points to,
     ///        p.e. Handles to other resources and//or buffers.
@@ -66,4 +67,3 @@ namespace boitatah{
 
 }
 
-#endif

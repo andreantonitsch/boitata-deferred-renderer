@@ -1,5 +1,4 @@
-#ifndef BOITATAH_DESCPOOLMANAGER_HPP
-#define BOITATAH_DESCPOOLMANAGER_HPP
+#pragma once
 
 #include "../../vulkan/Vulkan.hpp"
 #include "../../collections/Pool.hpp"
@@ -110,4 +109,4 @@ namespace boitatah
         std::vector<DescriptorSetPool> m_pools;
     };
 }
-#endif // BOITATAH_DESCPOOLMANAGER_HPP
+

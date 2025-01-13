@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.9.1)
 
 set(LIBRARY_OUTPUT_PATH ${OUTPUT_FOLDER}/libs)
 
+set (LIBRARY_INCLUDE_PATH ./)
+
 set(LIB_DR_SOURCES
             collections/PartitionList.cpp
             buffers/BufferAllocator.cpp
@@ -21,3 +23,4 @@ set(LIB_DR_SOURCES
 
 add_library(boitatah STATIC ${LIB_DR_SOURCES})
 
+target_include_directories(boitatah PUBLIC ${LIBRARY_INCLUDE_PATH})

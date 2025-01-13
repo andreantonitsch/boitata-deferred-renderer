@@ -35,15 +35,21 @@ int main()
                                             .layout = layout,
                                             .bindings = {{.stride = 20, .attributes = {{.format = FORMAT::RG_32_SFLOAT, .offset = 0}, {.format = FORMAT::RGB_32_SFLOAT, .offset = formatSize(FORMAT::RG_32_SFLOAT)}}}}});
 
-    GeometryData geometryData = triangleVertices();
+    GeometryData geometryData = planeVertices(1.0, 1.0, 100, 200);
 
-    Handle<Geometry> geometry = r.createGeometry({
-        .vertexInfo = {geometryData.vertices.size(), 0},
-        .vertexSize = static_cast<uint32_t>(sizeof(Vertex)),
-        .vertexDataSize = static_cast<uint32_t>(sizeof(Vertex) * geometryData.vertices.size()),
-        .vertexData = geometryData.vertices.data(),
-        .indexCount = static_cast<uint32_t>(geometryData.indices.size()),
-        .indexData = geometryData.indices.data(),
+    Handle<Geometry> geometry = r.createGeometry(GeometryCreateDescription{
+        .vertexInfo = {static_cast<uint32_t>(geometryData.vertices.size()), 0},
+        .bufferData = {{
+                        GeometryBufferDataDesc{
+                            .vertexCount = static_cast<uint32_t>(geometryData.vertices.size()),
+                            .vertexSize = static_cast<uint32_t>(sizeof(Vertex)),
+                            .vertexDataPtr = geometryData.vertices.data()
+                        }
+                      }},
+        .indexData = {
+                      .count = geometryData.indices.size(),
+                      .dataPtr = geometryData.indices.data(),
+                      },
     });
 
     SceneNode triangle({

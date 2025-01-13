@@ -1,5 +1,4 @@
-#ifndef BOITATAH_BUFFER_HPP
-#define BOITATAH_BUFFER_HPP
+#pragma once
 
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
@@ -41,6 +40,10 @@ namespace boitatah::buffer
             Buffer(const BufferDesc &desc, const vk::Vulkan *vulkan);
             ~Buffer(void);
 
+            VkBuffer getBuffer() const;
+            VkDeviceMemory getMemory() const;
+            uint32_t getID() const;
+            
         private:
             const vk::Vulkan *vulkan;
 
@@ -70,8 +73,6 @@ namespace boitatah::buffer
 
             //initialization method
             void setupBuffer(uint32_t desiredBlockSize, uint32_t partitions);
-            VkBuffer getBuffer() const;
-            VkDeviceMemory getMemory() const;
 
             //void queueTransfers();
             //void clearTransferQueue();
@@ -93,12 +94,9 @@ namespace boitatah::buffer
             //template<class T>
             //void queueTransfer(Handle<BufferAddress> src, Handle<BufferReservation> dst, CommandBufferWriter<T> &writer);
 
-            uint32_t getID() const;
             bool hasUpdates();
     };
 
 
 
 }
-
-#endif // BOITATAH_BUFFER_HPP

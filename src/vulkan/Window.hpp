@@ -1,5 +1,4 @@
-#ifndef BOITATAH_WINDOW_HPP
-#define BOITATAH_WINDOW_HPP
+#pragma once
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
@@ -43,5 +42,3 @@ namespace boitatah::vk{
     };
 
 }
-
-#endif //BOITATAH_WINDOW_HPP

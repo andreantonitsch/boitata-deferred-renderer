@@ -36,7 +36,7 @@ int main()
         .sharing_mode = SHARING_MODE::EXCLUSIVE,
     });
 
-        std::cout << "created exclusive gpu buffer" << std::endl;
+    std::cout << "created exclusive gpu buffer" << std::endl;
 
     auto sharedBufferHandle = objManager.create(GPUBufferCreateDescription{
         .size = 1024u,
@@ -54,6 +54,12 @@ int main()
     exclusiveBuffer.copyData(a);
     sharedBuffer.copyData(a);
 
+    
+    auto& content = exclusiveBuffer.get_content(0);
+    Buffer* buffer;
+    auto gotBuffer = objManager.getBufferManager()->getAddressBuffer(content.buffer, buffer);
+
+    std::cout << "got buffer : " << gotBuffer << " " << buffer->getID();
 
     objManager.forceCommitResource(exclusiveBufferHandle, currentFrame);
     objManager.waitForTransfers();
@@ -62,15 +68,15 @@ int main()
 
     exclusiveBuffer.copyData(a);
 
-    objManager.commitAll(currentFrame);
-    objManager.waitForTransfers();
+    //objManager.commitAll(currentFrame);
+    //objManager.waitForTransfers();
     a[0], a[1], a[2] = 8, 9, 10;
 
 
     objManager.beginCommitCommands();
     objManager.commitResourceCommand(exclusiveBufferHandle, currentFrame);
     objManager.submitCommitCommands();
-    objManager.waitForTransfers();
+    //objManager.waitForTransfers();
 
     objManager.destroy(exclusiveBufferHandle);
     objManager.destroy(sharedBufferHandle);

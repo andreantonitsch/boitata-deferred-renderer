@@ -1,5 +1,5 @@
-#ifndef BOITATAH_COMMAND_BUFFER_HPP
-#define BOITATAH_COMMAND_BUFFER_HPP
+#pragma once
+
 #include <vulkan/vulkan.h>
 
 #include "../BttEnums.hpp"
@@ -31,5 +31,3 @@ namespace boitatah{
         VkFence inFlightFen;
     };
 }
-
-#endif //BOITATAH_COMMAND_BUFFER_HPP

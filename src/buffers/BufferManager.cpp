@@ -261,7 +261,7 @@ namespace boitatah::buffer
         BufferAddress address;
         if(m_addressPool.tryGet(handle, address)){
             if(m_bufferPool.tryGet(address.buffer, buffer))
-            return true;
+                return true;
         }
         return false;
     }
@@ -282,6 +282,15 @@ namespace boitatah::buffer
     CommandBuffer BufferManager::getTransferBuffer()
     {
         return m_transferBuffer;
+    }
+
+    VkBuffer BufferManager::getVkBuffer(const Handle<BufferAddress> handle)
+    {
+        auto addr = m_addressPool.get(handle);
+
+        auto buffer = m_bufferPool.get(addr.buffer);
+        
+        return buffer->getBuffer();
     }
 
     template <class T>

@@ -73,13 +73,13 @@ int main()
 
 
     boitatah::utils::Timewatch timewatch(100);
-
+    uint32_t frame = 0;
     while (!r.isWindowClosed())
     {
         // wait for frame to finish
         //  record command buffer to render scene into image
         //  submit command buffer
-        r.renderToRenderTarget(triangle, rendertarget);
+        r.renderToRenderTarget(triangle, rendertarget, frame);
         // std::cout << "rendered scene" << std::endl;
         //  present the rendered frame to swapchain
         //       acquire image from swapchain.
@@ -88,7 +88,7 @@ int main()
         r.presentRenderTarget(rendertarget);
 
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
-
+        frame++;
     }
     r.waitIdle();
 

@@ -1,5 +1,4 @@
-#ifndef BOITATAH_POOL_HPP
-#define BOITATAH_POOL_HPP
+#pragma once
 
 #include <cstdint>
 // #include <array>
@@ -192,4 +191,3 @@ void boitatah::Pool<T>::pushStack(uint32_t id)
     freeStack[stackTop] = id;
 }
 
-#endif // BOITATAH_POOL_HPP

@@ -10,6 +10,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_FOLDER}/examples)
 
 add_subdirectory(src/)
 
+
 add_executable(test_render src/examples/test_render.cpp)
 add_executable(test_rendertotarget src/examples/test_rendertotarget.cpp)
 add_executable(test_geometry src/examples/test_geometry.cpp)

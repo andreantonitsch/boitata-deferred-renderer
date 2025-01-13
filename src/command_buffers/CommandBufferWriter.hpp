@@ -1,5 +1,4 @@
-#ifndef BOITATAH_COMMAND_BUFFER_WRITER_HPP
-#define BOITATAH_COMMAND_BUFFER_WRITER_HPP
+#pragma once
 
 #include "CommandBufferWriterStructs.hpp"
 
@@ -93,5 +92,3 @@ namespace boitatah::command_buffers{
 
 };
 
-
-#endif

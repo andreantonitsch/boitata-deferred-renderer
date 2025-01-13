@@ -1,5 +1,4 @@
-#ifndef BOITATAH_DESCRIPTORS_HPP
-#define BOITATAH_DESCRIPTORS_HPP
+#pragma once
 
 #include "BttEnums.hpp"
 #include <vector>
@@ -47,4 +46,3 @@ namespace boitatah
 
 
 
-#endif

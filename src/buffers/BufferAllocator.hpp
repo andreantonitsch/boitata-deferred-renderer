@@ -1,5 +1,4 @@
-#ifndef BOITATAH_BUFFER_ALLOCATOR_HPP
-#define BOITATAH_BUFFER_ALLOCATOR_HPP
+#pragma once
 
 #include "../collections/Pool.hpp"
 #include <vector>
@@ -94,5 +93,3 @@ namespace boitatah::buffer {
 
 
 }
-
-#endif //BOITATAH_BUFFER_ALLOCATOR_HPP

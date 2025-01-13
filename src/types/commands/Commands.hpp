@@ -1,5 +1,5 @@
-#ifndef BOITATAH_COMMANDS_HPP
-#define BOITATAH_COMMANDS_HPP
+#pragma once
+
 #include <vulkan/vulkan.h>
 
 #include "../../buffers/Buffer.hpp"
@@ -100,5 +100,3 @@ namespace boitatah
     };
 
 }
-
-#endif // BOITATAH_COMMANDS_HPP

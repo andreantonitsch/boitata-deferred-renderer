@@ -1,12 +1,11 @@
-#ifndef BOITATAH_GPURESOURCE_HPP
-#define BOITATAH_GPURESOURCE_HPP
+#pragma once
 
 #include "ResourceStructs.hpp"
-#include "../modules/GPUResourceManager.hpp"
-#include "../../collections/Pool.hpp"
-#include "../../buffers/BufferStructs.hpp"
-#include "../../buffers/Buffer.hpp"
-#include "../../types/BttEnums.hpp"
+#include <renderer/modules/GPUResourceManager.hpp>
+#include <collections/Pool.hpp>
+#include <buffers/BufferStructs.hpp>
+#include <buffers/Buffer.hpp>
+#include <types/BttEnums.hpp>
 #include <stdexcept>
 
 namespace boitatah{
@@ -116,14 +115,14 @@ namespace boitatah{
         friend class GPUResource<MutableGPUResource, Resource>;
 
         protected :
-            ResourceGPUContent<Resource> gpu_content[2]; //<< clear up on release
+            ResourceTraits<Resource>::ContentType replicated_content[2]; //<< clear up on release
 
             MutableGPUResource() = default;
             MutableGPUResource(const ResourceDescriptor &descriptor, std::shared_ptr<GPUResourceManager> manager) 
                               : GPUResource<MutableGPUResource, Resource>(descriptor, manager){
-
-                gpu_content[0] = resource().CreateGPUData();
-                gpu_content[1] = resource().CreateGPUData();
+                
+                replicated_content[0] = resource().CreateGPUData();
+                replicated_content[1] = resource().CreateGPUData();
                 
             }; //Constructor
 
@@ -143,15 +142,15 @@ namespace boitatah{
             }};
 
             ResourceTraits<Resource>::ContentType& __impl_get_resource_content(uint32_t frame_index){
-                return gpu_content[frame_index % 2].getContent();
+                return replicated_content[frame_index % 2];
             };
 
             uint32_t __impl_get_data(void* dstPtr, uint32_t frame_index){
                 return 0;
             };
 
-            void __impl_set_content(uint32_t frame_index, ResourceGPUContent<Resource> &content_data){
-                gpu_content[frame_index %2 ] = resource().__impl_set_content(content_data);
+            void __impl_set_content(uint32_t frame_index, ResourceTraits<Resource>::ContentType &content_data){
+                replicated_content[frame_index %2 ] = resource().__impl_set_content(content_data);
             };
 
             bool __impl_ready_for_use(uint32_t frame_index){
@@ -159,15 +158,15 @@ namespace boitatah{
             };
 
             void __impl_release(std::shared_ptr<GPUResourceManager> manager){
-                resource().ReleaseData(gpu_content[0].getContent());
-                resource().ReleaseData(gpu_content[1].getContent());
+                resource().ReleaseData(replicated_content[0]);
+                resource().ReleaseData(replicated_content[1]);
                 resource().Release();
                 
             };
 
             void __impl_commit(uint32_t frame_index, ResourceTraits<Resource>::CommandBufferWriter& writer){
 
-                resource().WriteTransfer(gpu_content[frame_index&2].getContent(), writer.self());
+                resource().WriteTransfer(replicated_content[frame_index&2], writer.self());
             }
 
     };
@@ -178,7 +177,7 @@ namespace boitatah{
     {   
 
         protected :   
-            ResourceGPUContent<DerivedResource> gpu_content;
+            ResourceTraits<DerivedResource>::ContentType gpu_content;
         public :
 
             void __impl_resource_update(ResourceUpdateDescription<DerivedResource>& description){{
@@ -193,7 +192,7 @@ namespace boitatah{
                 return 0;
             };
 
-            void __impl_set_content(uint32_t frameIndex, Handle<ResourceGPUContent<DerivedResource>> content_data){
+            void __impl_set_content(uint32_t frameIndex, ResourceTraits<DerivedResource>::ContentType content_data){
                 gpu_content = this->self().__impl_set_content(content_data);
             };
 
@@ -204,4 +203,3 @@ namespace boitatah{
 
 }
 
-#endif

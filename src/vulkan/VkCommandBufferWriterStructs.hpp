@@ -1,5 +1,4 @@
-#ifndef BOITATAH_VULKAN_COMMAND_BUFFER_WRITER_STRUCTS_HPP
-#define BOITATAH_VULKAN_COMMAND_BUFFER_WRITER_STRUCTS_HPP
+#pragma once
 
 #include <vulkan/vulkan.h>
 #include "../command_buffers/CommandBufferWriterStructs.hpp"
@@ -59,5 +58,3 @@ namespace boitatah::command_buffers{
 
 };
 
-   
-#endif

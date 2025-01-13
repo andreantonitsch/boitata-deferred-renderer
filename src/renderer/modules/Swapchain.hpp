@@ -1,5 +1,4 @@
-#ifndef BOITATAH_SWAPCHAIN_HPP
-#define BOITATAH_SWAPCHAIN_HPP
+#pragma once
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
@@ -83,4 +82,3 @@ namespace boitatah
     };
 }
 
-#endif // BOITATAH_SWAPCHAIN_HPP

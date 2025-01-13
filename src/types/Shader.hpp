@@ -1,5 +1,4 @@
-#ifndef BOITATAH_SHADER_HPP
-#define BOITATAH_SHADER_HPP
+#pragma once
 
 #include <vulkan/vulkan.h>
 #include <string>
@@ -120,4 +119,3 @@ namespace boitatah
 
 }
 
-#endif // BOITATAH_SHADER_HPP

@@ -107,7 +107,7 @@ namespace boitatah
         m_vk->waitIdle();
     }
 
-    void Renderer::renderToRenderTarget(const SceneNode &scene, const Handle<RenderTarget> &rendertarget)
+    void Renderer::renderToRenderTarget(const SceneNode &scene, const Handle<RenderTarget> &rendertarget, uint32_t frameIndex = 0)
     {
         RenderTarget target;
         if (!renderTargetPool.tryGet(rendertarget, target))
@@ -138,29 +138,40 @@ namespace boitatah
         }
 
         // vertex and mesh data
-        Geometry geom;
-        if (!geometryPool.tryGet(scene.geometry, geom))
-        {
-            throw std::runtime_error("Failed to retrieve geometry");
-        }
+        Geometry geom = m_resourceManager->getResource(scene.geometry);
 
-        Handle<BufferAddress> vertexBufferHandle = geom.buffers.size() > 0 ? geom.buffers[0] : Handle<BufferAddress>();
+        Handle<GPUBuffer> vertexBufferHandle = geom.buffers[0].buffer;
+
+        std::cout << "retrieved GPUBuffer \n";
+        auto vertexGPUBuffer = m_resourceManager->getResource(vertexBufferHandle);
+        auto vertexGPUBufferContent = vertexGPUBuffer.get_content(frameIndex);
         
-        
-        BufferReservation vertexBufferReservation;
+
         Buffer* vertexBuffer;
-        m_bufferManager->getAddressReservation(vertexBufferHandle, vertexBufferReservation);
-        m_bufferManager->getAddressBuffer(vertexBufferHandle, vertexBuffer);
+        BufferReservation vertexBufferReservation;
+        m_bufferManager->getAddressReservation(vertexGPUBufferContent.buffer, vertexBufferReservation);
+        m_bufferManager->getAddressBuffer(vertexGPUBufferContent.buffer, vertexBuffer);
 
-        BufferReservation indexBufferReservation;
+        std::cout << "got vertex buffer data" << std::endl;
+
+        auto indexBufferAddressHandle = m_resourceManager->getResource(geom.indexBuffer).get_content(frameIndex).buffer;
         Buffer* indexBuffer;
-        m_bufferManager->getAddressBuffer(geom.indexBuffer, indexBuffer);
-        m_bufferManager->getAddressReservation(geom.indexBuffer, indexBufferReservation);
+        BufferReservation indexBufferReservation;
+        if(m_bufferManager->getAddressBuffer(indexBufferAddressHandle, indexBuffer))
+            std::cout << "index buffer exists \n";
+        m_bufferManager->getAddressReservation(indexBufferAddressHandle, indexBufferReservation);
+        std::cout << "retrieved GPUBuffer Data \n";
+        
 
-        m_vk->waitForFrame(buffers);
 
-        m_vk->resetCmdBuffer(buffers.drawBuffer.buffer);
-        m_vk->resetCmdBuffer(buffers.transferBuffer.buffer);
+        std::cout << "waited for frames. reset cmd buffers" << std::endl;
+        std::cout << "vertex buffer id " << vertexBuffer->getID();
+        std::cout << "index buffer id " << indexBuffer->getID();
+        auto indexVkBuffer = indexBuffer->getBuffer();
+        std::cout <<"get index vk buffer" << std::endl;
+
+        auto vertexVkBuffer = vertexBuffer->getBuffer();
+        std::cout <<"get vertex vk buffer" << std::endl;
 
         drawCommand({
             .drawBuffer = buffers.drawBuffer,
@@ -172,21 +183,23 @@ namespace boitatah
                 static_cast<int>(image.dimensions.y),
             },
 
-            // .vertexBuffer = vertexBufferHandle.isNull() ? VK_NULL_HANDLE : vertexBuffer->getBuffer(),
-            // .vertexBufferOffset = vertexBufferReservation.offset,
-
-            // .indexBuffer = geom.indexBuffer.isNull() ? VK_NULL_HANDLE : indexBuffer->getBuffer(),
-            // .indexBufferOffset = indexBufferReservation.offset,
-            // .indexCount = geom.indiceCount,
+            //.vertexBuffer = vertexBufferHandle.isNull() ? VK_NULL_HANDLE : vertexBuffer->getBuffer(),
+            .vertexBuffer = vertexVkBuffer,
+            .vertexBufferOffset = vertexBufferReservation.offset,
+            //.indexBuffer = geom.indexBuffer.isNull() ? VK_NULL_HANDLE : indexBuffer->getBuffer(),
+            .indexBuffer = indexVkBuffer,
+            .indexBufferOffset  = indexBufferReservation.offset,
+            .indexCount = geom.indiceCount,
 
             .vertexInfo = geom.vertexInfo,
             .instanceInfo = {1, 0}, // scene.instanceInfo
         });
 
+        std::cout << "Wrote Draw Command \n";
         // vk->submitDrawCmdBuffer({.bufferData = buffers,
         //                          .submitType = COMMAND_BUFFER_TYPE::GRAPHICS});
-        m_vk->submitDrawCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer,
-                                   .fence = buffers.inFlightFen});
+
+
     }
 
     void Renderer::render(SceneNode &scene)
@@ -251,12 +264,55 @@ namespace boitatah
         // TRANSFORM UPDATES
         // ETC
 
+        // RenderTarget target;
+        // renderTargetPool.tryGet(rendertarget, target);
+        // RenderTargetCmdBuffers buffers;
+        // rtCmdPool.tryGet(target.cmdBuffers, buffers);
+        // RenderPass pass;
+        // renderpassPool.tryGet(target.renderpass, pass);
+        // Image image;
+        // imagePool.tryGet(target.attachments[0], image);
+
+        RenderTarget target = renderTargetPool.get(rendertarget);
+        RenderTargetCmdBuffers buffers = rtCmdPool.get(target.cmdBuffers);
+        RenderPass pass = renderpassPool.get(target.renderpass);
+        Image image = imagePool.get(target.attachments[0]);
+
+         m_vk->waitForFrame(buffers);
+
+        m_vk->resetCmdBuffer(buffers.drawBuffer.buffer);
+        m_vk->resetCmdBuffer(buffers.transferBuffer.buffer);
+
+        beginBuffer({.buffer = buffers.drawBuffer});
+
+        std::cout << "began buffer" << std::endl;
+        beginRenderpass({
+            .commandBuffer = buffers.drawBuffer,
+            .pass = pass,
+            .target = target,
+
+            .clearColor = glm::vec4(0, 0, 0, 1),
+            .scissorDims = image.dimensions,
+            .scissorOffset = glm::vec2(0, 0),
+        });
+
+        std::cout << "began RenderPass" << std::endl;
+
         for (const auto &node : nodes)
         {
             if (node->shader.isNull())
                 continue;
-            renderToRenderTarget(*node, rendertarget);
+            renderToRenderTarget(*node, rendertarget, m_backBufferManager->getCurrentIndex());
         }
+
+        m_vk->endRenderpassCommand({.commandBuffer = buffers.drawBuffer.buffer});
+
+        m_vk->submitDrawCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer,
+                            .fence = buffers.inFlightFen});
+
+        
+
+        std::cout << "Submit Draw Command \n";
     }
 
     void Renderer::render(SceneNode &scene, Camera &camera)
@@ -344,12 +400,11 @@ namespace boitatah
         m_vk->waitIdle();
         m_vk->destroyDescriptorSetLayout(m_baseLayout.layout);
 
-        if(!m_vk->checkFenceStatus(m_transferFence))
-            m_vk->destroyFence(m_transferFence);
-        else{
+        if(m_vk->checkFenceStatus(m_transferFence))
             m_vk->waitForFence(m_transferFence);
-            m_vk->destroyFence(m_transferFence);
-        }
+
+        m_vk->destroyFence(m_transferFence);
+        
     }
 
     Renderer::~Renderer(void)
@@ -696,43 +751,43 @@ namespace boitatah
         return pipelineLayoutPool.set(layout);
     }
 
-    Handle<Geometry> Renderer::createGeometry(const GeometryDesc &desc)
+    Handle<Geometry> Renderer::createGeometry(const GeometryCreateDescription &desc)
     {
+        m_resourceManager->beginCommitCommands();
+
         Geometry geo{};
-        if (desc.vertexDataSize != 0)
+        for(auto& bufferDesc : desc.bufferData)
         {
-            auto bufferHandle = m_bufferManager->reserveBuffer({
-                .request = desc.vertexDataSize,
+            auto bufferHandle = m_resourceManager->create(GPUBufferCreateDescription{
+                .size = bufferDesc.vertexCount * bufferDesc.vertexSize,
                 .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
-                .sharing = SHARING_MODE::EXCLUSIVE,
+                .sharing_mode = SHARING_MODE::EXCLUSIVE,
             });
-            m_bufferManager->copyToBuffer({
-                .address = bufferHandle,
-                .dataSize = desc.vertexDataSize,
-                .data = desc.vertexData
-            });
+            auto buffer = m_resourceManager->getResource(bufferHandle);
+            buffer.copyData(bufferDesc.vertexDataPtr);
 
-            geo.buffers.push_back(bufferHandle);
+            geo.buffers.push_back({.buffer = bufferHandle, .count = bufferDesc.vertexCount, .elementSize = bufferDesc.vertexSize});
+            m_resourceManager->commitResourceCommand(bufferHandle, 0);
+            m_resourceManager->commitResourceCommand(bufferHandle, 1);
         }
-        std::cout << "copied vertex buffer " << std::endl;
-        if (desc.indexCount != 0)
-        {
-            uint32_t data_size = static_cast<uint32_t>(desc.indexCount * sizeof(uint32_t));
-            geo.indexBuffer = m_bufferManager->reserveBuffer({.request = data_size,
-                                                                .usage = BUFFER_USAGE::TRANSFER_DST_INDEX,
-                                                                .sharing = SHARING_MODE::EXCLUSIVE});
 
-            m_bufferManager->copyToBuffer({
-                .address = geo.indexBuffer,
-                .dataSize = data_size,
-                .data = desc.indexData
+        if (desc.indexData.count != 0)
+        {
+            uint32_t data_size = static_cast<uint32_t>(desc.indexData.count  * sizeof(uint32_t));
+            auto bufferHandle = m_resourceManager->create(GPUBufferCreateDescription{
+                .size = data_size,
+                .usage = BUFFER_USAGE::TRANSFER_DST_INDEX,
+                .sharing_mode = SHARING_MODE::EXCLUSIVE,
             });
+            auto buffer = m_resourceManager->getResource(bufferHandle);
+            buffer.copyData(desc.indexData.dataPtr);
         }
         
+        m_resourceManager->submitCommitCommands();
+
         std::cout << "copied index buffer " << std::endl;
         geo.vertexInfo = desc.vertexInfo;
-        geo.vertexSize = desc.vertexSize;
-        geo.indiceCount = desc.indexCount;
+        geo.indiceCount = desc.indexData.count;
 
         return geometryPool.set(geo);
     }

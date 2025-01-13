@@ -1,5 +1,4 @@
-#ifndef BOITATAH_RENDERTARGET_HPP
-#define BOITATAH_RENDERTARGET_HPP
+#pragma once
 
 #include <vulkan/vulkan.h>
 #include <glm/vec2.hpp>
@@ -59,4 +58,3 @@ namespace boitatah{
     };
 }
 
-#endif //BOITATAH_RENDERTARGET_HPP

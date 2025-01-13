@@ -1,5 +1,4 @@
-#ifndef BOITATAH_SCENE_HPP
-#define BOITATAH_SCENE_HPP
+#pragma once
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -143,4 +142,3 @@ namespace boitatah
     };
 }
 
-#endif // BOITATAH_SCENE_HPP

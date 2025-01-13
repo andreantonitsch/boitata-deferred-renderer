@@ -1,5 +1,5 @@
-#ifndef BOITATAH_COMMANDS_VK_HPP
-#define BOITATAH_COMMANDS_VK_HPP
+#pragma once
+
 #include <vulkan/vulkan.h>
 
 #include <glm/glm.hpp>
@@ -44,6 +44,9 @@ namespace boitatah::vk
 
         // glm::ivec2 viewportDims;
         // glm::ivec2 viewportOffset;
+    };
+    struct EndRenderpassCommandVk{
+        VkCommandBuffer commandBuffer;
     };
 
     struct SubmitCommandVk
@@ -143,4 +146,3 @@ namespace boitatah::vk
     };
 
 }
-#endif //BOITATAH_COMMANDS_VK_HPP

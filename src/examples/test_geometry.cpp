@@ -45,14 +45,23 @@ int main()
     //GeometryData geometryData = squareVertices();
     GeometryData geometryData = planeVertices(1.0, 1.0, 100, 200);
 
-    Handle<Geometry> geometry = r.createGeometry({
-        .vertexInfo = {geometryData.vertices.size(), 0},
-        .vertexSize = static_cast<uint32_t>(sizeof(Vertex)),
-        .vertexDataSize = static_cast<uint32_t>(sizeof(Vertex) * geometryData.vertices.size()),
-        .vertexData = geometryData.vertices.data(),
-        .indexCount = static_cast<uint32_t>(geometryData.indices.size()),
-        .indexData = geometryData.indices.data(),
+    Handle<Geometry> geometry = r.getResourceManager().create(GeometryCreateDescription{
+        .vertexInfo = {static_cast<uint32_t>(geometryData.vertices.size()), 0},
+        .bufferData = {{
+                        GeometryBufferDataDesc{
+                            .vertexCount = static_cast<uint32_t>(geometryData.vertices.size()),
+                            .vertexSize = static_cast<uint32_t>(sizeof(Vertex)),
+                            .vertexDataPtr = geometryData.vertices.data()
+                        }
+                      }},
+        .indexData = {
+                      .count = static_cast<uint32_t>(geometryData.indices.size()),
+                      .dataPtr = geometryData.indices.data(),
+                      },
     });
+
+    std::cout << "Created Geometry" << std::endl;
+            
 
     SceneNode triangle({
         .name = "triangle",
@@ -64,6 +73,8 @@ int main()
     SceneNode scene({.name = "root scene"});
     scene.add(&triangle);
     boitatah::utils::Timewatch timewatch(1000);
+
+    r.waitIdle();
 
     while (!r.isWindowClosed())
     {
