@@ -81,6 +81,7 @@ namespace boitatah::buffer
 
             // for SHARINGMODE::EXCLUSIVE requires a buffer queueUpdate after
             void copyData(const Handle<BufferReservation> handle, void * data);
+            void copyData(const Handle<BufferReservation> handle, void * data, uint32_t size);
             //void copyDataFromBuffer(const Handle<BufferReservation> dst, const Handle<BufferAddress> srcBuffer);
             // returns a buffer address to the staging buffer
 

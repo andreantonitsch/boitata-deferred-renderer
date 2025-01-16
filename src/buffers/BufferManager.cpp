@@ -115,7 +115,8 @@ namespace boitatah::buffer
 
         Handle<Buffer *> bufferHandle = findOrCreateCompatibleBuffer(request);
         if(!bufferHandle){
-            std::cout << "reserve buffer failed. no buffer created." << std::endl;
+
+            std::runtime_error("reserve buffer failed. no buffer created.");
             return Handle<BufferAddress>();
         }
 
@@ -129,8 +130,11 @@ namespace boitatah::buffer
             .reservation = buffer->reserve(request.request),
             .size = static_cast<uint32_t>(request.request)
         };
-            
-        return m_addressPool.set(bufferAddress);
+        auto handle = m_addressPool.set(bufferAddress);
+
+        BufferReservation reserv;
+        getAddressReservation(handle, reserv);
+        return handle;
     }
 
     bool BufferManager::copyToBuffer(const BufferUploadDesc &desc)
@@ -150,8 +154,6 @@ namespace boitatah::buffer
         Buffer* dstBuffer;
         if(getAddressBuffer(dst, dstBuffer)){
 
-            auto dstReserv = getAddressReservation(dst);
-
             Buffer* srcBuffer;
 
             BufferReservation srcReservation;
@@ -160,10 +162,10 @@ namespace boitatah::buffer
             if(!getAddressBuffer(src, srcBuffer))
                 std::runtime_error("buffer transfer failed, invalid staging buffer");
             
-            if(!getAddressReservation(src,srcReservation))
+            if(!getAddressReservation(src, srcReservation))
                 std::runtime_error("buffer transfer failed, invalid staging reservation");
 
-            if(!dstBuffer->getReservationData(dstReserv,dstReservation))
+            if(!getAddressReservation(dst, dstReservation))
                 std::runtime_error("buffer transfer failed, invalid staging reservation");
 
             m_vk->CmdCopyBuffer({
@@ -195,16 +197,15 @@ namespace boitatah::buffer
     {
         //TODO handle except
         auto& bufferAddr = m_addressPool.get(handle);
-        std::cout << "buffer address fetched" << std::endl;
-        auto buffer = m_bufferPool.get(bufferAddr.buffer);
-        std::cout << "buffer fetched" << std::endl;
+        auto& buffer = m_bufferPool.get(bufferAddr.buffer);
+        
         BufferReservation reserv;
         if(!buffer->getReservationData(bufferAddr.reservation, reserv));
             std::runtime_error("failed to get reservation data in buffer manager memory copy");
         if(reserv.size < dataSize)
             std::runtime_error("Buffer is smaller than required space in buffermanager copy.");
 
-        buffer->copyData(bufferAddr.reservation, data);
+        buffer->copyData(bufferAddr.reservation, data, dataSize);
         
     }
 
@@ -263,6 +264,7 @@ namespace boitatah::buffer
             if(m_bufferPool.tryGet(address.buffer, buffer))
                 return true;
         }
+        std::cout << "failed get address buffer on buffer " << handle.i << std::endl;
         return false;
     }
 
@@ -298,19 +300,12 @@ namespace boitatah::buffer
     {
         Buffer* dstBuffer;
         Buffer* srcBuffer;
-        if(getAddressBuffer(dst, dstBuffer) && getAddressBuffer(src, srcBuffer)){
- 
-            auto dstReservHandle = getAddressReservation(dst);
-            auto srcReservHandle = getAddressReservation(src);
-
-            BufferReservation srcReservation;
-            BufferReservation dstReservation;
-
-            if(dstBuffer->getReservationData(dstReservHandle, dstReservation))
-                std::runtime_error("buffer transfer failed, invalid final reservation");
-
-            if(srcBuffer->getReservationData(srcReservHandle, srcReservation))
-                std::runtime_error("buffer transfer failed, invalid staging reservation");
+        BufferReservation srcReservation;
+        BufferReservation dstReservation;
+        if(getAddressBuffer(dst, dstBuffer) &&
+           getAddressBuffer(src, srcBuffer) &&
+           getAddressReservation(dst, dstReservation) &&
+           getAddressReservation(src, srcReservation)){
 
             writer.copyBuffer({
                 .srcBuffer = srcBuffer->getBuffer(),
@@ -319,7 +314,6 @@ namespace boitatah::buffer
                 .dstOffset = dstReservation.offset,
                 .size = dstReservation.requestSize,
             });
-            
             return true;
         }
         return false;

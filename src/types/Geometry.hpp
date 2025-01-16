@@ -35,7 +35,7 @@ namespace boitatah
 
     struct GeometryIndexDataDesc{
         uint32_t count;
-        uint32_t* dataPtr;
+        void* dataPtr;
     };
 
     // struct GeometryDesc
@@ -51,7 +51,7 @@ namespace boitatah
     struct GeometryCreateDescription
     {
         glm::ivec2 vertexInfo;
-        std::span<const GeometryBufferDataDesc> bufferData;
+        std::vector<GeometryBufferDataDesc> bufferData;
         GeometryIndexDataDesc indexData;
     };
 
@@ -116,9 +116,8 @@ namespace boitatah
             .vertices = {
                 {{0.0f, -0.5f}, {1.0f, 1.0f, 0.0f}},
                 {{0.5f, 0.5f}, {1.0f, 0.0f, 1.0f}},
-                {{-0.5f, 0.5f}, {0.0f, 1.0f, 1.0f}},
-            },
-            .indices = {0, 1, 2},
+                {{-0.5f, 0.5f}, {0.0f, 1.0f, 1.0f}}},
+            .indices = {0U, 1U, 2U},
         };
     }
 

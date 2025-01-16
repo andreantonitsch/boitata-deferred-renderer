@@ -59,8 +59,10 @@ namespace boitatah::buffer
         auto blockHandle = mainAllocator->allocate(request);
 
         // failed to reserve a buffer.
-        if (blockHandle.isNull())
+        if (!blockHandle){
+            std::cout << "failed to reserve space on buffer " << getID() << std::endl;
             return Handle<BufferReservation>{};
+        }
 
         BufferReservation reservation{};
         mainAllocator->getBlockData(blockHandle, reservation.offset, reservation.size);
@@ -237,6 +239,24 @@ namespace boitatah::buffer
         return usage == compatibility.usage && 
                sharing == compatibility.sharing &&
                mainAllocator->getLargestFreeBlockSize() >= compatibility.request;
+    }
+
+    void Buffer::copyData(const Handle<BufferReservation> handle, void *data, uint32_t size)
+    {
+        BufferReservation reservation;
+            if(!mainReservPool->tryGet(handle, reservation)) 
+                throw std::runtime_error("failed to copy data to gpu buffer");
+
+
+        if(sharing == SHARING_MODE::CONCURRENT){
+            vulkan->copyToMappedMemory({
+                .offset = 0, //reservation.offset,
+                .elementSize = std::min(reservation.size, size),
+                .elementCount = static_cast<uint32_t>(1),
+                .map = static_cast<std::byte*>(mappedMemory) + reservation.offset,
+                .data = data,
+            });
+        }
     }
 
     VkBuffer Buffer::getBuffer() const

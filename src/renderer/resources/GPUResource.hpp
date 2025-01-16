@@ -7,6 +7,7 @@
 #include <buffers/Buffer.hpp>
 #include <types/BttEnums.hpp>
 #include <stdexcept>
+#include <array>
 
 namespace boitatah{
     using namespace boitatah::buffer;
@@ -115,15 +116,14 @@ namespace boitatah{
         friend class GPUResource<MutableGPUResource, Resource>;
 
         protected :
-            ResourceTraits<Resource>::ContentType replicated_content[2]; //<< clear up on release
+            std::array<typename ResourceTraits<Resource>::ContentType, 2> replicated_content; //<< clear up on release
 
             MutableGPUResource() = default;
             MutableGPUResource(const ResourceDescriptor &descriptor, std::shared_ptr<GPUResourceManager> manager) 
                               : GPUResource<MutableGPUResource, Resource>(descriptor, manager){
-                
+
                 replicated_content[0] = resource().CreateGPUData();
                 replicated_content[1] = resource().CreateGPUData();
-                
             }; //Constructor
 
         public :
@@ -165,8 +165,7 @@ namespace boitatah{
             };
 
             void __impl_commit(uint32_t frame_index, ResourceTraits<Resource>::CommandBufferWriter& writer){
-
-                resource().WriteTransfer(replicated_content[frame_index&2], writer.self());
+                resource().WriteTransfer(replicated_content[frame_index % 2], writer.self());
             }
 
     };

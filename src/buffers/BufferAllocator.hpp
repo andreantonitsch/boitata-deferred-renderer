@@ -3,7 +3,7 @@
 #include "../collections/Pool.hpp"
 #include <vector>
 #include <string>
-
+#include <memory>
 namespace boitatah::buffer {
 
     struct Block{
@@ -71,7 +71,7 @@ namespace boitatah::buffer {
             std::vector<Block> blocks;
             std::vector<BinaryTreeNode> nodes;
 
-            Pool<Block> blockPool;
+            std::unique_ptr<Pool<Block>> blockPool;
 
             //uint32_t getNodeBuddy(uint32_t index);
             uint32_t getNodeLevel(uint32_t index);

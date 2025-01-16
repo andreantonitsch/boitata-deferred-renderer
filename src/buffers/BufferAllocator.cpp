@@ -6,23 +6,28 @@
 namespace boitatah::buffer
 {
 
-    BufferAllocator::BufferAllocator(const BufferAllocatorDesc &desc) : blockPool({.size = ((desc.partitionSize * (1u << desc.height)) / desc.partitionSize) * 2u - 1u})
+    BufferAllocator::BufferAllocator(const BufferAllocatorDesc &desc) 
     {
         alignment = desc.alignment;
-        partitionSize = desc.partitionSize + (desc.partitionSize % alignment);
+        
+        partitionSize = desc.partitionSize % alignment == 0 ?
+                        desc.partitionSize :
+                        ((desc.partitionSize / alignment) + 1u)* alignment;
+
         height = desc.height;
 
-        size = desc.partitionSize * (1u << height);
+        size = partitionSize * (1u << height);
+
 
         //while buffer is larger than 100mb
         while(size > 100000000){
             height--;
             size = desc.partitionSize * (1u << height);
         }
-        //size = std::max(size, partitionSize);
 
         leafQuant = size / partitionSize;
 
+        blockPool = std::make_unique<Pool<Block>>(PoolOptions{.size = leafQuant * 2 });
         blocks.resize(leafQuant * 2 );
         nodes.resize(leafQuant * 2 );
 
@@ -56,7 +61,7 @@ namespace boitatah::buffer
     bool BufferAllocator::getBlockData(Handle<Block> &handle, uint32_t &offset, uint32_t &size)
     {
         Block block;
-        if (!blockPool.tryGet(handle, block))
+        if (!blockPool->tryGet(handle, block))
             return false;
 
         offset = block.address;
@@ -81,7 +86,7 @@ namespace boitatah::buffer
         //std::cout << "allocator corrected" << std::endl;
         occupiedSpace += blocks[available_index].size;
 
-        return blockPool.set(blocks[available_index]);
+        return blockPool->set(blocks[available_index]);
     }
 
     // Corrects tree from this node upwards.
@@ -185,7 +190,7 @@ namespace boitatah::buffer
     {
         // fetch block
         Block block;
-        if (!blockPool.clear(handle, block))
+        if (!blockPool->clear(handle, block))
             return false;
 
         uint32_t index = getBlockIndexFromId(block.id);

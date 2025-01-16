@@ -45,8 +45,9 @@ namespace boitatah
             uint32_t size;
             BUFFER_USAGE usage;
             GPUBufferHelper() = default;
-            GPUBufferHelper(const GPUBufferCreateDescription &createDescription)  :       size(createDescription.size),
-                    usage(createDescription.usage){};
+            GPUBufferHelper(const GPUBufferCreateDescription &createDescription)  :
+                   size(createDescription.size),
+                   usage(createDescription.usage){};
     };
  
     class GPUBuffer : public GPUBufferHelper, public MutableGPUResource<GPUBuffer>
@@ -69,7 +70,7 @@ namespace boitatah
                                                   }, manager) 
                                                   { };
 
-            void copyData(void * data);
+            void copyData(void * data, uint32_t length);
 
             //TODO: Implement
             bool readData(void* dstPtr);

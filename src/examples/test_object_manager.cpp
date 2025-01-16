@@ -49,10 +49,11 @@ int main()
     auto& exclusiveBuffer = objManager.getResource(exclusiveBufferHandle);
     auto& sharedBuffer = objManager.getResource(sharedBufferHandle);
     
-    int a[] = {1,2,3};
+    //uint32_t a[] = {1,2,3,4,5,6,7,8,9,10};
+    auto a = std::array{1, 2, 4, 8, 16, 32};
 
-    exclusiveBuffer.copyData(a);
-    sharedBuffer.copyData(a);
+    exclusiveBuffer.copyData(a.data(), sizeof(uint32_t) * a.size());
+    sharedBuffer.copyData(a.data(), sizeof(uint32_t) * a.size());
 
     
     auto& content = exclusiveBuffer.get_content(0);
@@ -64,22 +65,30 @@ int main()
     objManager.forceCommitResource(exclusiveBufferHandle, currentFrame);
     objManager.waitForTransfers();
 
-    a[0], a[1], a[2] = 4, 5, 7;
+    //a[0], a[1], a[2] = 4, 5, 7;
 
-    exclusiveBuffer.copyData(a);
+    exclusiveBuffer.copyData(a.data(), sizeof(uint32_t) * a.size());
 
     //objManager.commitAll(currentFrame);
     //objManager.waitForTransfers();
-    a[0], a[1], a[2] = 8, 9, 10;
+    //a[0], a[1], a[2] = 8, 9, 10;
+
 
 
     objManager.beginCommitCommands();
     objManager.commitResourceCommand(exclusiveBufferHandle, currentFrame);
+    objManager.commitResourceCommand(exclusiveBufferHandle, currentFrame+1);
     objManager.submitCommitCommands();
     //objManager.waitForTransfers();
 
+    SceneNode triangle({
+        .name = "triangle"
+    });
+    r.render(triangle);
     objManager.destroy(exclusiveBufferHandle);
     objManager.destroy(sharedBufferHandle);
+
+
 
     return EXIT_SUCCESS;
 }

@@ -142,7 +142,6 @@ namespace boitatah
 
         Handle<GPUBuffer> vertexBufferHandle = geom.buffers[0].buffer;
 
-        std::cout << "retrieved GPUBuffer \n";
         auto vertexGPUBuffer = m_resourceManager->getResource(vertexBufferHandle);
         auto vertexGPUBufferContent = vertexGPUBuffer.get_content(frameIndex);
         
@@ -152,26 +151,15 @@ namespace boitatah
         m_bufferManager->getAddressReservation(vertexGPUBufferContent.buffer, vertexBufferReservation);
         m_bufferManager->getAddressBuffer(vertexGPUBufferContent.buffer, vertexBuffer);
 
-        std::cout << "got vertex buffer data" << std::endl;
-
         auto indexBufferAddressHandle = m_resourceManager->getResource(geom.indexBuffer).get_content(frameIndex).buffer;
         Buffer* indexBuffer;
         BufferReservation indexBufferReservation;
-        if(m_bufferManager->getAddressBuffer(indexBufferAddressHandle, indexBuffer))
-            std::cout << "index buffer exists \n";
-        m_bufferManager->getAddressReservation(indexBufferAddressHandle, indexBufferReservation);
-        std::cout << "retrieved GPUBuffer Data \n";
+        m_bufferManager->getAddressBuffer(indexBufferAddressHandle, indexBuffer);
         
+        m_bufferManager->getAddressReservation(indexBufferAddressHandle, indexBufferReservation);
 
-
-        std::cout << "waited for frames. reset cmd buffers" << std::endl;
-        std::cout << "vertex buffer id " << vertexBuffer->getID();
-        std::cout << "index buffer id " << indexBuffer->getID();
         auto indexVkBuffer = indexBuffer->getBuffer();
-        std::cout <<"get index vk buffer" << std::endl;
-
         auto vertexVkBuffer = vertexBuffer->getBuffer();
-        std::cout <<"get vertex vk buffer" << std::endl;
 
         drawCommand({
             .drawBuffer = buffers.drawBuffer,
@@ -194,11 +182,6 @@ namespace boitatah
             .vertexInfo = geom.vertexInfo,
             .instanceInfo = {1, 0}, // scene.instanceInfo
         });
-
-        std::cout << "Wrote Draw Command \n";
-        // vk->submitDrawCmdBuffer({.bufferData = buffers,
-        //                          .submitType = COMMAND_BUFFER_TYPE::GRAPHICS});
-
 
     }
 
@@ -278,30 +261,33 @@ namespace boitatah
         RenderPass pass = renderpassPool.get(target.renderpass);
         Image image = imagePool.get(target.attachments[0]);
 
-         m_vk->waitForFrame(buffers);
+        m_vk->waitForFrame(buffers);
 
         m_vk->resetCmdBuffer(buffers.drawBuffer.buffer);
         m_vk->resetCmdBuffer(buffers.transferBuffer.buffer);
 
         beginBuffer({.buffer = buffers.drawBuffer});
 
-        std::cout << "began buffer" << std::endl;
+        //std::cout << "began buffer" << std::endl;
         beginRenderpass({
             .commandBuffer = buffers.drawBuffer,
             .pass = pass,
             .target = target,
 
-            .clearColor = glm::vec4(0, 0, 0, 1),
+            .clearColor = glm::vec4(0, 1, 0, 1),
             .scissorDims = image.dimensions,
             .scissorOffset = glm::vec2(0, 0),
         });
 
-        std::cout << "began RenderPass" << std::endl;
+        //std::cout << "began RenderPass" << std::endl;
 
         for (const auto &node : nodes)
         {
             if (node->shader.isNull())
-                continue;
+                {
+                    std::cout << "skip drawing node" << std::endl;
+                    continue;
+                }
             renderToRenderTarget(*node, rendertarget, m_backBufferManager->getCurrentIndex());
         }
 
@@ -312,7 +298,7 @@ namespace boitatah
 
         
 
-        std::cout << "Submit Draw Command \n";
+        //std::cout << "Submit Draw Command \n";
     }
 
     void Renderer::render(SceneNode &scene, Camera &camera)
@@ -758,13 +744,14 @@ namespace boitatah
         Geometry geo{};
         for(auto& bufferDesc : desc.bufferData)
         {
+            uint32_t data_size = static_cast<uint32_t>(bufferDesc.vertexCount * bufferDesc.vertexSize);
             auto bufferHandle = m_resourceManager->create(GPUBufferCreateDescription{
                 .size = bufferDesc.vertexCount * bufferDesc.vertexSize,
                 .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
                 .sharing_mode = SHARING_MODE::EXCLUSIVE,
             });
             auto buffer = m_resourceManager->getResource(bufferHandle);
-            buffer.copyData(bufferDesc.vertexDataPtr);
+            buffer.copyData(bufferDesc.vertexDataPtr, data_size);
 
             geo.buffers.push_back({.buffer = bufferHandle, .count = bufferDesc.vertexCount, .elementSize = bufferDesc.vertexSize});
             m_resourceManager->commitResourceCommand(bufferHandle, 0);
@@ -780,7 +767,7 @@ namespace boitatah
                 .sharing_mode = SHARING_MODE::EXCLUSIVE,
             });
             auto buffer = m_resourceManager->getResource(bufferHandle);
-            buffer.copyData(desc.indexData.dataPtr);
+            buffer.copyData(desc.indexData.dataPtr, data_size);
         }
         
         m_resourceManager->submitCommitCommands();

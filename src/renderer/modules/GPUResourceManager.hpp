@@ -112,6 +112,8 @@ namespace boitatah
             std::unique_ptr<GPUResourcePool> m_resourcePool;
             std::shared_ptr<vk::VkCommandBufferWriter> m_commandBufferWriter;
 
+            void commitGeometryData(Geometry& geo);
+
         };
 
 

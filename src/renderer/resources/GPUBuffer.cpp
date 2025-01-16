@@ -4,13 +4,13 @@
 
 namespace boitatah{
 
-    void GPUBuffer::copyData(void *data)
+    void GPUBuffer::copyData(void *data, uint32_t length)
     {
         
         dirty = true;
         //Stages a transfer
         if(m_descriptor.sharing == SHARING_MODE::EXCLUSIVE){
-            std::cout << "GPUBuffer Exclusive Copy Data Invoked" << std::endl;
+            
             auto manager = std::shared_ptr(m_manager); 
             auto bufferManager = manager->getBufferManager();
 
@@ -18,23 +18,18 @@ namespace boitatah{
             if(!stagingBuffer){
                 stagingBuffer = bufferManager->reserveBuffer({
                     .request = size,
-                    .usage = usage,
+                    .usage = BUFFER_USAGE::TRANSFER_SRC,
                     .sharing = SHARING_MODE::CONCURRENT,
                 });
-
-                std::cout << "created staging buffer" << std::endl;
             }
-
-            bufferManager->memoryCopy(size, data, stagingBuffer);
+            bufferManager->memoryCopy(std::min(size, length), data, stagingBuffer);
         }
         else{
-            std::cout << "GPUBuffer Shared Copy Data Invoked" << std::endl;
             auto manager = std::shared_ptr(m_manager); 
             auto bufferManager = manager->getBufferManager();
-            //auto& resource = self().self();
+            
             auto& resource = get_content(0);
-            auto frame_buffer = resource; //(self().get_content(frameIndex));
-            //bufferManager->memoryCopy(size, data, frame_buffer.buffer);
+            bufferManager->memoryCopy(std::min(size, length), data, resource.buffer);
         }
     }
     
@@ -52,25 +47,21 @@ namespace boitatah{
     {     
         auto manager = std::shared_ptr(m_manager);
         auto data = BufferGPUData{.buffer =  manager->getBufferManager()->reserveBuffer({
-                            .request = size,
+                            .request = std::max(size, 64u),
                             .usage = usage,
                             .sharing = m_descriptor.sharing,}),
                             .buffer_capacity = size};
-
-        std::cout << "Created GPUBuffer GPU Data with size " << size << " and usage "
-                  <<  std::endl;
-
+        BufferReservation reserv;
+        manager->getBufferManager()->getAddressReservation(data.buffer, reserv);
         return data;
     }
 
     void GPUBuffer::WriteTransfer(BufferGPUData &data, CommandBufferWriter<VkCommandBufferWriter> &writer) {
-        
-        std::cout << "Writing Transfer for GPU Buffer" << std::endl;
         if(m_descriptor.sharing == SHARING_MODE::EXCLUSIVE){
-            auto manager = std::shared_ptr(m_manager);
+            auto manager = std::shared_ptr(m_manager)->getBufferManager();
             data.dirty = false;
-            
-            manager->getBufferManager()->queueCopy<VkCommandBufferWriter>(writer, stagingBuffer, data.buffer);
+            std::cout << "copying to exclusive buffer" << std::endl;
+            manager->queueCopy<VkCommandBufferWriter>(writer, stagingBuffer, data.buffer);
         }
     };
 
@@ -84,8 +75,7 @@ namespace boitatah{
         auto manager = std::shared_ptr(m_manager);
         auto bufferManager = manager->getBufferManager();
 
-        bufferManager->freeBufferReservation(stagingBuffer);
-
-    
+        if(stagingBuffer)
+            bufferManager->freeBufferReservation(stagingBuffer);
     };
 };

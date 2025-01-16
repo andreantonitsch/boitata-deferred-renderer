@@ -27,7 +27,7 @@ namespace boitatah{
 
     void GPUResourceManager::submitCommitCommands()
     {
-        std::cout << "submiting transfer commands" << std::endl;
+        //std::cout << "submiting transfer commands" << std::endl;
         m_commandBufferWriter->submit({
             .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
         });
@@ -58,63 +58,57 @@ namespace boitatah{
 
     Handle<Geometry> GPUResourceManager::create(const GeometryCreateDescription& description)
     {
-        beginCommitCommands();
 
         Geometry geo{};
         for(auto& bufferDesc : description.bufferData)
         {
-            std::cout << "added buffer to geoemtry" << std::endl;
+            uint32_t data_size = static_cast<uint32_t>(bufferDesc.vertexCount * bufferDesc.vertexSize);
             auto bufferHandle = create(GPUBufferCreateDescription{
-                .size = bufferDesc.vertexCount * bufferDesc.vertexSize,
+                .size = data_size,
                 .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
                 .sharing_mode = SHARING_MODE::EXCLUSIVE,
             });
-            auto buffer = getResource(bufferHandle);
-            buffer.copyData(bufferDesc.vertexDataPtr);
+            auto& buffer = getResource(bufferHandle);
+            buffer.copyData(bufferDesc.vertexDataPtr, data_size);
 
-            geo.buffers.push_back({.buffer = bufferHandle, .count = bufferDesc.vertexCount, .elementSize = bufferDesc.vertexSize});
-            commitResourceCommand(bufferHandle, 0);
-            commitResourceCommand(bufferHandle, 1);
+            geo.buffers.push_back({.buffer = bufferHandle,
+                                   .count = bufferDesc.vertexCount, 
+                                   .elementSize = bufferDesc.vertexSize});
         }
 
         if (description.indexData.count != 0)
         {
-            std::cout << "created indexbuffer" << std::endl;
             uint32_t data_size = static_cast<uint32_t>(description.indexData.count  * sizeof(uint32_t));
             auto bufferHandle = create(GPUBufferCreateDescription{
                 .size = data_size,
                 .usage = BUFFER_USAGE::TRANSFER_DST_INDEX,
                 .sharing_mode = SHARING_MODE::EXCLUSIVE,
             });
-            auto buffer = getResource(bufferHandle);
-            buffer.copyData(description.indexData.dataPtr);
-            commitResourceCommand(bufferHandle,0);
-            commitResourceCommand(bufferHandle,1);
-            
+            auto& buffer = getResource(bufferHandle);
+            buffer.copyData(description.indexData.dataPtr, data_size);
             geo.indexBuffer = bufferHandle;
             geo.indiceCount = description.indexData.count;
         }
-        
-        submitCommitCommands();
-        
-        std::cout << "copied index buffer " << std::endl;
+
         geo.vertexInfo = description.vertexInfo;
         geo.indiceCount = description.indexData.count;
+        commitGeometryData(geo);
 
         return m_resourcePool->set(geo);
     }
 
-    // void GPUResourceManager::initialize_buffers(GPUResource &resource, const ResourceDescriptor &descriptor)
-    // {
-    //     auto buffer_manager = std::shared_ptr<BufferManager>(m_bufferManager);
+    void GPUResourceManager::commitGeometryData(Geometry &geo)
+    {
+        waitForTransfers();
+        beginCommitCommands();
+        for(auto& bufferdata : geo.buffers)
+        {
+            commitResourceCommand(bufferdata.buffer, 0);
+            commitResourceCommand(bufferdata.buffer, 1);    
+        }
 
-    //     auto buffer_request = BufferReservationRequest{.request = descriptor.size,
-    //                                                     .usage = descriptor.usage,
-    //                                                     .sharing = descriptor.sharing,};
-    //     auto buffer1 = buffer_manager->reserveBuffer(buffer_request);
-    //     auto buffer2 = buffer_manager->reserveBuffer(buffer_request);
-
-    //     resource.set_buffer(0, {buffer1, descriptor.size});
-    //     resource.set_buffer(1, {buffer2, descriptor.size});
-    // }
+        commitResourceCommand(geo.indexBuffer, 0);
+        commitResourceCommand(geo.indexBuffer, 1);
+        submitCommitCommands();
+    }
 }

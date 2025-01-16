@@ -258,11 +258,11 @@ void boitatah::vk::Vulkan::waitIdle()
 
 void boitatah::vk::Vulkan::waitForFence(const VkFence &fence) const
 {
-    std::cout << " waiting for fence " << std::endl;
+    //std::cout << " waiting for fence " << std::endl;
     VkResult result = vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
     if (result != VK_SUCCESS)
         std::cout << "wait for fence failed " << result << std::endl;
-    std::cout << " waited for fence " << std::endl;
+    //std::cout << " waited for fence " << std::endl;
     vkResetFences(device, 1, &fence);
 }
 
@@ -466,7 +466,10 @@ void boitatah::vk::Vulkan::beginCmdBuffer(const BeginCommandVk &command)
 
 void boitatah::vk::Vulkan::beginRenderpassCommand(const BeginRenderpassCommandVk &command)
 {
-    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+    VkClearValue clearColor = {{{command.clearColor.x,
+                                 command.clearColor.y,
+                                 command.clearColor.z,
+                                 command.clearColor.w}}};
 
     VkRect2D scissor = {
         .offset = {command.scissorOffset.x, command.scissorOffset.y},
@@ -515,16 +518,18 @@ void boitatah::vk::Vulkan::recordDrawCommand(const DrawCommandVk &command)
     if (command.vertexBuffer != VK_NULL_HANDLE)
     {
         VkBuffer vertexBuffers[] = {command.vertexBuffer};
-        VkDeviceSize offsets[] = {command.vertexBufferOffset};
+        VkDeviceSize offsets[] = {command.vertexBufferOffset}; //<-- for buffer suballocation
         vkCmdBindVertexBuffers(command.drawBuffer, 0, 1, vertexBuffers, offsets);
     }
 
     if(command.indexBuffer != VK_NULL_HANDLE){
         vkCmdBindIndexBuffer(command.drawBuffer, command.indexBuffer,
-        command.indexBufferOffset, VK_INDEX_TYPE_UINT32);
+        command.indexBufferOffset, //<-- for buffer suballocation
+         VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(command.drawBuffer, command.indexCount,
                 command.instaceCount, command.firstVertex, 
-                command.vertexBufferOffset, command.firstInstance);
+                0 //command.vertexBufferOffset <-- for instanced drawing. not for suballocated buffers.
+                ,command.firstInstance);
     }else{
 
         vkCmdDraw(command.drawBuffer, command.vertexCount, command.instaceCount,
@@ -849,7 +854,7 @@ void boitatah::vk::Vulkan::copyToMappedMemory(const CopyMappedMemoryVk &op) cons
     std::byte* start = static_cast<std::byte*>(op.data) + op.offset;
     std::byte* end = start + op.elementSize * op.elementCount;
     
-    std::cout << "Vulkan copy data " << start << " " << end << op.map << std::endl;
+    std::cout << "Vulkan copy data " << start << " " << end << " "<< op.map << std::endl;
 
     std::copy(
         start,
