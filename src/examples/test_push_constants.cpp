@@ -23,18 +23,26 @@ int main()
                                    .dimensions = {windowWidth, windowHeight}}});
 
     // Pipeline Layout for the Shader.
-    Handle<ShaderLayout> layout = r.createShaderLayout({});
+    Handle<ShaderLayout> layout = r.createShaderLayout({
+        .customPushConstants ={
+            PushConstantDesc{
+                .offset = sizeof(glm::mat4), //<-- must be larger or equal than sizeof(glm::mat4)
+                .size = sizeof(glm::mat4) * 2, //<- V P matrices
+                .stages = STAGE_FLAG::ALL_GRAPHICS}
+        }
+    });
+
     Handle<Shader> shader = r.createShader({.name = "test",
                                             .vert = {
-                                                .byteCode = utils::readFile("./src/vert.spv"),
+                                                .byteCode = utils::readFile("./src/push_constants_vert.spv"),
                                                 .entryFunction = "main"},
-                                            .frag = {.byteCode = utils::readFile("./src/frag.spv"), .entryFunction = "main"},
+                                            .frag = {.byteCode = utils::readFile("./src/push_constants_frag.spv"), .entryFunction = "main"},
                                             .layout = layout,
-                                            .bindings = {{.stride = sizeof(float) * 6, .attributes = {{.format = FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = FORMAT::RGB_32_SFLOAT, .offset = formatSize(FORMAT::RGB_32_SFLOAT)}}}}});
+                                            .bindings = {{.stride = 20, .attributes = {{.format = FORMAT::RG_32_SFLOAT, .offset = 0}, {.format = FORMAT::RGB_32_SFLOAT, .offset = formatSize(FORMAT::RG_32_SFLOAT)}}}}});
     
     
-    GeometryData geometryData = triangleVertices();
-    //GeometryData geometryData = squareVertices();
+    //GeometryData geometryData = triangleVertices();
+    GeometryData geometryData = squareVertices();
     //GeometryData geometryData = planeVertices(1.0, 1.0, 100, 200);
 
     Handle<Geometry> geometry = r.getResourceManager().create(GeometryCreateDescription{
@@ -64,10 +72,14 @@ int main()
     boitatah::utils::Timewatch timewatch(1000);
 
     r.waitIdle();
+    
+    float rotateSpeed = (2 * glm::pi<float>() / 900 );
 
     while (!r.isWindowClosed())
     {
         r.render(scene);
+
+        triangle.rotate({0.0f, 0.0f, 1.0}, rotateSpeed); 
 
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
     }

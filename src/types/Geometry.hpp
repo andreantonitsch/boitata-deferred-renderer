@@ -100,7 +100,7 @@ namespace boitatah
     //geom data
     struct Vertex
     {
-        glm::vec2 pos;
+        glm::vec3 pos;
         glm::vec3 color;
     };
 
@@ -114,9 +114,9 @@ namespace boitatah
     {
         return {
             .vertices = {
-                {{0.0f, -0.5f}, {1.0f, 1.0f, 0.0f}},
-                {{0.5f, 0.5f}, {1.0f, 0.0f, 1.0f}},
-                {{-0.5f, 0.5f}, {0.0f, 1.0f, 1.0f}}},
+                {{0.0f, -0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}},
+                {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 1.0f}},
+                {{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 1.0f}}},
             .indices = {0U, 1U, 2U},
         };
     }
@@ -125,10 +125,10 @@ namespace boitatah
     {
         return {
             .vertices = {
-                {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-                {{0.5f, 0.5f}, {0.0f, 0.0f, 0.0f}},
-                {{-0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}}},
+                {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+                {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+                {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}},
+                {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}}},
             .indices = {0, 1, 2, 2, 3, 0},
         };
     }
@@ -149,8 +149,8 @@ namespace boitatah
                 float jh = j * h;
 
                 vertices.push_back({
-                    {iw - (0.5 * width), jh - (0.5 * height)}, 
-                    {iw, jh, 0.0f}
+                    {iw - (0.5 * width), jh - (0.5 * height), 0.0f}, 
+                    {iw, jh, 0.0f},
                 });
             }
         }

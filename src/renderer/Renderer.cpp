@@ -107,7 +107,7 @@ namespace boitatah
         m_vk->waitIdle();
     }
 
-    void Renderer::renderToRenderTarget(const SceneNode &scene, const Handle<RenderTarget> &rendertarget, uint32_t frameIndex = 0)
+    void Renderer::renderToRenderTarget(SceneNode &scene, const Handle<RenderTarget> &rendertarget, uint32_t frameIndex = 0)
     {
         RenderTarget target;
         if (!renderTargetPool.tryGet(rendertarget, target))
@@ -161,6 +161,11 @@ namespace boitatah
         auto indexVkBuffer = indexBuffer->getBuffer();
         auto vertexVkBuffer = vertexBuffer->getBuffer();
 
+
+        CameraModelMatrices push{
+            .model = scene.getGlobalMatrix()
+        };
+
         drawCommand({
             .drawBuffer = buffers.drawBuffer,
             .renderTarget = target,
@@ -181,6 +186,16 @@ namespace boitatah
 
             .vertexInfo = geom.vertexInfo,
             .instanceInfo = {1, 0}, // scene.instanceInfo
+
+            .pushConstants = {
+                PushConstant{ //camera constant
+                    .ptr = &push,
+                    .offset = 0,
+                    .size = sizeof(CameraModelMatrices),
+                    .stages = STAGE_FLAG::ALL_GRAPHICS
+                }
+            }
+            
         });
 
     }
@@ -438,6 +453,7 @@ namespace boitatah
             .pass = command.renderPass.renderPass,
             .frameBuffer = command.renderTarget.buffer,
             .pipeline = command.shader.pipeline,
+            .layout = command.shader.layout.layout,
             .vertexBuffer = command.vertexBuffer,
             .vertexBufferOffset = command.vertexBufferOffset,
             .indexBuffer = command.indexBuffer,
@@ -450,6 +466,7 @@ namespace boitatah
             .instaceCount = 1,
             .firstVertex = command.vertexInfo.y,
             .firstInstance = 0,
+            .pushConstants = command.pushConstants,
         });
     }
 
@@ -586,7 +603,7 @@ namespace boitatah
         ShaderLayout layout;
         if (!pipelineLayoutPool.tryGet(data.layout, layout))
             throw std::runtime_error("failed to get pipeline layout");
-
+        shader.layout = layout;
         // Get rendertarget and renderpass
         // from backbuffer
         // or from description

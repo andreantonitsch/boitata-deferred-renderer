@@ -133,6 +133,9 @@ namespace boitatah
     enum class STAGE_FLAG
     {
         VERTEX = 1,
+        FRAGMENT = 2,
+        VERTEX_FRAGMENT = 3,
+        ALL_GRAPHICS = 4
     };
 
     template <typename To, typename From>
@@ -389,6 +392,12 @@ namespace boitatah
         {
         case STAGE_FLAG::VERTEX:
             return VK_SHADER_STAGE_VERTEX_BIT;
+        case STAGE_FLAG::FRAGMENT:
+            return VK_SHADER_STAGE_FRAGMENT_BIT;
+        case STAGE_FLAG::VERTEX_FRAGMENT:
+            return VK_SHADER_STAGE_VERTEX_BIT ||VK_SHADER_STAGE_FRAGMENT_BIT;
+        case STAGE_FLAG::ALL_GRAPHICS:
+            return VK_SHADER_STAGE_ALL_GRAPHICS;
         default:
             return VK_SHADER_STAGE_ALL_GRAPHICS;
         }

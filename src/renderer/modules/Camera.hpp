@@ -9,6 +9,7 @@
 #include <glm/ext/quaternion_trigonometric.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtx/euler_angles.hpp>
+
 namespace boitatah{
 
     struct CameraDesc{
@@ -19,6 +20,7 @@ namespace boitatah{
         float aspect = 16.0/10.0;
         float fov = glm::radians(27.0);
     };
+
 
     class Camera{
         public:
@@ -53,5 +55,5 @@ namespace boitatah{
             void computeMatrices();
     };
 
-}
+};
 

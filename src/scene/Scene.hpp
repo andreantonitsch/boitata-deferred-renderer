@@ -36,109 +36,113 @@ namespace boitatah
 
     struct SceneNode
     {
-        std::string name = "node";
-        std::vector<SceneNode *> children;
-        std::optional<SceneNode *> parentNode;
-        Handle<Shader> shader;
+        private:
+            bool m_dirtyMatrix = true;
 
-        // Transform
-        glm::mat4 m_localTransform;
-        glm::mat4 m_globalTransform;
-        bool m_dirtyMatrix = true;
+        public:
+            std::string name = "node";
+            std::vector<SceneNode *> children;
+            std::optional<SceneNode *> parentNode;
+            Handle<Shader> shader;
 
-        // Mesh
-        Handle<Geometry> geometry;
+            // Transform
+            glm::mat4 m_localTransform;
+            glm::mat4 m_globalTransform;
+            std::vector<void*> customPushConstants;
 
-        // Material
+            // Mesh
+            Handle<Geometry> geometry;
 
-        // Constructor
-        SceneNode(const SceneNodeDesc &desc) : shader(desc.shader),
-                                         //children(desc.children),
-                                         name(desc.name),
-                                         //parentNode(desc.parentNode),
-                                         geometry(desc.geometry)
-        {
-            m_localTransform = glm::mat4(1.0f);
-            scale(desc.scale);
-            translate(desc.position);
-            rotate(desc.rotation);
-        }
+            // Material
 
-        void sceneAsList(std::vector<SceneNode*> &sceneList) const
-        {
-            sceneList.insert(sceneList.end(), children.begin(), children.end());
-
-            for (const auto &child : children)
+            // Constructor
+            SceneNode(const SceneNodeDesc &desc) : shader(desc.shader),
+                                            //children(desc.children),
+                                            name(desc.name),
+                                            //parentNode(desc.parentNode),
+                                            geometry(desc.geometry)
             {
-                child->sceneAsList(sceneList);
+                m_localTransform = glm::mat4(1.0f);
+                scale(desc.scale);
+                translate(desc.position);
+                rotate(desc.rotation);
             }
-        }
 
-        void scale(const glm::vec3 &scales)
-        {
-            dirty();
-            m_localTransform = glm::scale(m_localTransform, scales);
-        }
-
-        void rotate(const glm::vec3 &axis, float angle_radians)
-        {
-            dirty();
-            m_localTransform = glm::rotate(m_localTransform,
-                                           angle_radians, axis);
-        }
-
-        void rotate(const glm::vec3 &eulerAngles)
-        {
-            dirty();
-            glm::mat4 rotationMatrix = glm::eulerAngleXYX(eulerAngles.x,
-                                                          eulerAngles.y,
-                                                          eulerAngles.z);
-
-            m_localTransform = rotationMatrix * m_localTransform;
-        }
-
-        void translate(const glm::vec3 &translation)
-        {
-            dirty();
-            m_localTransform = glm::translate(m_localTransform,
-                                              translation);
-        }
-
-        void updateGlobalMatrix()
-        {
-            if (parentNode.has_value())
+            void sceneAsList(std::vector<SceneNode*> &sceneList) const
             {
-                m_globalTransform = parentNode.value()->getGlobalMatrix() *
-                                    m_localTransform;
-            }
-            else
-            {
-                m_globalTransform = m_localTransform;
-            }
-        }
-        glm::mat4 getLocalMatrix() { return m_localTransform; }
-        glm::mat4 getGlobalMatrix()
-        {
-            if (m_dirtyMatrix)
-            {
-                updateGlobalMatrix();
-            }
-            return m_globalTransform;
-        }
+                sceneList.insert(sceneList.end(), children.begin(), children.end());
 
-        void dirty(){
-            if(m_dirtyMatrix) return;
-            m_dirtyMatrix = true;
-            for(auto& child : children){
-                child->dirty();
+                for (const auto &child : children)
+                {
+                    child->sceneAsList(sceneList);
+                }
             }
-        }
 
-        void add(SceneNode* node){
-            children.push_back(node);
-            node->dirty();
-            node->parentNode = this;
-        }
+            void scale(const glm::vec3 &scales)
+            {
+                dirty();
+                m_localTransform = glm::scale(m_localTransform, scales);
+            }
+
+            void rotate(const glm::vec3 &axis, float angle_radians)
+            {
+                dirty();
+                m_localTransform = glm::rotate(m_localTransform,
+                                            angle_radians, axis);
+            }
+
+            void rotate(const glm::vec3 &eulerAngles)
+            {
+                dirty();
+                glm::mat4 rotationMatrix = glm::eulerAngleXYX(eulerAngles.x,
+                                                            eulerAngles.y,
+                                                            eulerAngles.z);
+
+                m_localTransform = rotationMatrix * m_localTransform;
+            }
+
+            void translate(const glm::vec3 &translation)
+            {
+                dirty();
+                m_localTransform = glm::translate(m_localTransform,
+                                                translation);
+            }
+
+            void updateGlobalMatrix()
+            {
+                if (parentNode.has_value())
+                {
+                    m_globalTransform = parentNode.value()->getGlobalMatrix() *
+                                        m_localTransform;
+                }
+                else
+                {
+                    m_globalTransform = m_localTransform;
+                }
+            }
+            glm::mat4 getLocalMatrix() { return m_localTransform; }
+            glm::mat4 getGlobalMatrix()
+            {
+                if (m_dirtyMatrix)
+                {
+                    updateGlobalMatrix();
+                }
+                return m_globalTransform;
+            }
+
+            void dirty(){
+                if(m_dirtyMatrix) return;
+                m_dirtyMatrix = true;
+                for(auto& child : children){
+                    child->dirty();
+                }
+            }
+
+            void add(SceneNode* node){
+                children.push_back(node);
+                node->dirty();
+                node->parentNode = this;
+            }
     };
 }
 

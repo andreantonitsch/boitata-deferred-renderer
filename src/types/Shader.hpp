@@ -11,17 +11,37 @@
 
 namespace boitatah
 {
+    struct CameraModelMatrices{
+        glm::mat4 model;
+        glm::mat4 VP;
+    };
+    
+    struct PushConstant{
+        void* ptr;
+        uint32_t offset;
+        uint32_t size;
+        STAGE_FLAG stages;
+    };
+
+    struct PushConstantDesc{
+        uint32_t offset;
+        uint32_t size;
+        STAGE_FLAG stages;
+    };
 
     // becomes a shaderlayout with 3 descriptor set layouts and push constants
     struct ShaderLayoutDesc
     {
         DescriptorSetLayoutDesc materialLayout;
+        std::vector<PushConstantDesc> customPushConstants;
     };
 
     struct ShaderLayoutDescVk
     {
         VkDescriptorSetLayout materialLayout;
         VkDescriptorSetLayout baseLayout;
+        std::vector<PushConstantDesc> customPushConstants;
+
     };
 
     struct ShaderLayout
@@ -95,6 +115,7 @@ namespace boitatah
         ShaderModule frag;
 
         VkPipeline pipeline;
+        ShaderLayout layout;
     };
 
     // gets updated every frame

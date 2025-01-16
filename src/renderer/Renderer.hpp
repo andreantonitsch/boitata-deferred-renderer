@@ -85,7 +85,7 @@ namespace boitatah
         void waitIdle();
 
         // Render Methods
-        void renderToRenderTarget(const SceneNode &scene, const Handle<RenderTarget> &rendertarget, uint32_t frameIndex);
+        void renderToRenderTarget(SceneNode &scene, const Handle<RenderTarget> &rendertarget, uint32_t frameIndex);
         void render(SceneNode &scene);
         void render(SceneNode &scene, Camera &camera);
         void presentRenderTarget(Handle<RenderTarget> &rendertarget);

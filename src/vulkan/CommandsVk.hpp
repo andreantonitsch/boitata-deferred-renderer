@@ -108,6 +108,7 @@ namespace boitatah::vk
         VkRenderPass pass;
         VkFramebuffer frameBuffer;
         VkPipeline pipeline;
+        VkPipelineLayout layout;
 
         VkBuffer vertexBuffer;
         uint32_t vertexBufferOffset;
@@ -122,6 +123,7 @@ namespace boitatah::vk
         uint32_t instaceCount;
         uint32_t firstVertex;
         uint32_t firstInstance;
+        std::vector<PushConstant> pushConstants;
     };
 
 

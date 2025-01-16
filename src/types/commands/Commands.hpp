@@ -82,6 +82,9 @@ namespace boitatah
         // count, first
         glm::uvec2 vertexInfo;
         glm::uvec2 instanceInfo;
+
+        std::vector<PushConstant> pushConstants;
+
     };
 
     struct BeginRenderpassCommand

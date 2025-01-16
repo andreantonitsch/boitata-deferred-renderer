@@ -522,6 +522,18 @@ void boitatah::vk::Vulkan::recordDrawCommand(const DrawCommandVk &command)
         vkCmdBindVertexBuffers(command.drawBuffer, 0, 1, vertexBuffers, offsets);
     }
 
+
+    for(auto& push_constant : command.pushConstants){
+        vkCmdPushConstants(
+            command.drawBuffer,
+            command.layout,
+            castEnum<VkShaderStageFlags>(push_constant.stages),
+            push_constant.offset,
+            push_constant.size,
+            push_constant.ptr
+        );
+    }
+
     if(command.indexBuffer != VK_NULL_HANDLE){
         vkCmdBindIndexBuffer(command.drawBuffer, command.indexBuffer,
         command.indexBufferOffset, //<-- for buffer suballocation
@@ -535,6 +547,7 @@ void boitatah::vk::Vulkan::recordDrawCommand(const DrawCommandVk &command)
         vkCmdDraw(command.drawBuffer, command.vertexCount, command.instaceCount,
                 command.firstVertex, command.firstInstance);
     }
+
 
 
 }
@@ -866,19 +879,35 @@ VkPipelineLayout boitatah::vk::Vulkan::createShaderLayout(const ShaderLayoutDesc
 {
     VkPipelineLayout layout;
     
-    //  add camera layout
+    // add camera layout
     // add shader custom layout
     
     //add model push constants
+    std::vector<VkPushConstantRange> ranges;
+
+    ranges.push_back(
+        VkPushConstantRange{
+          .stageFlags = castEnum<VkShaderStageFlags>(STAGE_FLAG::ALL_GRAPHICS), 
+          .offset = 0,
+          .size = sizeof(glm::mat4) * 2,
+        });
+    for(auto& push_constant : desc.customPushConstants){
+        ranges.push_back(
+        VkPushConstantRange{
+          .stageFlags = castEnum<VkShaderStageFlags>(push_constant.stages), 
+          .offset = push_constant.offset,
+          .size = push_constant.size,
+        });
+    }
 
     VkPipelineLayoutCreateInfo layoutCreate{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .setLayoutCount = 0,
         .pSetLayouts = nullptr,
-        .pushConstantRangeCount = 0,
-        .pPushConstantRanges = nullptr,
+        .pushConstantRangeCount = static_cast<uint32_t>(ranges.size()),
+        .pPushConstantRanges = ranges.data(),
     };
-
+ 
     if (vkCreatePipelineLayout(device, &layoutCreate, nullptr, &layout) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create Pipeline Layout");
