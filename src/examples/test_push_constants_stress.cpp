@@ -75,7 +75,7 @@ int main()
     std::uniform_real_distribution<> pos_dist(-1.0f, 1.0f);
     std::uniform_real_distribution<> scale_dist(0.25f, 0.5f);
     
-    int count = 10;
+    int count = 1000;
     for (int i = 0; i < count; i++)
     {
         SceneNode* other = new SceneNode({

@@ -69,7 +69,7 @@ namespace boitatah
         CommandBuffer drawBuffer;
         RenderTarget renderTarget;
         RenderPass renderPass;
-        Shader shader;
+        //Shader shader;
         glm::ivec2 dimensions;
 
         VkBuffer vertexBuffer;
@@ -83,7 +83,7 @@ namespace boitatah
         glm::uvec2 vertexInfo;
         glm::uvec2 instanceInfo;
 
-        std::vector<PushConstant> pushConstants;
+        //std::vector<PushConstant> pushConstants;
 
     };
 
@@ -100,6 +100,17 @@ namespace boitatah
 
         // glm::ivec2 viewportDims;
         // glm::ivec2 viewportOffset;
+    };
+
+    struct BindPipelineCommand{
+        CommandBuffer commandBuffer;
+        Handle<Shader> shader;
+    };
+
+    struct PushConstantsCommand{
+        CommandBuffer drawBuffer;
+        ShaderLayout layout;
+        std::vector<PushConstant> push_constants;
     };
 
 }

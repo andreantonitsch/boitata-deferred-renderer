@@ -18,6 +18,7 @@ namespace boitatah::vk
     };
 
     struct BindPipelineCommandVk{
+        VkCommandBuffer drawBuffer;
         VkPipeline pipeline;
     };
 
@@ -107,8 +108,7 @@ namespace boitatah::vk
         VkCommandBuffer drawBuffer;
         VkRenderPass pass;
         VkFramebuffer frameBuffer;
-        VkPipeline pipeline;
-        VkPipelineLayout layout;
+        //VkPipelineLayout layout;
 
         VkBuffer vertexBuffer;
         uint32_t vertexBufferOffset;
@@ -123,7 +123,7 @@ namespace boitatah::vk
         uint32_t instaceCount;
         uint32_t firstVertex;
         uint32_t firstInstance;
-        std::vector<PushConstant> pushConstants;
+        //std::vector<PushConstant> pushConstants;
     };
 
 

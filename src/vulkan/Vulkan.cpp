@@ -510,28 +510,12 @@ void boitatah::vk::Vulkan::endRenderpassCommand(const EndRenderpassCommandVk &co
 
 void boitatah::vk::Vulkan::recordDrawCommand(const DrawCommandVk &command)
 {
-    vkCmdBindPipeline(command.drawBuffer,
-                      VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      command.pipeline);
-
-
+    
     if (command.vertexBuffer != VK_NULL_HANDLE)
     {
         VkBuffer vertexBuffers[] = {command.vertexBuffer};
         VkDeviceSize offsets[] = {command.vertexBufferOffset}; //<-- for buffer suballocation
         vkCmdBindVertexBuffers(command.drawBuffer, 0, 1, vertexBuffers, offsets);
-    }
-
-
-    for(auto& push_constant : command.pushConstants){
-        vkCmdPushConstants(
-            command.drawBuffer,
-            command.layout,
-            castEnum<VkShaderStageFlags>(push_constant.stages),
-            push_constant.offset,
-            push_constant.size,
-            push_constant.ptr
-        );
     }
 
     if(command.indexBuffer != VK_NULL_HANDLE){
@@ -580,6 +564,12 @@ void boitatah::vk::Vulkan::submitDrawCmdBuffer(const SubmitDrawCommandVk &comman
     }
 }
 
+void boitatah::vk::Vulkan::bindPipelineCommand(const BindPipelineCommandVk &command)
+{
+    vkCmdBindPipeline(command.drawBuffer,
+                      VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      command.pipeline);
+}
 
 void boitatah::vk::Vulkan::submitCmdBuffer(const SubmitCommandVk &command)
 {

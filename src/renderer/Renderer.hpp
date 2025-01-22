@@ -112,19 +112,15 @@ namespace boitatah
         void beginRenderpass(const BeginRenderpassCommand &command);
 
         // Constructs a transfer queue for uniform updating on the beginning of the frame.
-        void queueTransferUniform(const TransferUniformCommand &command);
         void transferImage(const TransferImageCommand &command);
         void copyBuffer(const CopyBufferCommand &command);
         void drawCommand(const DrawCommand &command);
 
 
-        void bindDummyPipeline();
+        void bindDummyPipeline(const BindPipelineCommand& command);
+        void bindPipelineCommand(const BindPipelineCommand& command);
 
-        //UNIFORMS
-        Handle<Uniform> createUniform(void *data, uint32_t size, DESCRIPTOR_TYPE type);
-        void updateUniform(const Handle<Uniform> uniform, const void* new_data, const uint32_t new_size);
-        void commitSceneNodeUniforms(const SceneNode * scene_nodes);
-
+        void pushPushConstants(const PushConstantsCommand& command);
 
         Handle<RenderPass> getBackBufferRenderPass();
 

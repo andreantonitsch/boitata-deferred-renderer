@@ -170,7 +170,7 @@ namespace boitatah
             .drawBuffer = buffers.drawBuffer,
             .renderTarget = target,
             .renderPass = pass,
-            .shader = shader,
+            //.shader = shader,
             .dimensions = {
                 static_cast<int>(image.dimensions.x),
                 static_cast<int>(image.dimensions.y),
@@ -187,19 +187,8 @@ namespace boitatah
             .vertexInfo = geom.vertexInfo,
             .instanceInfo = {1, 0}, // scene.instanceInfo
 
-            .pushConstants = {
-                PushConstant{ //camera constant
-                    .ptr = &push,
-                    .offset = 0,
-                    .size = sizeof(CameraModelMatrices),
-                    .stages = STAGE_FLAG::ALL_GRAPHICS
-                }
-            }
-            
         });
-
     }
-
     void Renderer::render(SceneNode &scene)
     {
         auto backbuffer = m_backBufferManager->getNext();
@@ -294,8 +283,9 @@ namespace boitatah
             .scissorOffset = glm::vec2(0, 0),
         });
 
+        //Bind Pipeline <-- relevant when shader is reused.
         //std::cout << "began RenderPass" << std::endl;
-
+        Handle<Shader> boundPipeline;
         for (const auto &node : nodes)
         {
             if (node->shader.isNull())
@@ -303,6 +293,29 @@ namespace boitatah
                     std::cout << "skip drawing node" << std::endl;
                     continue;
                 }
+            if(boundPipeline != node->shader){
+                bindPipelineCommand({
+                    .commandBuffer = buffers.drawBuffer,
+                    .shader = node->shader
+                });
+                boundPipeline = node->shader;
+            }
+
+            CameraModelMatrices mvp{
+                .model = scene.m_globalTransform,
+            };
+            pushPushConstants({
+                .drawBuffer = buffers.drawBuffer,
+                .layout = shaderPool.get(node->shader).layout.layout,
+                .push_constants = {
+                PushConstant{ //camera constant
+                    .ptr = &mvp,
+                    .offset = 0,
+                    .size = sizeof(CameraModelMatrices),
+                    .stages = STAGE_FLAG::ALL_GRAPHICS
+                }}}
+            );
+
             renderToRenderTarget(*node, rendertarget, m_backBufferManager->getCurrentIndex());
         }
 
@@ -310,8 +323,6 @@ namespace boitatah
 
         m_vk->submitDrawCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer,
                             .fence = buffers.inFlightFen});
-
-        
 
         //std::cout << "Submit Draw Command \n";
     }
@@ -452,8 +463,8 @@ namespace boitatah
             .drawBuffer = command.drawBuffer.buffer,
             .pass = command.renderPass.renderPass,
             .frameBuffer = command.renderTarget.buffer,
-            .pipeline = command.shader.pipeline,
-            .layout = command.shader.layout.layout,
+            //.pipeline = command.shader.pipeline,
+            //.layout = command.shader.layout.layout,
             .vertexBuffer = command.vertexBuffer,
             .vertexBufferOffset = command.vertexBufferOffset,
             .indexBuffer = command.indexBuffer,
@@ -466,7 +477,7 @@ namespace boitatah
             .instaceCount = 1,
             .firstVertex = command.vertexInfo.y,
             .firstInstance = 0,
-            .pushConstants = command.pushConstants,
+            //.pushConstants = command.pushConstants,
         });
     }
 
@@ -475,18 +486,6 @@ namespace boitatah
         m_vk->resetCmdBuffer(buffer.buffer);
     }
 
-    void Renderer::queueTransferUniform(const TransferUniformCommand &command)
-    {
-        Uniform uniform;
-        uniformPool.tryGet(command.uniform, uniform);
-
-        // TODO change usage to type depending on uniform type.
-        // queueUploadBuffer({
-        //     .dataSize = uniform.get_size(),
-        //     .data = uniform.get_data(),
-        //     .usage = BUFFER_USAGE::UNIFORM_BUFFER
-        // });
-    }
 
     void Renderer::transferImage(const TransferImageCommand &command)
     {
@@ -583,8 +582,34 @@ namespace boitatah
         });
     }
 
-    void Renderer::bindDummyPipeline()
+    void Renderer::bindDummyPipeline(const BindPipelineCommand &command)
     {
+        m_vk->bindPipelineCommand({
+            .drawBuffer =  command.commandBuffer.buffer,
+            .pipeline = m_dummyPipeline.pipeline
+        });
+    }
+
+    void Renderer::bindPipelineCommand(const BindPipelineCommand &command)
+    {
+        m_vk->bindPipelineCommand({
+            .drawBuffer = command.commandBuffer.buffer,
+            .pipeline = shaderPool.get(command.shader).pipeline,
+        });
+    }
+
+    void Renderer::pushPushConstants(const PushConstantsCommand &command)
+    {
+        for(auto& push_constant : command.push_constants){
+        vkCmdPushConstants(
+            command.drawBuffer.buffer,
+            command.layout.layout,
+            castEnum<VkShaderStageFlags>(push_constant.stages),
+            push_constant.offset,
+            push_constant.size,
+            push_constant.ptr
+        );
+    }
     }
 
 #pragma endregion Command Buffers
@@ -820,26 +845,6 @@ namespace boitatah
 
 #pragma endregion Create Vulkan Objects
 
-#pragma region Buffers
-
-    Handle<Uniform> Renderer::createUniform(void *data, uint32_t size, DESCRIPTOR_TYPE type)
-    {
-
-        return Handle<Uniform>{};
-    }
-
-    void Renderer::updateUniform(const Handle<Uniform> uniform, const void *new_data, const uint32_t new_size)
-    {
-        // TODO
-        //uniformManager->updateUniform(uniform, new_data, new_size);
-    }
-
-    void Renderer::commitSceneNodeUniforms(const SceneNode * scene_nodes)
-    {
-
-    }
-
-#pragma endregion Buffers
 
 #pragma region Destroy Vulkan Objects
 
