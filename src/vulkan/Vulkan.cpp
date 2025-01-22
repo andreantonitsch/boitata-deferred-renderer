@@ -548,8 +548,6 @@ void boitatah::vk::Vulkan::recordDrawCommand(const DrawCommandVk &command)
                 command.firstVertex, command.firstInstance);
     }
 
-
-
 }
 
 void boitatah::vk::Vulkan::resetCmdBuffer(const VkCommandBuffer buffer)

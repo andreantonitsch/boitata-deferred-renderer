@@ -140,7 +140,7 @@ namespace boitatah
         // vertex and mesh data
         Geometry geom = m_resourceManager->getResource(scene.geometry);
 
-        Handle<GPUBuffer> vertexBufferHandle = geom.buffers[0].buffer;
+        Handle<GPUBuffer> vertexBufferHandle = geom[0];
 
         auto vertexGPUBuffer = m_resourceManager->getResource(vertexBufferHandle);
         auto vertexGPUBufferContent = vertexGPUBuffer.get_content(frameIndex);
@@ -754,47 +754,47 @@ namespace boitatah
         return pipelineLayoutPool.set(layout);
     }
 
-    Handle<Geometry> Renderer::createGeometry(const GeometryCreateDescription &desc)
-    {
-        m_resourceManager->beginCommitCommands();
+    // Handle<Geometry> Renderer::createGeometry(const GeometryCreateDescription &desc)
+    // {
+    //     m_resourceManager->beginCommitCommands();
 
-        Geometry geo{};
-        for(auto& bufferDesc : desc.bufferData)
-        {
-            uint32_t data_size = static_cast<uint32_t>(bufferDesc.vertexCount * bufferDesc.vertexSize);
-            auto bufferHandle = m_resourceManager->create(GPUBufferCreateDescription{
-                .size = bufferDesc.vertexCount * bufferDesc.vertexSize,
-                .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
-                .sharing_mode = SHARING_MODE::EXCLUSIVE,
-            });
-            auto buffer = m_resourceManager->getResource(bufferHandle);
-            buffer.copyData(bufferDesc.vertexDataPtr, data_size);
+    //     Geometry geo{};
+    //     for(auto& bufferDesc : desc.bufferData)
+    //     {
+    //         uint32_t data_size = static_cast<uint32_t>(bufferDesc.vertexCount * bufferDesc.vertexSize);
+    //         auto bufferHandle = m_resourceManager->create(GPUBufferCreateDescription{
+    //             .size = bufferDesc.vertexCount * bufferDesc.vertexSize,
+    //             .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
+    //             .sharing_mode = SHARING_MODE::EXCLUSIVE,
+    //         });
+    //         auto buffer = m_resourceManager->getResource(bufferHandle);
+    //         buffer.copyData(bufferDesc.vertexDataPtr, data_size);
 
-            geo.buffers.push_back({.buffer = bufferHandle, .count = bufferDesc.vertexCount, .elementSize = bufferDesc.vertexSize});
-            m_resourceManager->commitResourceCommand(bufferHandle, 0);
-            m_resourceManager->commitResourceCommand(bufferHandle, 1);
-        }
+    //         geo.m_buffers.push_back({.buffer = bufferHandle, .count = bufferDesc.vertexCount, .elementSize = bufferDesc.vertexSize});
+    //         m_resourceManager->commitResourceCommand(bufferHandle, 0);
+    //         m_resourceManager->commitResourceCommand(bufferHandle, 1);
+    //     }
 
-        if (desc.indexData.count != 0)
-        {
-            uint32_t data_size = static_cast<uint32_t>(desc.indexData.count  * sizeof(uint32_t));
-            auto bufferHandle = m_resourceManager->create(GPUBufferCreateDescription{
-                .size = data_size,
-                .usage = BUFFER_USAGE::TRANSFER_DST_INDEX,
-                .sharing_mode = SHARING_MODE::EXCLUSIVE,
-            });
-            auto buffer = m_resourceManager->getResource(bufferHandle);
-            buffer.copyData(desc.indexData.dataPtr, data_size);
-        }
+    //     if (desc.indexData.count != 0)
+    //     {
+    //         uint32_t data_size = static_cast<uint32_t>(desc.indexData.count  * sizeof(uint32_t));
+    //         auto bufferHandle = m_resourceManager->create(GPUBufferCreateDescription{
+    //             .size = data_size,
+    //             .usage = BUFFER_USAGE::TRANSFER_DST_INDEX,
+    //             .sharing_mode = SHARING_MODE::EXCLUSIVE,
+    //         });
+    //         auto buffer = m_resourceManager->getResource(bufferHandle);
+    //         buffer.copyData(desc.indexData.dataPtr, data_size);
+    //     }
         
-        m_resourceManager->submitCommitCommands();
+    //     m_resourceManager->submitCommitCommands();
 
-        std::cout << "copied index buffer " << std::endl;
-        geo.vertexInfo = desc.vertexInfo;
-        geo.indiceCount = desc.indexData.count;
+    //     std::cout << "copied index buffer " << std::endl;
+    //     geo.vertexInfo = desc.vertexInfo;
+    //     geo.indiceCount = desc.indexData.count;
 
-        return geometryPool.set(geo);
-    }
+    //     return geometryPool.set(geo);
+    // }
 
     Handle<RenderPass> Renderer::getBackBufferRenderPass()
     {

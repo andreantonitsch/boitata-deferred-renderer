@@ -37,7 +37,7 @@ int main()
         .layout = layout,
         .bindings={}
     });
-    Handle<Geometry> geometry = r.createGeometry({.vertexInfo = {3, 0}});
+    Handle<Geometry> geometry = r.getResourceManager().create({.vertexInfo = {3, 0}});
 
     SceneNode triangle({
         .name = "triangle",

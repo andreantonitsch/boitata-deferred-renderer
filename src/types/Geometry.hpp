@@ -21,32 +21,29 @@ namespace boitatah
     };
 
 
-    struct GeometryBufferData{
-        Handle<GPUBuffer> buffer;
-        uint32_t count;
-        uint32_t elementSize;
-    };
+    enum class GEO_BUFFER_TYPE{
+        Ptr,
+        UIntVector,
+        GPUBuffer,
+    }; 
 
     struct GeometryBufferDataDesc{
+        GEO_BUFFER_TYPE type;
         uint32_t vertexCount;
         uint32_t vertexSize;
         void* vertexDataPtr;
+        Handle<GPUBuffer> buffer;
     };
 
+    
     struct GeometryIndexDataDesc{
+        GEO_BUFFER_TYPE type;
         uint32_t count;
         void* dataPtr;
+        std::vector<uint32_t> index_vector;
+        Handle<GPUBuffer> buffer;
     };
 
-    // struct GeometryDesc
-    // {
-    //     glm::ivec2 vertexInfo;
-    //     uint32_t vertexSize;
-    //     uint32_t vertexDataSize;
-    //     void *vertexData;
-    //     uint32_t indexCount;
-    //     void *indexData;
-    // };
 
     struct GeometryCreateDescription
     {
@@ -55,17 +52,13 @@ namespace boitatah
         GeometryIndexDataDesc indexData;
     };
 
-    // struct Geometry
-    // {
-    //     std::vector<Handle<BufferAddress>> buffers;
-    //     glm::ivec2 vertexInfo; //begin, count
-    //     uint32_t vertexSize;
-    //     Handle<BufferAddress> indexBuffer;
-    //     uint32_t indiceCount; 
-    // };
 
     class Geometry : public MutableGPUResource<Geometry>
     {
+        friend class GPUResourceManager;
+        private:
+            std::vector<Handle<GPUBuffer>> m_ownedBuffers;
+            std::vector<Handle<GPUBuffer>> m_buffers;
         public:
             Geometry() = default;
             Geometry(std::shared_ptr<GPUResourceManager> manager):
@@ -78,7 +71,19 @@ namespace boitatah
             ~Geometry() = default;
             Geometry(const Geometry& other) = default;
 
-            std::vector<GeometryBufferData> buffers;
+            Handle<GPUBuffer>& operator[](int idx){return m_buffers[idx];};
+            Handle<GPUBuffer> operator[](int idx) const{return m_buffers[idx];};
+
+            void addOwnedBuffer(Handle<GPUBuffer>& buffer){
+                m_ownedBuffers.push_back(buffer);
+                m_buffers.push_back(buffer);
+            }
+
+            void addExternalBuffer(Handle<GPUBuffer>& buffer){
+                
+                m_buffers.push_back(buffer);
+            }
+
             glm::ivec2 vertexInfo;
             Handle<GPUBuffer> indexBuffer;
             uint32_t indiceCount;
@@ -90,8 +95,8 @@ namespace boitatah
                 
                 auto manager = std::shared_ptr<GPUResourceManager>(m_manager);
 
-                for(auto& bufferData : buffers ){
-                    manager->destroy(bufferData.buffer);
+                for(auto& buffer : m_ownedBuffers ){
+                    manager->destroy(buffer);
                 }
                 manager->destroy(indexBuffer);
              }

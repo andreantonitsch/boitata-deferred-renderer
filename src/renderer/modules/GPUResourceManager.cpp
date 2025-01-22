@@ -62,18 +62,27 @@ namespace boitatah{
         Geometry geo{};
         for(auto& bufferDesc : description.bufferData)
         {
-            uint32_t data_size = static_cast<uint32_t>(bufferDesc.vertexCount * bufferDesc.vertexSize);
-            auto bufferHandle = create(GPUBufferCreateDescription{
-                .size = data_size,
-                .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
-                .sharing_mode = SHARING_MODE::EXCLUSIVE,
-            });
-            auto& buffer = getResource(bufferHandle);
-            buffer.copyData(bufferDesc.vertexDataPtr, data_size);
 
-            geo.buffers.push_back({.buffer = bufferHandle,
-                                   .count = bufferDesc.vertexCount, 
-                                   .elementSize = bufferDesc.vertexSize});
+            Handle<GPUBuffer> bufferHandle;
+            if(bufferDesc.type == GEO_BUFFER_TYPE::Ptr)
+            {
+                uint32_t data_size = static_cast<uint32_t>(bufferDesc.vertexCount * bufferDesc.vertexSize);
+                bufferHandle = create(GPUBufferCreateDescription{
+                    .size = data_size,
+                    .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
+                    .sharing_mode = SHARING_MODE::EXCLUSIVE,
+                });
+                auto& buffer = getResource(bufferHandle);
+                buffer.setStrideCount(bufferDesc.vertexSize, bufferDesc.vertexCount);
+                buffer.copyData(bufferDesc.vertexDataPtr, data_size);
+                geo.addOwnedBuffer(bufferHandle);
+            }
+
+            if(bufferDesc.type == GEO_BUFFER_TYPE::GPUBuffer){
+                bufferHandle = bufferDesc.buffer;
+                geo.addExternalBuffer(bufferHandle);
+            }
+
         }
 
         if (description.indexData.count != 0)
@@ -101,10 +110,10 @@ namespace boitatah{
     {
         waitForTransfers();
         beginCommitCommands();
-        for(auto& bufferdata : geo.buffers)
+        for(auto& buffer : geo.m_buffers)
         {
-            commitResourceCommand(bufferdata.buffer, 0);
-            commitResourceCommand(bufferdata.buffer, 1);    
+            commitResourceCommand(buffer, 0);
+            commitResourceCommand(buffer, 1);    
         }
 
         commitResourceCommand(geo.indexBuffer, 0);

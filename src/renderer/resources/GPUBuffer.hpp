@@ -36,7 +36,8 @@ namespace boitatah
     };
 
     struct BufferMetaData : ResourceMetaContent<GPUBuffer>{
-        void* buffer_ptr;
+        uint32_t stride;
+        uint32_t count;
     };
 
     //TODO solve this issue in a more elegant manner
@@ -77,6 +78,13 @@ namespace boitatah
 
             //TODO: Implement
             bool asyncReadData(void* dstPtr);
+
+            void setStride(uint32_t stride){meta_data.stride = stride;};
+            void setCount(uint32_t count){meta_data.count = count;};
+            void setStrideCount(uint32_t stride, uint32_t count){
+                setStride(stride);
+                setCount(count);
+            }
             
         private:
 

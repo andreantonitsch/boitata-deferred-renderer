@@ -102,7 +102,6 @@ namespace boitatah
         Handle<Image> addImage(Image image);
         Handle<Image> createImage(const ImageDesc &desc);
         Handle<ShaderLayout> createShaderLayout(const ShaderLayoutDesc &desc);
-        Handle<Geometry> createGeometry(const GeometryCreateDescription &desc);
 
         // Command Buffers
         CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
@@ -125,16 +124,6 @@ namespace boitatah
         Handle<Uniform> createUniform(void *data, uint32_t size, DESCRIPTOR_TYPE type);
         void updateUniform(const Handle<Uniform> uniform, const void* new_data, const uint32_t new_size);
         void commitSceneNodeUniforms(const SceneNode * scene_nodes);
-
-        //BUFFERS
-        //Buffer *createBuffer(const BufferDesc &desc);
-        //Handle<BufferAddress> reserveBuffer(const BufferReservationRequest &request);
-        //std::pair<Handle<BufferAddress>,Handle<BufferAddress>> getUploadBufferHandles(const BufferUploadDesc &desc);
-        //Handle<BufferAddress> uploadBuffer(const BufferUploadDesc &desc);
-        //Handle<BufferAddress> queueUploadBuffer(const BufferUploadDesc &desc);
-        //void clearUploadBufferQueue();
-        //void copyDataToBuffer(const CopyDataToBufferDesc &desc);
-        //void unreserveBuffer(Handle<BufferAddress> &reservation);
 
 
         Handle<RenderPass> getBackBufferRenderPass();
@@ -172,10 +161,6 @@ namespace boitatah
 
         void handleWindowResize();
         void createSwapchain();
-
-        // Buffers
-        //Buffer *findOrCreateCompatibleBuffer(const BufferReservationRequest &compatibility);
-        //uint32_t findCompatibleBuffer(const BufferReservationRequest &compatibility);
 
         // Pools
         Pool<Shader> shaderPool = Pool<Shader>({.size = 10, .name = "shader pool"});

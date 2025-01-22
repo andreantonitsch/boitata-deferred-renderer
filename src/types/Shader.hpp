@@ -121,10 +121,13 @@ namespace boitatah
     // gets updated every frame
     struct FrameUniforms
     {
+        glm::mat4 vp;
         glm::mat4 projection;
         glm::mat4 view;
-        float time;
-        float deltaTime;
+        glm::f32vec4 time; 
+        glm::f32vec4 deltaTime;
+        glm::f32vec4 sinTime;
+        float a;
     };
 
     enum class UNIFORM_TYPE

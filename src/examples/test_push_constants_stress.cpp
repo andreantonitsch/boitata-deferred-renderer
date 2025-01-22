@@ -5,6 +5,7 @@
 #include "../types/Shader.hpp"
 #include "../utils/utils.hpp"
 #include "../collections/Pool.hpp"
+#include <random>
 
 using namespace boitatah;
 
@@ -41,9 +42,9 @@ int main()
                                             .bindings = {{.stride = 24, .attributes = {{.format = FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = FORMAT::RGB_32_SFLOAT, .offset = formatSize(FORMAT::RG_32_SFLOAT)}}}}});
     
     
-    //GeometryData geometryData = triangleVertices();
+    GeometryData geometryData = triangleVertices();
     //GeometryData geometryData = squareVertices();
-    GeometryData geometryData = planeVertices(1.0, 1.0, 100, 200);
+    //GeometryData geometryData = planeVertices(1.0, 1.0, 10, 20);
 
     Handle<Geometry> geometry = r.getResourceManager().create(GeometryCreateDescription{
         .vertexInfo = { static_cast<uint32_t>(geometryData.vertices.size()), 0},
@@ -68,8 +69,27 @@ int main()
 
     // Scene Description.
     SceneNode scene({.name = "root scene"});
+
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_real_distribution<> pos_dist(-1.0f, 1.0f);
+    std::uniform_real_distribution<> scale_dist(0.25f, 0.5f);
+    
+    int count = 10;
+    for (int i = 0; i < count; i++)
+    {
+        SceneNode* other = new SceneNode({
+        .name = "triangle",
+        .geometry = geometry,
+        .shader = shader,
+        });
+        // other->translate({pos_dist(rng),pos_dist(rng),pos_dist(rng)});
+        // other->translate({scale_dist(rng),scale_dist(rng),scale_dist(rng)});
+        scene.add(other);
+    }
+    
     scene.add(&triangle);
-    boitatah::utils::Timewatch timewatch(1000);
+    boitatah::utils::Timewatch timewatch(10);
 
     r.waitIdle();
     
@@ -79,12 +99,14 @@ int main()
     {
         r.render(scene);
 
-        triangle.rotate({0.0f, 0.0f, 1.0}, rotateSpeed); //<-- is a push constant update
+        //triangle.rotate({0.0f, 0.0f, 1.0}, rotateSpeed); //<-- is a push constant update
 
-        std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
+        std::cout << "\rFrametime :: " << timewatch.Lap() << "     "   << std::flush;
     }
     r.waitIdle();
-
+    for(int i = 1; i< scene.children.size(); i++){
+        delete scene.children[i];
+    }
     r.destroyLayout(layout);
     r.destroyShader(shader);
 
