@@ -7,7 +7,7 @@
 namespace boitatah
 {
     struct BindingDesc{
-        uint32_t binding = 0;
+        //uint32_t binding = 0;
         DESCRIPTOR_TYPE type;
         STAGE_FLAG stages;
         uint32_t descriptorCount = 1;

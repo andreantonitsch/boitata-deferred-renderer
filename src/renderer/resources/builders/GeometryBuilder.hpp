@@ -17,12 +17,14 @@ namespace boitatah{
     class GeometryBuilder{
         private:
             GeometryCreateDescription m_description;
-            std::shared_ptr<GPUResourceManager> m_manager;
+            GPUResourceManager& m_manager;
 
             
         public:
-            static GeometryBuilder createGeoemtry(std::shared_ptr<GPUResourceManager> manager);
-            static GeometryBuilder createGeoemtry(std::shared_ptr<Renderer> renderer);
+            static GeometryBuilder createGeoemtry(GPUResourceManager& manager);
+            static GeometryBuilder createGeoemtry(Renderer& renderer);
+
+            GeometryBuilder(GPUResourceManager& manager) : m_manager(manager){};
 
             GeometryBuilder& SetIndexes(std::initializer_list<uint32_t>&& indices);
             GeometryBuilder& SetIndexes(std::vector<uint32_t>& indices);
@@ -63,55 +65,55 @@ namespace boitatah{
     };
 
     template <typename T>
-    inline GeometryBuilder &GeometryBuilder::AddBuffer(std::initializer_list<T> &&buffer)
+    inline GeometryBuilder& GeometryBuilder::AddBuffer(std::initializer_list<T> &&buffer)
     {
         AddBuffer(std::vector<T>(buffer));
         return *this;
     }
 
     template <typename T>
-    inline GeometryBuilder &GeometryBuilder::AddBuffer(std::vector<T> &buffer)
+    inline GeometryBuilder& GeometryBuilder::AddBuffer(std::vector<T> &buffer)
     {
         m_description.bufferData.push_back(GeometryBufferDataDesc{
             .type = GEO_BUFFER_TYPE::Ptr,
+            .vertexCount = static_cast<uint32_t>(buffer.size()),
+            .vertexSize = sizeof(T),
             .vertexDataPtr = buffer.data(),
-            .count = buffer.size(),
-            .elementSize = sizeof(T)
         });
         return *this;
     }
     
     template <typename T>
-    inline GeometryBuilder &GeometryBuilder::AddBuffer(std::vector<T> &buffer, uint32_t count, uint32_t stride)
+    inline GeometryBuilder& GeometryBuilder::AddBuffer(std::vector<T> &buffer, uint32_t count, uint32_t stride)
     {
         m_description.bufferData.push_back(GeometryBufferDataDesc{
             .type = GEO_BUFFER_TYPE::Ptr,
+            .vertexCount = count,
+            .vertexSize = stride,
             .vertexDataPtr = buffer.data(),
-            .count = count,
-            .elementSize = stride
         });
         return *this;
     }
 
     template <typename T>
-    inline GeometryBuilder &GeometryBuilder::AddBuffer(T *buffer, uint32_t count)
+    inline GeometryBuilder& GeometryBuilder::AddBuffer(T *buffer, uint32_t count)
     {
         m_description.bufferData.push_back(GeometryBufferDataDesc{
             .type = GEO_BUFFER_TYPE::Ptr,
+            .vertexCount = count,
+            .vertexSize = sizeof(T),
             .vertexDataPtr = buffer,
-            .count = count,
-            .elementSize = sizeof(T)
         });
         return *this;
     }
     template <typename T>
-    inline GeometryBuilder &GeometryBuilder::AddBuffer(T *buffer, uint32_t count, uint32_t stride)
+    inline GeometryBuilder& GeometryBuilder::AddBuffer(T *buffer, uint32_t count, uint32_t stride)
     {
         m_description.bufferData.push_back(GeometryBufferDataDesc{
             .type = GEO_BUFFER_TYPE::Ptr,
+            .vertexCount = count,
+            .vertexSize = stride,
             .vertexDataPtr = buffer,
-            .count = count,
-            .elementSize = stride
         });
         return *this;
     }

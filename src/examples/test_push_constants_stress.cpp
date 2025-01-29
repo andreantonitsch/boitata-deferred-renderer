@@ -104,9 +104,7 @@ int main()
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     "   << std::flush;
     }
     r.waitIdle();
-    for(int i = 1; i< scene.children.size(); i++){
-        delete scene.children[i];
-    }
+
     r.destroyLayout(layout);
     r.destroyShader(shader);
 

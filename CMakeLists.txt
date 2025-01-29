@@ -21,6 +21,7 @@ add_executable(test_buffer_manager src/examples/test_buffer_manager.cpp)
 add_executable(test_object_manager src/examples/test_object_manager.cpp)
 add_executable(test_push_constants src/examples/test_push_constants.cpp)
 add_executable(test_push_constants_stress src/examples/test_push_constants_stress.cpp)
+add_executable(test_geometry_builder src/examples/test_geometry_builder.cpp)
 
 
 #-lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
@@ -46,5 +47,6 @@ target_link_libraries(test_buffer_manager ${LIBS})
 target_link_libraries(test_object_manager ${LIBS})
 target_link_libraries(test_push_constants ${LIBS})
 target_link_libraries(test_push_constants_stress ${LIBS})
+target_link_libraries(test_geometry_builder ${LIBS})
 
 

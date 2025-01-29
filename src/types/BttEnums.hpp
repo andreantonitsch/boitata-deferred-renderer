@@ -82,9 +82,7 @@ namespace boitatah
         INDEX = 2,
         TRANSFER_SRC = 3,
         TRANSFER_DST = 4,
-        TRANSFER_DST_VERTEX = 5,
-        TRANSFER_DST_INDEX = 6,
-        UNIFORM_BUFFER = 7,
+        UNIFORM_BUFFER = 5,
 
     };
 
@@ -361,26 +359,22 @@ namespace boitatah
     {
         switch (usage)
         {
-        case BUFFER_USAGE::VERTEX:
-            return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-        case BUFFER_USAGE::INDEX:
-            return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         case BUFFER_USAGE::TRANSFER_DST:
             return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-
         case BUFFER_USAGE::TRANSFER_SRC:
             return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
-        case BUFFER_USAGE::TRANSFER_DST_VERTEX:
+        case BUFFER_USAGE::VERTEX:
             return VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-        case BUFFER_USAGE::TRANSFER_DST_INDEX:
+        case BUFFER_USAGE::INDEX:
             return VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         case BUFFER_USAGE::UNIFORM_BUFFER:
-            return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+            return VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
         default:
-            return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
         }
     }
     template VkBufferUsageFlags boitatah::castEnum<VkBufferUsageFlags, BUFFER_USAGE>(BUFFER_USAGE MODE);

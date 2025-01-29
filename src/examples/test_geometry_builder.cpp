@@ -40,26 +40,13 @@ int main()
     //GeometryData geometryData = squareVertices();
     //GeometryData geometryData = planeVertices(1.0, 1.0, 100, 200);
 
-    Handle<Geometry> geometry = GeometryBuilder::createGeoemtry(std::shared_ptr<Renderer>(&r))
-                                .SetVertexInfo(0, geometryData.vertices.size())
+    Handle<Geometry> geometry = GeometryBuilder::createGeoemtry(r.getResourceManager())
+                                .SetVertexInfo(geometryData.vertices.size(), 0)
                                 .SetIndexes(geometryData.indices)
                                 .AddBuffer(geometryData.vertices)
                                 .Finish();
 
-
-    // Handle<Geometry> geometry = r.getResourceManager().create(GeometryCreateDescription{
-    //     .vertexInfo = { static_cast<uint32_t>(geometryData.vertices.size()), 0},
-    //     .bufferData = { {   .vertexCount = static_cast<uint32_t>(geometryData.vertices.size()),
-    //                         .vertexSize = static_cast<uint32_t>(sizeof(Vertex)),
-    //                         .vertexDataPtr = geometryData.vertices.data()
-    //                     }},
-    //     .indexData = {
-    //                   .count = static_cast<uint32_t>(geometryData.indices.size()),
-    //                   .dataPtr = geometryData.indices.data(),
-    //                   },
-    // });
-
-    std::cout << "Created Geometry" << std::endl;
+    // std::cout << "Created Geometry" << std::endl;
             
 
     SceneNode triangle({

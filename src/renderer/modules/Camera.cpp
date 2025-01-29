@@ -11,6 +11,17 @@ namespace boitatah
         lookAt(desc.lookAtTarget);
     }
 
+    CameraUniforms Camera::getCameraUniforms()
+    {
+        return CameraUniforms{
+            .vp = getView() * getProjection(),
+            .projection = getProjection(),
+            .view = getView(),
+            .viewPos = m_position,
+            .aspect = m_aspect,
+        };
+    }
+
     void Camera::translate(glm::vec3 direction)
     {
         dirty();

@@ -133,6 +133,8 @@ namespace boitatah
         template <typename ResourceType>
         inline void GPUResourceManager::forceCommitResource(Handle<ResourceType> resource, uint32_t frame_index)
         {
+            if(!checkTransfers()) //if fence is signaled
+                waitForTransfers();
             beginCommitCommands();
             commitResourceCommand(resource, frame_index);
             submitCommitCommands();

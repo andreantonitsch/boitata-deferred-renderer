@@ -36,7 +36,7 @@ namespace boitatah
                                                          .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                                                          .type = COMMAND_BUFFER_TYPE::TRANSFER});\
         
-        m_transferFence = m_vk->createFence(true);
+        m_transferFence = m_vk->createFence(true); //create fence signaled
         m_bufferManager = std::make_shared<BufferManager>(m_vk);
         m_ResourceManagerTransferWriter = std::make_shared<VkCommandBufferWriter>(m_vk);
         m_ResourceManagerTransferWriter->setCommandBuffer(m_transferCommandBuffer.buffer);
@@ -45,22 +45,38 @@ namespace boitatah
         
         m_resourceManager = std::make_shared<GPUResourceManager>(m_vk, m_bufferManager, m_ResourceManagerTransferWriter);
 
-        // m_cameraUniforms = getBufferManager().reserveBuffer({
-        //     .request = sizeof(FrameUniforms),
-        //     .usage = BUFFER_USAGE::UNIFORM_BUFFER,
-        //     .sharing = SHARING_MODE::CONCURRENT,
-        // });
-
-        // camera uniforms
-        //  FrameUniforms frameUniforms{}; //auto ptr
-        //  m_cameraUniforms = createUniform<FrameUniforms>( frameUniforms );
-        //  updateUniform(m_cameraUniforms, new frame uniforms
+        // frame uniforms
+        m_frameUniform = m_resourceManager->create(GPUBufferCreateDescription{
+            .size = sizeof(FrameUniforms2),
+            .usage = BUFFER_USAGE::UNIFORM_BUFFER,
+            .sharing_mode = SHARING_MODE::EXCLUSIVE,
+            });
 
         m_baseLayout.layout = m_vk->createDescriptorLayout({.m_set = 0,
                                                             .bindingDescriptors = {
-                                                                {.binding = 0,
+                                                                {//.binding = 0,
                                                                  .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
-                                                                 .stages = STAGE_FLAG::VERTEX}}});
+                                                                 .stages = STAGE_FLAG::ALL_GRAPHICS,
+                                                                 .descriptorCount= 1,
+                                                                 }}});
+
+
+        // Handle<ShaderLayout> layoutHandle = pipelineLayoutPool.set(ShaderLayout{.setLayout = m_baseLayout, .layout})
+        // m_dummyPipeline = createShader({.layout = m_baseLayout})
+    }
+
+    void Renderer::updateCameraUniforms(Camera &camera)
+    {
+        frame_uniforms.camera = camera.getCameraUniforms();
+
+    }
+
+    void Renderer::updateFrameUniforms(uint32_t frame_index)
+    {
+        GPUBuffer& buffer = m_resourceManager->getResource(m_frameUniform);
+        buffer.copyData(&frame_uniforms, sizeof(FrameUniforms2));
+        m_resourceManager->forceCommitResource(m_frameUniform, frame_index);
+
     }
 
     void Renderer::handleWindowResize()
@@ -162,10 +178,6 @@ namespace boitatah
         auto vertexVkBuffer = vertexBuffer->getBuffer();
 
 
-        CameraModelMatrices push{
-            .model = scene.getGlobalMatrix()
-        };
-
         drawCommand({
             .drawBuffer = buffers.drawBuffer,
             .renderTarget = target,
@@ -192,6 +204,7 @@ namespace boitatah
     void Renderer::render(SceneNode &scene)
     {
         auto backbuffer = m_backBufferManager->getNext();
+        updateFrameUniforms(m_backBufferManager->getCurrentIndex());
         renderSceneNode(scene, backbuffer);
         presentRenderTarget(backbuffer);
     }
@@ -250,16 +263,7 @@ namespace boitatah
         // TODO cullings and whatever
         // TRANSFORM UPDATES
         // ETC
-
-        // RenderTarget target;
-        // renderTargetPool.tryGet(rendertarget, target);
-        // RenderTargetCmdBuffers buffers;
-        // rtCmdPool.tryGet(target.cmdBuffers, buffers);
-        // RenderPass pass;
-        // renderpassPool.tryGet(target.renderpass, pass);
-        // Image image;
-        // imagePool.tryGet(target.attachments[0], image);
-
+        
         RenderTarget target = renderTargetPool.get(rendertarget);
         RenderTargetCmdBuffers buffers = rtCmdPool.get(target.cmdBuffers);
         RenderPass pass = renderpassPool.get(target.renderpass);
@@ -283,6 +287,9 @@ namespace boitatah
             .scissorOffset = glm::vec2(0, 0),
         });
 
+        //indDummyPipeline({.commandBuffer = buffers.drawBuffer});
+
+
         //Bind Pipeline <-- relevant when shader is reused.
         //std::cout << "began RenderPass" << std::endl;
         Handle<Shader> boundPipeline;
@@ -301,24 +308,23 @@ namespace boitatah
                 boundPipeline = node->shader;
             }
 
-            CameraModelMatrices mvp{
-                .model = scene.m_globalTransform,
-            };
+            glm::mat4 model_mat = scene.getGlobalMatrix();
+
             pushPushConstants({
                 .drawBuffer = buffers.drawBuffer,
                 .layout = shaderPool.get(node->shader).layout.layout,
                 .push_constants = {
                 PushConstant{ //camera constant
-                    .ptr = &mvp,
+                    .ptr = &model_mat,
                     .offset = 0,
-                    .size = sizeof(CameraModelMatrices),
+                    .size = sizeof(glm::mat4),
                     .stages = STAGE_FLAG::ALL_GRAPHICS
                 }}}
             );
 
             renderToRenderTarget(*node, rendertarget, m_backBufferManager->getCurrentIndex());
         }
-
+ 
         m_vk->endRenderpassCommand({.commandBuffer = buffers.drawBuffer.buffer});
 
         m_vk->submitDrawCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer,
@@ -329,79 +335,18 @@ namespace boitatah
 
     void Renderer::render(SceneNode &scene, Camera &camera)
     {
+        updateCameraUniforms(camera);
         auto backbuffer = m_backBufferManager->getNext();
-
+        updateFrameUniforms(m_backBufferManager->getCurrentIndex());
         renderSceneNode(scene, camera, backbuffer);
-
         presentRenderTarget(backbuffer);
     }
 
     void Renderer::renderSceneNode(SceneNode &scene, Camera &camera, Handle<RenderTarget> &rendertargetHandle)
     {
-        std::vector<SceneNode *> nodes;
-        scene.sceneAsList(nodes);
-
-        // TODO cullings and whatever
-        // TRANSFORM UPDATES
-        // BUILD UPDATE TRANSFER BUFFER FOR CHANGED UNIFORMS
-        // SORT BY MATERIALS
-        // ETC
-
-        // COMMIT UNIFORM UPDATES OF ACTIVE NODES
-        //updateUniforms(nodes);
-
-
-        RenderTarget renderTarget;
-        renderTargetPool.tryGet(rendertargetHandle, renderTarget);
-        RenderTargetCmdBuffers renderTargetBuffers;
-        rtCmdPool.tryGet(renderTarget.cmdBuffers, renderTargetBuffers);
-        RenderPass pass;
-        renderpassPool.tryGet(renderTarget.renderpass, pass);
-        Image image;
-        imagePool.tryGet(renderTarget.attachments[0], image);
-
-
-        // update camera uniforms
-        FrameUniforms frameUniforms;
-        // copyDataToBuffer({.reservation = m_cameraUniforms,
-        //                   .data = &frameUniforms,
-        //                   .dataSize = sizeof(FrameUniforms)});
-
-        beginBuffer({.buffer = renderTargetBuffers.drawBuffer});
-
-        beginRenderpass({
-            .commandBuffer = renderTargetBuffers.drawBuffer,
-            .pass = pass,
-            .target = renderTarget,
-
-            .clearColor = glm::vec4(0, 0, 0, 1),
-            .scissorDims = image.dimensions,
-            .scissorOffset = glm::vec2(0, 0),
-        });
-
-        // bind dummy pipeline
-
-        // bind camera uniforms
-        // bindUniformsCommand({});
-
-        std::cout << "rendernode with camera" << std::endl;
-
-        // parallellizable?
-        for (const auto &node : nodes)
-        {
-            // if material changed,
-            //  bind pipeline
-            // bindPipelineCommand({});
-
-            // bind object matrix
-            // push constant?
-            // draw object
-            if (node->shader.isNull())
-                continue;
-        }
-        // End Render Pass
-        // End Buffer
-        // Submit buffer
+        updateCameraUniforms(camera);
+        updateFrameUniforms(0);
+        renderSceneNode(scene, rendertargetHandle);
     }
 
 #pragma endregion Rendering
@@ -573,6 +518,11 @@ namespace boitatah
         });
     }
 
+    void Renderer::setCameraUniforms(Camera &camera)
+    {
+        frame_uniforms.camera = camera.getCameraUniforms();
+    }
+
     void Renderer::submitBuffer(const SubmitBufferCommand &command)
     {
         m_vk->submitCmdBuffer({
@@ -586,7 +536,7 @@ namespace boitatah
     {
         m_vk->bindPipelineCommand({
             .drawBuffer =  command.commandBuffer.buffer,
-            .pipeline = m_dummyPipeline.pipeline
+            //.pipeline = m_dummyPipeline.pipeline
         });
     }
 

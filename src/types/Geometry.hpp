@@ -84,6 +84,7 @@ namespace boitatah
                 m_buffers.push_back(buffer);
             }
 
+            //Count, begin
             glm::ivec2 vertexInfo;
             Handle<GPUBuffer> indexBuffer;
             uint32_t indiceCount;

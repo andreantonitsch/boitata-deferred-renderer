@@ -8,13 +8,10 @@
 #include "Descriptors.hpp"
 #include "../collections/Pool.hpp"
 #include <glm/glm.hpp>
+#include <renderer/modules/Camera.hpp>
 
 namespace boitatah
 {
-    struct CameraModelMatrices{
-        glm::mat4 model;
-        glm::mat4 VP;
-    };
     
     struct PushConstant{
         void* ptr;
@@ -128,6 +125,18 @@ namespace boitatah
         glm::f32vec4 deltaTime;
         glm::f32vec4 sinTime;
         float a;
+    };
+
+    struct TimeUniforms{
+        float time;
+        float deltaTime;
+        float sinTime;
+        float a;
+    };
+
+    struct FrameUniforms2{
+        CameraUniforms camera;
+        TimeUniforms time;
     };
 
     enum class UNIFORM_TYPE

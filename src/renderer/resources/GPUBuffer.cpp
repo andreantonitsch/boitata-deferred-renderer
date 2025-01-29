@@ -60,7 +60,7 @@ namespace boitatah{
         if(m_descriptor.sharing == SHARING_MODE::EXCLUSIVE){
             auto manager = std::shared_ptr(m_manager)->getBufferManager();
             data.dirty = false;
-            std::cout << "copying to exclusive buffer" << std::endl;
+            //std::cout << "copying to exclusive buffer" << std::endl;
             manager->queueCopy<VkCommandBufferWriter>(writer, stagingBuffer, data.buffer);
         }
     };

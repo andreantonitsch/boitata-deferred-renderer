@@ -7,6 +7,7 @@
 #include "../collections/Pool.hpp"
 #include "../renderer/modules/Camera.hpp"
 
+#include <renderer/resources/builders/GeometryBuilder.hpp>
 using namespace boitatah;
 
 int main()
@@ -24,30 +25,33 @@ int main()
                                    .dimensions = {windowWidth, windowHeight}}});
 
     // Pipeline Layout for the Shader.
-    Handle<ShaderLayout> layout = r.createShaderLayout({});
+    Handle<ShaderLayout> layout = r.createShaderLayout({
+        .customPushConstants ={
+            PushConstantDesc{
+                .offset = sizeof(glm::mat4), //<-- must be larger or equal than sizeof(glm::mat4)
+                .size = sizeof(glm::mat4) * 2, //<- V P matrices
+                .stages = STAGE_FLAG::ALL_GRAPHICS}
+        }
+    });
 
-    // Shader Description
     Handle<Shader> shader = r.createShader({.name = "test",
                                             .vert = {
-                                                .byteCode = utils::readFile("./src/18_vert.spv"),
+                                                .byteCode = utils::readFile("./src/push_constants_vert.spv"),
                                                 .entryFunction = "main"},
-                                            .frag = {.byteCode = utils::readFile("./src/18_frag.spv"), .entryFunction = "main"},
+                                            .frag = {.byteCode = utils::readFile("./src/push_constants_frag.spv"), .entryFunction = "main"},
                                             .layout = layout,
-                                            .bindings = {{.stride = 20, .attributes = {{.format = FORMAT::RG_32_SFLOAT, .offset = 0}, {.format = FORMAT::RGB_32_SFLOAT, .offset = formatSize(FORMAT::RG_32_SFLOAT)}}}}});
-
-    GeometryData geometryData = planeVertices(1.0, 1.0, 100, 200);
+                                            .bindings = {{.stride = 24, .attributes = {{.format = FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = FORMAT::RGB_32_SFLOAT, .offset = formatSize(FORMAT::RG_32_SFLOAT)}}}}});
     
-    Handle<Geometry> geometry = r.getResourceManager().create(GeometryCreateDescription{
-        .vertexInfo = { static_cast<uint32_t>(geometryData.vertices.size()), 0},
-        .bufferData = { {   .vertexCount = static_cast<uint32_t>(geometryData.vertices.size()),
-                            .vertexSize = static_cast<uint32_t>(sizeof(Vertex)),
-                            .vertexDataPtr = geometryData.vertices.data()
-                        }},
-        .indexData = {
-                      .count = static_cast<uint32_t>(geometryData.indices.size()),
-                      .dataPtr = geometryData.indices.data(),
-                      },
-    });
+
+    GeometryData geometryData = triangleVertices();
+    //GeometryData geometryData = squareVertices();
+    //GeometryData geometryData = planeVertices(1.0, 1.0, 100, 200);
+
+    Handle<Geometry> geometry = GeometryBuilder::createGeoemtry(r.getResourceManager())
+                                .SetVertexInfo(geometryData.vertices.size(), 0)
+                                .SetIndexes(geometryData.indices)
+                                .AddBuffer(geometryData.vertices)
+                                .Finish();
 
 
     SceneNode triangle({
@@ -67,7 +71,7 @@ int main()
     while (!r.isWindowClosed())
     {
         r.render(scene, camera);
-
+        camera.roll(0.01);
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
     }
     r.waitIdle();

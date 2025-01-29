@@ -12,6 +12,14 @@
 
 namespace boitatah{
 
+    struct CameraUniforms {
+        glm::mat4 vp;
+        glm::mat4 projection;
+        glm::mat4 view;
+        glm::vec3 viewPos;
+        float aspect;
+    };
+
     struct CameraDesc{
         glm::vec3 lookAtTarget = glm::vec3(0.0,0.0,0.0);
         glm::vec3 position = glm::vec3(0.5,0.5,0.5);
@@ -25,6 +33,7 @@ namespace boitatah{
     class Camera{
         public:
             Camera(const CameraDesc& desc);
+            CameraUniforms getCameraUniforms();
             void translate(glm::vec3 direction);
             void lookAt(glm::vec3 target);
             void rotate(glm::quat rotation);

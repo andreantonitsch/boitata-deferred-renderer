@@ -111,6 +111,8 @@ namespace boitatah
 
         void beginRenderpass(const BeginRenderpassCommand &command);
 
+        void setCameraUniforms(Camera& camera);
+
         // Constructs a transfer queue for uniform updating on the beginning of the frame.
         void transferImage(const TransferImageCommand &command);
         void copyBuffer(const CopyBufferCommand &command);
@@ -145,12 +147,16 @@ namespace boitatah
         std::shared_ptr<Vulkan> m_vk;
         std::shared_ptr<WindowManager> m_window;
 
-
         // Frame Uniforms
-        Handle<BufferAddress> m_cameraUniforms;
+        FrameUniforms2 frame_uniforms;
+        Handle<GPUBuffer> m_frameUniform;
+        void updateCameraUniforms(Camera& camera);
+        void updateFrameUniforms(uint32_t frame_index);
+
+
         // Handle<Uniform> m_cameraUniforms;
         DescriptorSetLayout m_baseLayout;
-        Shader m_dummyPipeline;
+        Handle<Shader> m_dummyPipeline;
 
         CommandBuffer m_transferCommandBuffer;
         VkFence m_transferFence;

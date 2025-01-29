@@ -69,11 +69,13 @@ namespace boitatah{
                 uint32_t data_size = static_cast<uint32_t>(bufferDesc.vertexCount * bufferDesc.vertexSize);
                 bufferHandle = create(GPUBufferCreateDescription{
                     .size = data_size,
-                    .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
+                    .usage = BUFFER_USAGE::VERTEX,
                     .sharing_mode = SHARING_MODE::EXCLUSIVE,
                 });
                 auto& buffer = getResource(bufferHandle);
                 buffer.setStrideCount(bufferDesc.vertexSize, bufferDesc.vertexCount);
+
+
                 buffer.copyData(bufferDesc.vertexDataPtr, data_size);
                 geo.addOwnedBuffer(bufferHandle);
             }
@@ -84,25 +86,38 @@ namespace boitatah{
             }
 
         }
-
         if (description.indexData.count != 0)
         {
-            uint32_t data_size = static_cast<uint32_t>(description.indexData.count  * sizeof(uint32_t));
-            auto bufferHandle = create(GPUBufferCreateDescription{
-                .size = data_size,
-                .usage = BUFFER_USAGE::TRANSFER_DST_INDEX,
-                .sharing_mode = SHARING_MODE::EXCLUSIVE,
-            });
-            auto& buffer = getResource(bufferHandle);
-            buffer.copyData(description.indexData.dataPtr, data_size);
-            geo.indexBuffer = bufferHandle;
-            geo.indiceCount = description.indexData.count;
+
+            if(description.indexData.type == GEO_BUFFER_TYPE::Ptr){
+                uint32_t data_size = static_cast<uint32_t>(description.indexData.count  * sizeof(uint32_t));
+                auto bufferHandle = create(GPUBufferCreateDescription{
+                    .size = data_size,
+                    .usage = BUFFER_USAGE::INDEX,
+                    .sharing_mode = SHARING_MODE::EXCLUSIVE,
+                });
+                auto& buffer = getResource(bufferHandle);
+                buffer.copyData(description.indexData.dataPtr, data_size);
+                geo.indexBuffer = bufferHandle;
+                geo.indiceCount = description.indexData.count;
+            }
+            // if(description.indexData.type == GEO_BUFFER_TYPE::UIntVector){
+            //     uint32_t data_size = static_cast<uint32_t>(description.indexData.count  * sizeof(uint32_t));
+            //     auto bufferHandle = create(GPUBufferCreateDescription{
+            //         .size = data_size,
+            //         .usage = BUFFER_USAGE::INDEX,
+            //         .sharing_mode = SHARING_MODE::EXCLUSIVE,
+            //     });
+            //     auto& buffer = getResource(bufferHandle);
+            //     //TODO fix the const cast away
+            //     buffer.copyData(const_cast<uint32_t*>(description.indexData.index_vector.data()), data_size);
+            //     geo.indexBuffer = bufferHandle;
+            //     geo.indiceCount = description.indexData.count;
+            // }
         }
-
         geo.vertexInfo = description.vertexInfo;
-        geo.indiceCount = description.indexData.count;
         commitGeometryData(geo);
-
+        std::cout << "commited" << std::endl;
         return m_resourcePool->set(geo);
     }
 

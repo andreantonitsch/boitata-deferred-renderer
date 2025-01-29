@@ -32,7 +32,7 @@ int main()
 
     auto exclusiveBufferHandle = objManager.create(GPUBufferCreateDescription{
         .size = 1024u,
-        .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
+        .usage = BUFFER_USAGE::VERTEX,
         .sharing_mode = SHARING_MODE::EXCLUSIVE,
     });
 
@@ -40,7 +40,7 @@ int main()
 
     auto sharedBufferHandle = objManager.create(GPUBufferCreateDescription{
         .size = 1024u,
-        .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
+        .usage = BUFFER_USAGE::VERTEX,
         .sharing_mode = SHARING_MODE::CONCURRENT,
     });
 

@@ -269,7 +269,7 @@ void boitatah::vk::Vulkan::waitForFence(const VkFence &fence) const
 bool boitatah::vk::Vulkan::checkFenceStatus(VkFence fence)
 {
     VkResult result = vkGetFenceStatus(device, fence);
-    return result == VK_SUCCESS;
+    return result == VK_SUCCESS; //fence is signaled
 }
 
 #pragma endregion Synchronization
@@ -855,7 +855,7 @@ void boitatah::vk::Vulkan::copyToMappedMemory(const CopyMappedMemoryVk &op) cons
     std::byte* start = static_cast<std::byte*>(op.data) + op.offset;
     std::byte* end = start + op.elementSize * op.elementCount;
     
-    std::cout << "Vulkan copy data " << start << " " << end << " "<< op.map << std::endl;
+    //std::cout << "Vulkan copy data " << start << " " << end << " "<< op.map << std::endl;
 
     std::copy(
         start,
@@ -887,11 +887,14 @@ VkPipelineLayout boitatah::vk::Vulkan::createShaderLayout(const ShaderLayoutDesc
           .size = push_constant.size,
         });
     }
-
+    std::vector<VkDescriptorSetLayout> descripLayouts;
+    descripLayouts.push_back(desc.baseLayout);
+    descripLayouts.push_back(desc.materialLayout);
+    
     VkPipelineLayoutCreateInfo layoutCreate{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount = 0,
-        .pSetLayouts = nullptr,
+        .setLayoutCount = static_cast<uint32_t>(descripLayouts.size()),
+        .pSetLayouts = descripLayouts.size() == 0 ? 0 : descripLayouts.data(),
         .pushConstantRangeCount = static_cast<uint32_t>(ranges.size()),
         .pPushConstantRanges = ranges.data(),
     };
@@ -910,6 +913,7 @@ VkDescriptorSetLayout boitatah::vk::Vulkan::createDescriptorLayout(const Descrip
 
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     uint32_t binding_index = 0;
+
     for(const auto& bindingDesc : desc.bindingDescriptors){
         VkDescriptorSetLayoutBinding binding{
             .binding = binding_index,
@@ -917,6 +921,7 @@ VkDescriptorSetLayout boitatah::vk::Vulkan::createDescriptorLayout(const Descrip
             .descriptorCount = binding.descriptorCount,
             .stageFlags = castEnum<VkShaderStageFlags>(bindingDesc.stages)
         };
+        bindings.push_back(binding);
         binding_index++;
     }
 
