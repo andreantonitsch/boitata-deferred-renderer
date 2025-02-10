@@ -18,9 +18,9 @@ int main()
     Renderer r({.windowDimensions = {windowWidth, windowHeight},
                 .appName = "Test Frame Buffer",
                 .debug = true,
-                .swapchainFormat = FORMAT::BGRA_8_SRGB,
+                .swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB,
                 .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR},
-                                   .attachmentFormats = {FORMAT::RGBA_8_SRGB},
+                                   .attachmentFormats = {IMAGE_FORMAT::RGBA_8_SRGB},
                                    .dimensions = {windowWidth, windowHeight}}
                 });
 

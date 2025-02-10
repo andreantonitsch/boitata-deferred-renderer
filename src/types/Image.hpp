@@ -9,7 +9,7 @@ namespace boitatah
 {
     struct ImageDesc
     {
-        FORMAT format;
+        IMAGE_FORMAT format;
         glm::u32vec2 dimensions;
         uint32_t mipLevels = 1;
         IMAGE_LAYOUT initialLayout;

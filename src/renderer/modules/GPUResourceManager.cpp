@@ -27,7 +27,6 @@ namespace boitatah{
 
     void GPUResourceManager::submitCommitCommands()
     {
-        //std::cout << "submiting transfer commands" << std::endl;
         m_commandBufferWriter->submit({
             .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
         });
@@ -64,7 +63,7 @@ namespace boitatah{
         {
 
             Handle<GPUBuffer> bufferHandle;
-            if(bufferDesc.type == GEO_BUFFER_TYPE::Ptr)
+            if(bufferDesc.data_type == GEO_DATA_TYPE::Ptr)
             {
                 uint32_t data_size = static_cast<uint32_t>(bufferDesc.vertexCount * bufferDesc.vertexSize);
                 bufferHandle = create(GPUBufferCreateDescription{
@@ -77,19 +76,19 @@ namespace boitatah{
 
 
                 buffer.copyData(bufferDesc.vertexDataPtr, data_size);
-                geo.addOwnedBuffer(bufferHandle);
+                geo.addOwnedBuffer(bufferHandle, bufferDesc.buffer_type);
             }
 
-            if(bufferDesc.type == GEO_BUFFER_TYPE::GPUBuffer){
+            if(bufferDesc.data_type == GEO_DATA_TYPE::GPUBuffer){
                 bufferHandle = bufferDesc.buffer;
-                geo.addExternalBuffer(bufferHandle);
+                geo.addExternalBuffer(bufferHandle, bufferDesc.buffer_type);
             }
 
         }
         if (description.indexData.count != 0)
         {
 
-            if(description.indexData.type == GEO_BUFFER_TYPE::Ptr){
+            if(description.indexData.data_type == GEO_DATA_TYPE::Ptr){
                 uint32_t data_size = static_cast<uint32_t>(description.indexData.count  * sizeof(uint32_t));
                 auto bufferHandle = create(GPUBufferCreateDescription{
                     .size = data_size,
@@ -101,19 +100,6 @@ namespace boitatah{
                 geo.indexBuffer = bufferHandle;
                 geo.indiceCount = description.indexData.count;
             }
-            // if(description.indexData.type == GEO_BUFFER_TYPE::UIntVector){
-            //     uint32_t data_size = static_cast<uint32_t>(description.indexData.count  * sizeof(uint32_t));
-            //     auto bufferHandle = create(GPUBufferCreateDescription{
-            //         .size = data_size,
-            //         .usage = BUFFER_USAGE::INDEX,
-            //         .sharing_mode = SHARING_MODE::EXCLUSIVE,
-            //     });
-            //     auto& buffer = getResource(bufferHandle);
-            //     //TODO fix the const cast away
-            //     buffer.copyData(const_cast<uint32_t*>(description.indexData.index_vector.data()), data_size);
-            //     geo.indexBuffer = bufferHandle;
-            //     geo.indiceCount = description.indexData.count;
-            // }
         }
         geo.vertexInfo = description.vertexInfo;
         commitGeometryData(geo);

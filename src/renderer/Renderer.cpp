@@ -7,8 +7,7 @@
 #include <vulkan/vulkan.h>
 
 #include <stdexcept>
-
-
+#include <utils/utils.hpp>
 
 namespace boitatah
 {
@@ -52,17 +51,29 @@ namespace boitatah
             .sharing_mode = SHARING_MODE::EXCLUSIVE,
             });
 
-        m_baseLayout.layout = m_vk->createDescriptorLayout({.m_set = 0,
-                                                            .bindingDescriptors = {
-                                                                {//.binding = 0,
-                                                                 .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
-                                                                 .stages = STAGE_FLAG::ALL_GRAPHICS,
-                                                                 .descriptorCount= 1,
-                                                                 }}});
+        
+        base_setLayout = createDescriptorLayout({
+                                                    .bindingDescriptors = {
+                                                    {//.binding = 0,
+                                                        .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
+                                                        .stages = STAGE_FLAG::ALL_GRAPHICS,
+                                                        .descriptorCount= 1,
+                                                        }}});
 
+        //create base layout with push constants for model matrices
+        Handle<ShaderLayout> m_baseShaderLayout = createShaderLayout({});
 
-        // Handle<ShaderLayout> layoutHandle = pipelineLayoutPool.set(ShaderLayout{.setLayout = m_baseLayout, .layout})
-        // m_dummyPipeline = createShader({.layout = m_baseLayout})
+        m_descriptorManager = std::make_shared<DescriptorPoolManager>(m_vk, m_resourceManager, 4096);
+        m_dummyPipeline = createShader({
+            .vert = {.byteCode = utils::readFile("./src/09_shader_base_vert.spv"),
+                     .entryFunction = "main"},
+            .frag = {.byteCode = utils::readFile("./src/09_shader_base_frag.spv"),
+                     .entryFunction = "main"},
+                                            
+            .layout = m_baseShaderLayout,
+            .bindings = {}
+            });
+        
     }
 
     void Renderer::updateCameraUniforms(Camera &camera)
@@ -76,7 +87,7 @@ namespace boitatah
         GPUBuffer& buffer = m_resourceManager->getResource(m_frameUniform);
         buffer.copyData(&frame_uniforms, sizeof(FrameUniforms2));
         m_resourceManager->forceCommitResource(m_frameUniform, frame_index);
-
+        
     }
 
     void Renderer::handleWindowResize()
@@ -156,7 +167,7 @@ namespace boitatah
         // vertex and mesh data
         Geometry geom = m_resourceManager->getResource(scene.geometry);
 
-        Handle<GPUBuffer> vertexBufferHandle = geom[0];
+        Handle<GPUBuffer> vertexBufferHandle = geom.getBuffer(VERTEX_BUFFER_TYPE::POSITION);
 
         auto vertexGPUBuffer = m_resourceManager->getResource(vertexBufferHandle);
         auto vertexGPUBufferContent = vertexGPUBuffer.get_content(frameIndex);
@@ -167,7 +178,7 @@ namespace boitatah
         m_bufferManager->getAddressReservation(vertexGPUBufferContent.buffer, vertexBufferReservation);
         m_bufferManager->getAddressBuffer(vertexGPUBufferContent.buffer, vertexBuffer);
 
-        auto indexBufferAddressHandle = m_resourceManager->getResource(geom.indexBuffer).get_content(frameIndex).buffer;
+        auto indexBufferAddressHandle = m_resourceManager->getResource(geom.IndexBuffer()).get_content(frameIndex).buffer;
         Buffer* indexBuffer;
         BufferReservation indexBufferReservation;
         m_bufferManager->getAddressBuffer(indexBufferAddressHandle, indexBuffer);
@@ -176,7 +187,6 @@ namespace boitatah
 
         auto indexVkBuffer = indexBuffer->getBuffer();
         auto vertexVkBuffer = vertexBuffer->getBuffer();
-
 
         drawCommand({
             .drawBuffer = buffers.drawBuffer,
@@ -194,9 +204,9 @@ namespace boitatah
             //.indexBuffer = geom.indexBuffer.isNull() ? VK_NULL_HANDLE : indexBuffer->getBuffer(),
             .indexBuffer = indexVkBuffer,
             .indexBufferOffset  = indexBufferReservation.offset,
-            .indexCount = geom.indiceCount,
+            .indexCount = geom.IndexCount(),
 
-            .vertexInfo = geom.vertexInfo,
+            .vertexInfo = geom.VertexInfo(),
             .instanceInfo = {1, 0}, // scene.instanceInfo
 
         });
@@ -273,6 +283,7 @@ namespace boitatah
 
         m_vk->resetCmdBuffer(buffers.drawBuffer.buffer);
         m_vk->resetCmdBuffer(buffers.transferBuffer.buffer);
+        m_descriptorManager->resetPools(m_backBufferManager->getCurrentIndex());
 
         beginBuffer({.buffer = buffers.drawBuffer});
 
@@ -287,8 +298,21 @@ namespace boitatah
             .scissorOffset = glm::vec2(0, 0),
         });
 
-        //indDummyPipeline({.commandBuffer = buffers.drawBuffer});
+        //binds dummy pipeline
+        bindPipelineCommand({.commandBuffer = buffers.drawBuffer, .shader = m_dummyPipeline});
+        auto& dummyPipeline = shaderPool.get(m_dummyPipeline);
+        //bind camera uniforms.
 
+        bindDescriptorSetCommand({
+                                   .drawBuffer = buffers.drawBuffer,
+                                   .set_index = 0,
+                                   .set_layout = setLayoutPool.get(base_setLayout),
+                                   .shader_layout = dummyPipeline.layout,
+                                   .bindings = {{
+                                            .binding = 0,
+                                            .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
+                                            .buffer = m_frameUniform
+                                  }}});
 
         //Bind Pipeline <-- relevant when shader is reused.
         //std::cout << "began RenderPass" << std::endl;
@@ -312,7 +336,7 @@ namespace boitatah
 
             pushPushConstants({
                 .drawBuffer = buffers.drawBuffer,
-                .layout = shaderPool.get(node->shader).layout.layout,
+                .layout = shaderPool.get(node->shader).layout.pipeline,
                 .push_constants = {
                 PushConstant{ //camera constant
                     .ptr = &model_mat,
@@ -344,8 +368,6 @@ namespace boitatah
 
     void Renderer::renderSceneNode(SceneNode &scene, Camera &camera, Handle<RenderTarget> &rendertargetHandle)
     {
-        updateCameraUniforms(camera);
-        updateFrameUniforms(0);
         renderSceneNode(scene, rendertargetHandle);
     }
 
@@ -355,7 +377,9 @@ namespace boitatah
     void Renderer::cleanup()
     {
         m_vk->waitIdle();
-        m_vk->destroyDescriptorSetLayout(m_baseLayout.layout);
+
+        auto& layout = setLayoutPool.get(base_setLayout);
+        m_vk->destroyDescriptorSetLayout(layout.layout);
 
         if(m_vk->checkFenceStatus(m_transferFence))
             m_vk->waitForFence(m_transferFence);
@@ -536,7 +560,7 @@ namespace boitatah
     {
         m_vk->bindPipelineCommand({
             .drawBuffer =  command.commandBuffer.buffer,
-            //.pipeline = m_dummyPipeline.pipeline
+            .pipeline = shaderPool.get(m_dummyPipeline).pipeline
         });
     }
 
@@ -548,12 +572,27 @@ namespace boitatah
         });
     }
 
+    void Renderer::bindDescriptorSetCommand(const BindSetCommand &command)
+    {
+        //allocate
+        auto set = m_descriptorManager->getSet(command.set_layout, m_backBufferManager->getCurrentIndex());
+        
+        auto binds = std::span<const BindBindingDesc>(command.bindings);
+        // //write set
+        m_descriptorManager->writeSet(binds, set, m_backBufferManager->getCurrentIndex());
+        // //bind
+        m_descriptorManager->bindSet(command.drawBuffer,
+                                     command.shader_layout, 
+                                     set, command.set_index,  
+                                     m_backBufferManager->getCurrentIndex());
+    }
+
     void Renderer::pushPushConstants(const PushConstantsCommand &command)
     {
         for(auto& push_constant : command.push_constants){
         vkCmdPushConstants(
             command.drawBuffer.buffer,
-            command.layout.layout,
+            command.layout.pipeline,
             castEnum<VkShaderStageFlags>(push_constant.stages),
             push_constant.offset,
             push_constant.size,
@@ -631,7 +670,7 @@ namespace boitatah
                 .vert = shader.vert,
                 .frag = shader.frag,
                 .renderpass = pass.renderPass,
-                .layout = layout.layout,
+                .layout = layout.pipeline,
                 .bindings = vkbindings,
                 .attributes = vkattributes,
             },
@@ -717,59 +756,50 @@ namespace boitatah
         return imagePool.set(image);
     }
 
+    Handle<DescriptorSetLayout> Renderer::createDescriptorLayout(const DescriptorSetLayoutDesc &desc)
+    {
+        DescriptorSetLayout layout;
+        //std::vector<DescriptorSetRatio> ratios;
+        std::vector<BindingDesc> bindingDesc;
+        layout.layout = m_vk->createDescriptorLayout(desc);
+
+        for(auto& bindDesc : desc.bindingDescriptors){
+            for (size_t i = 0; i <= layout.ratios.size(); i++)
+            {
+                if(i == layout.ratios.size()){
+                    DescriptorSetRatio ratio;
+                    ratio.type = bindDesc.type;
+                    ratio.quantity = bindDesc.descriptorCount;
+                    layout.ratios.push_back(ratio);
+                    break;
+                }
+                if(layout.ratios[i].type == bindDesc.type)
+                {
+                    layout.ratios[i].quantity += bindDesc.descriptorCount;
+                    break;
+                }
+            }            
+        }
+        return setLayoutPool.set(layout);
+    }
+
     Handle<ShaderLayout> Renderer::createShaderLayout(const ShaderLayoutDesc &desc)
     {
+        auto& baseLayout = setLayoutPool.get(base_setLayout);
         VkDescriptorSetLayout materialLayout = m_vk->createDescriptorLayout(desc.materialLayout);
-        ShaderLayout layout{.layout = m_vk->createShaderLayout(
+        ShaderLayout layout{.pipeline = m_vk->createShaderLayout(
                                 {
                                     .materialLayout = materialLayout,
-                                    .baseLayout = m_baseLayout.layout,
+                                    .baseLayout = baseLayout.layout,
+                                    .pushConstants ={
+                                        PushConstantDesc{
+                                        .offset = 0, //<-- must be larger or equal than sizeof(glm::mat4)
+                                        .size = sizeof(glm::mat4), //<- M matrices
+                                        .stages = STAGE_FLAG::ALL_GRAPHICS}},
                                 })};
 
         return pipelineLayoutPool.set(layout);
     }
-
-    // Handle<Geometry> Renderer::createGeometry(const GeometryCreateDescription &desc)
-    // {
-    //     m_resourceManager->beginCommitCommands();
-
-    //     Geometry geo{};
-    //     for(auto& bufferDesc : desc.bufferData)
-    //     {
-    //         uint32_t data_size = static_cast<uint32_t>(bufferDesc.vertexCount * bufferDesc.vertexSize);
-    //         auto bufferHandle = m_resourceManager->create(GPUBufferCreateDescription{
-    //             .size = bufferDesc.vertexCount * bufferDesc.vertexSize,
-    //             .usage = BUFFER_USAGE::TRANSFER_DST_VERTEX,
-    //             .sharing_mode = SHARING_MODE::EXCLUSIVE,
-    //         });
-    //         auto buffer = m_resourceManager->getResource(bufferHandle);
-    //         buffer.copyData(bufferDesc.vertexDataPtr, data_size);
-
-    //         geo.m_buffers.push_back({.buffer = bufferHandle, .count = bufferDesc.vertexCount, .elementSize = bufferDesc.vertexSize});
-    //         m_resourceManager->commitResourceCommand(bufferHandle, 0);
-    //         m_resourceManager->commitResourceCommand(bufferHandle, 1);
-    //     }
-
-    //     if (desc.indexData.count != 0)
-    //     {
-    //         uint32_t data_size = static_cast<uint32_t>(desc.indexData.count  * sizeof(uint32_t));
-    //         auto bufferHandle = m_resourceManager->create(GPUBufferCreateDescription{
-    //             .size = data_size,
-    //             .usage = BUFFER_USAGE::TRANSFER_DST_INDEX,
-    //             .sharing_mode = SHARING_MODE::EXCLUSIVE,
-    //         });
-    //         auto buffer = m_resourceManager->getResource(bufferHandle);
-    //         buffer.copyData(desc.indexData.dataPtr, data_size);
-    //     }
-        
-    //     m_resourceManager->submitCommitCommands();
-
-    //     std::cout << "copied index buffer " << std::endl;
-    //     geo.vertexInfo = desc.vertexInfo;
-    //     geo.indiceCount = desc.indexData.count;
-
-    //     return geometryPool.set(geo);
-    // }
 
     Handle<RenderPass> Renderer::getBackBufferRenderPass()
     {

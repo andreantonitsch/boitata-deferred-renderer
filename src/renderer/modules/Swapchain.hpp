@@ -26,7 +26,7 @@ namespace boitatah
 
     struct SwapchainOptions
     {
-        FORMAT format;
+        IMAGE_FORMAT format;
         bool useValidationLayers = false;
     };
 
@@ -74,7 +74,7 @@ namespace boitatah
         SwapchainSupport getSwapchainSupport(VkPhysicalDevice physicalDevice);
         VkSurfaceFormatKHR chooseSwapSurfaceFormat(
             const std::vector<VkSurfaceFormatKHR> &availableFormats,
-            FORMAT scFormat,
+            IMAGE_FORMAT scFormat,
             COLOR_SPACE scColorSpace);
         VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
         VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availableModes);

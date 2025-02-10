@@ -26,9 +26,6 @@ namespace boitatah::buffer
         Handle<Block> reservedBlock;
     };
 
-
-
-
     struct BufferDesc
     {
         // uint32_t alignment;
@@ -60,5 +57,11 @@ namespace boitatah::buffer
         uint32_t request;
         BUFFER_USAGE usage;
         SHARING_MODE sharing;
+    };
+
+    struct BufferAccessData{
+        Buffer* buffer;
+        uint32_t offset;
+        uint32_t size;
     };
 }

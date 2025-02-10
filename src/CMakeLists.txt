@@ -18,6 +18,7 @@ set(LIB_DR_SOURCES
             renderer/modules/BackBuffer.cpp
             renderer/Renderer.cpp
             renderer/modules/Camera.cpp
+            vulkan/DescriptorPoolManager.cpp
             vulkan/Vulkan.cpp
             vulkan/Window.cpp
 )

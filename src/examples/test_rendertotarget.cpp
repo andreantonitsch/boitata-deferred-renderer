@@ -17,7 +17,7 @@ int main()
 
     std::vector<AttachmentDesc> attachments{
         {.index = 0,
-         .format = FORMAT::RGBA_8_SRGB,
+         .format = IMAGE_FORMAT::RGBA_8_SRGB,
          .layout = IMAGE_LAYOUT::COLOR_ATT_OPTIMAL,
          .initialLayout = IMAGE_LAYOUT::UNDEFINED,
          .finalLayout = IMAGE_LAYOUT::COLOR_ATT_OPTIMAL},
@@ -25,7 +25,7 @@ int main()
 
     std::vector<ImageDesc> fbAttImageDesc = {
         {
-            .format = FORMAT::RGBA_8_SRGB,
+            .format = IMAGE_FORMAT::RGBA_8_SRGB,
             .dimensions = {windowWidth, windowHeight},
             .initialLayout = IMAGE_LAYOUT::UNDEFINED,
             .usage = IMAGE_USAGE::COLOR_ATT_TRANSFER_SRC,
@@ -41,9 +41,9 @@ int main()
     Renderer r({.windowDimensions = {windowWidth, windowHeight},
                 .appName = "Test Frame Buffer",
                 .debug = true,
-                .swapchainFormat = FORMAT::BGRA_8_SRGB,
+                .swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB,
                 .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR},
-                                   .attachmentFormats = {FORMAT::RGBA_8_SRGB},
+                                   .attachmentFormats = {IMAGE_FORMAT::RGBA_8_SRGB},
                                    .dimensions = {windowWidth, windowHeight}}
                 });
 

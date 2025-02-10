@@ -19,38 +19,34 @@ int main()
     Renderer r({.windowDimensions = {windowWidth, windowHeight},
                 .appName = "Test Frame Buffer",
                 .debug = true,
-                .swapchainFormat = FORMAT::BGRA_8_UNORM,
+                .swapchainFormat = IMAGE_FORMAT::BGRA_8_UNORM,
                 .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR},
-                                   .attachmentFormats = {FORMAT::BGRA_8_UNORM},
+                                   .attachmentFormats = {IMAGE_FORMAT::BGRA_8_UNORM},
                                    .dimensions = {windowWidth, windowHeight}}});
 
     // Pipeline Layout for the Shader.
     Handle<ShaderLayout> layout = r.createShaderLayout({
-        .customPushConstants ={
-            PushConstantDesc{
-                .offset = sizeof(glm::mat4), //<-- must be larger or equal than sizeof(glm::mat4)
-                .size = sizeof(glm::mat4) * 2, //<- V P matrices
-                .stages = STAGE_FLAG::ALL_GRAPHICS}
-        }
+
     });
 
     Handle<Shader> shader = r.createShader({.name = "test",
                                             .vert = {
-                                                .byteCode = utils::readFile("./src/push_constants_vert.spv"),
+                                                .byteCode = utils::readFile("./src/camera_vert.spv"),
                                                 .entryFunction = "main"},
-                                            .frag = {.byteCode = utils::readFile("./src/push_constants_frag.spv"), .entryFunction = "main"},
+                                            .frag = {.byteCode = utils::readFile("./src/camera_frag.spv"), .entryFunction = "main"},
                                             .layout = layout,
-                                            .bindings = {{.stride = 24, .attributes = {{.format = FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = FORMAT::RGB_32_SFLOAT, .offset = formatSize(FORMAT::RG_32_SFLOAT)}}}}});
+                                            .bindings = {{.stride = 24, .attributes = {{.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = formatSize(IMAGE_FORMAT::RG_32_SFLOAT)}}}}});
     
 
-    GeometryData geometryData = triangleVertices();
+    //GeometryData geometryData = triangleVertices();
+    GeometryData geometryData = quadVertices();
     //GeometryData geometryData = squareVertices();
     //GeometryData geometryData = planeVertices(1.0, 1.0, 100, 200);
 
     Handle<Geometry> geometry = GeometryBuilder::createGeoemtry(r.getResourceManager())
                                 .SetVertexInfo(geometryData.vertices.size(), 0)
                                 .SetIndexes(geometryData.indices)
-                                .AddBuffer(geometryData.vertices)
+                                .AddBuffer(VERTEX_BUFFER_TYPE::POSITION, geometryData.vertices)
                                 .Finish();
 
 
@@ -64,13 +60,21 @@ int main()
     SceneNode scene({.name = "root scene"});
     scene.add(&triangle);
 
-    Camera camera({.aspect = static_cast<float>(windowWidth) / windowHeight});
-    
+    Camera camera({
+                   .position = glm::float3(0,0,-10),
+
+                   .aspect = static_cast<float>(windowWidth) / windowHeight,
+                   
+                   });
+
+
+    camera.lookAt(glm::vec3(0));
     boitatah::utils::Timewatch timewatch(1000);
 
     while (!r.isWindowClosed())
     {
         r.render(scene, camera);
+        ///camera.rotate(glm::vec3(0.0, 0.01, 0.0));
         camera.roll(0.01);
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
     }

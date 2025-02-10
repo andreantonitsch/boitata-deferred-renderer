@@ -17,7 +17,7 @@ namespace boitatah
         LINEAR = 2,
     };
 
-    enum class FORMAT
+    enum class IMAGE_FORMAT
     {
         RGBA_8_SRGB = 1,
         BGRA_8_SRGB = 2,
@@ -117,15 +117,16 @@ namespace boitatah
         NORMAL,
     };
 
-    enum class SHARING_MODE
+    enum class SHARING_MODE 
     {
         EXCLUSIVE = 1,
         CONCURRENT = 2,
     };
 
-    enum class DESCRIPTOR_TYPE
+    //TODO standardize
+    enum class DESCRIPTOR_TYPE : uint32_t
     {
-        UNIFORM_BUFFER = 1,
+        UNIFORM_BUFFER = 0U,
     };
 
     enum class STAGE_FLAG
@@ -155,55 +156,55 @@ namespace boitatah
     template VkDescriptorType boitatah::castEnum<VkDescriptorType, DESCRIPTOR_TYPE>(DESCRIPTOR_TYPE);
 
     template <>
-    inline VkFormat boitatah::castEnum(FORMAT format)
+    inline VkFormat boitatah::castEnum(IMAGE_FORMAT format)
     {
         switch (format)
         {
-        case FORMAT::RGBA_8_SRGB:
+        case IMAGE_FORMAT::RGBA_8_SRGB:
             return VK_FORMAT_R8G8B8A8_SRGB;
-        case FORMAT::BGRA_8_SRGB:
+        case IMAGE_FORMAT::BGRA_8_SRGB:
             return VK_FORMAT_B8G8R8A8_SRGB;
-        case FORMAT::RGBA_8_UNORM:
+        case IMAGE_FORMAT::RGBA_8_UNORM:
             return VK_FORMAT_R8G8B8A8_UNORM;
-        case FORMAT::BGRA_8_UNORM:
+        case IMAGE_FORMAT::BGRA_8_UNORM:
             return VK_FORMAT_B8G8R8A8_UNORM;
-        case FORMAT::R_32_SFLOAT:
+        case IMAGE_FORMAT::R_32_SFLOAT:
             return VK_FORMAT_R32_SFLOAT;
-        case FORMAT::RG_32_SFLOAT:
+        case IMAGE_FORMAT::RG_32_SFLOAT:
             return VK_FORMAT_R32G32_SFLOAT;
-        case FORMAT::RGB_32_SFLOAT:
+        case IMAGE_FORMAT::RGB_32_SFLOAT:
             return VK_FORMAT_R32G32B32_SFLOAT;
-        case FORMAT::RGBA_32_SFLOAT:
+        case IMAGE_FORMAT::RGBA_32_SFLOAT:
             return VK_FORMAT_R32G32B32A32_SFLOAT;
-        case FORMAT::R_32_SINT:
+        case IMAGE_FORMAT::R_32_SINT:
             return VK_FORMAT_R32_SINT;
-        case FORMAT::RG_32_SINT:
+        case IMAGE_FORMAT::RG_32_SINT:
             return VK_FORMAT_R32G32_SINT;
-        case FORMAT::RGB_32_SINT:
+        case IMAGE_FORMAT::RGB_32_SINT:
             return VK_FORMAT_R32G32B32_SINT;
-        case FORMAT::RGBA_32_SINT:
+        case IMAGE_FORMAT::RGBA_32_SINT:
             return VK_FORMAT_R32G32B32A32_SINT;
-        case FORMAT::R_32_UINT:
+        case IMAGE_FORMAT::R_32_UINT:
             return VK_FORMAT_R32_UINT;
-        case FORMAT::RG_32_UINT:
+        case IMAGE_FORMAT::RG_32_UINT:
             return VK_FORMAT_R32G32_UINT;
-        case FORMAT::RGB_32_UINT:
+        case IMAGE_FORMAT::RGB_32_UINT:
             return VK_FORMAT_R32G32B32_UINT;
-        case FORMAT::RGBA_32_UINT:
+        case IMAGE_FORMAT::RGBA_32_UINT:
             return VK_FORMAT_R32G32B32A32_UINT;
-        case FORMAT::R_64_SFLOAT:
+        case IMAGE_FORMAT::R_64_SFLOAT:
             return VK_FORMAT_R64_SFLOAT;
-        case FORMAT::RG_64_SFLOAT:
+        case IMAGE_FORMAT::RG_64_SFLOAT:
             return VK_FORMAT_R64G64_SFLOAT;
-        case FORMAT::RGB_64_SFLOAT:
+        case IMAGE_FORMAT::RGB_64_SFLOAT:
             return VK_FORMAT_R64G64B64_SFLOAT;
-        case FORMAT::RGBA_64_SFLOAT:
+        case IMAGE_FORMAT::RGBA_64_SFLOAT:
             return VK_FORMAT_R64G64B64A64_SFLOAT;
         default:
             return VK_FORMAT_UNDEFINED;
         }
     }
-    template VkFormat boitatah::castEnum<VkFormat, FORMAT>(FORMAT);
+    template VkFormat boitatah::castEnum<VkFormat, IMAGE_FORMAT>(IMAGE_FORMAT);
 
     template <>
     inline VkColorSpaceKHR boitatah::castEnum(COLOR_SPACE colorSpace)
@@ -401,50 +402,50 @@ namespace boitatah
 
 #pragma endregion Enum Specializations
 
-    static uint32_t formatSize(FORMAT format);
-    inline uint32_t formatSize(FORMAT format)
+    static uint32_t formatSize(IMAGE_FORMAT format);
+    inline uint32_t formatSize(IMAGE_FORMAT format)
     {
         switch (format)
         {
-        case FORMAT::RGBA_8_SRGB:
+        case IMAGE_FORMAT::RGBA_8_SRGB:
             return 4;
-        case FORMAT::BGRA_8_SRGB:
+        case IMAGE_FORMAT::BGRA_8_SRGB:
             return 4;
-        case FORMAT::RGBA_8_UNORM:
+        case IMAGE_FORMAT::RGBA_8_UNORM:
             return 4;
-        case FORMAT::BGRA_8_UNORM:
+        case IMAGE_FORMAT::BGRA_8_UNORM:
             return 4;
-        case FORMAT::R_32_SFLOAT:
+        case IMAGE_FORMAT::R_32_SFLOAT:
             return 4;
-        case FORMAT::RG_32_SFLOAT:
+        case IMAGE_FORMAT::RG_32_SFLOAT:
             return 8;
-        case FORMAT::RGB_32_SFLOAT:
+        case IMAGE_FORMAT::RGB_32_SFLOAT:
             return 12;
-        case FORMAT::RGBA_32_SFLOAT:
+        case IMAGE_FORMAT::RGBA_32_SFLOAT:
             return 16;
-        case FORMAT::R_32_SINT:
+        case IMAGE_FORMAT::R_32_SINT:
             return 4;
-        case FORMAT::RG_32_SINT:
+        case IMAGE_FORMAT::RG_32_SINT:
             return 8;
-        case FORMAT::RGB_32_SINT:
+        case IMAGE_FORMAT::RGB_32_SINT:
             return 12;
-        case FORMAT::RGBA_32_SINT:
+        case IMAGE_FORMAT::RGBA_32_SINT:
             return 16;
-        case FORMAT::R_32_UINT:
+        case IMAGE_FORMAT::R_32_UINT:
             return 4;
-        case FORMAT::RG_32_UINT:
+        case IMAGE_FORMAT::RG_32_UINT:
             return 8;
-        case FORMAT::RGB_32_UINT:
+        case IMAGE_FORMAT::RGB_32_UINT:
             return 12;
-        case FORMAT::RGBA_32_UINT:
+        case IMAGE_FORMAT::RGBA_32_UINT:
             return 16;
-        case FORMAT::R_64_SFLOAT:
+        case IMAGE_FORMAT::R_64_SFLOAT:
             return 8;
-        case FORMAT::RG_64_SFLOAT:
+        case IMAGE_FORMAT::RG_64_SFLOAT:
             return 16;
-        case FORMAT::RGB_64_SFLOAT:
+        case IMAGE_FORMAT::RGB_64_SFLOAT:
             return 24;
-        case FORMAT::RGBA_64_SFLOAT:
+        case IMAGE_FORMAT::RGBA_64_SFLOAT:
             return 32;
         default:
             return 0;

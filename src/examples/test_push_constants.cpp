@@ -17,19 +17,13 @@ int main()
     Renderer r({.windowDimensions = {windowWidth, windowHeight},
                 .appName = "Test Frame Buffer",
                 .debug = true,
-                .swapchainFormat = FORMAT::BGRA_8_UNORM,
+                .swapchainFormat = IMAGE_FORMAT::BGRA_8_UNORM,
                 .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR},
-                                   .attachmentFormats = {FORMAT::BGRA_8_UNORM},
+                                   .attachmentFormats = {IMAGE_FORMAT::BGRA_8_UNORM},
                                    .dimensions = {windowWidth, windowHeight}}});
 
     // Pipeline Layout for the Shader.
     Handle<ShaderLayout> layout = r.createShaderLayout({
-        .customPushConstants ={
-            PushConstantDesc{
-                .offset = sizeof(glm::mat4), //<-- must be larger or equal than sizeof(glm::mat4)
-                .size = sizeof(glm::mat4) * 2, //<- V P matrices
-                .stages = STAGE_FLAG::ALL_GRAPHICS}
-        }
     });
 
     Handle<Shader> shader = r.createShader({.name = "test",
@@ -38,7 +32,7 @@ int main()
                                                 .entryFunction = "main"},
                                             .frag = {.byteCode = utils::readFile("./src/push_constants_frag.spv"), .entryFunction = "main"},
                                             .layout = layout,
-                                            .bindings = {{.stride = 24, .attributes = {{.format = FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = FORMAT::RGB_32_SFLOAT, .offset = formatSize(FORMAT::RG_32_SFLOAT)}}}}});
+                                            .bindings = {{.stride = 24, .attributes = {{.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = formatSize(IMAGE_FORMAT::RG_32_SFLOAT)}}}}});
     
     
     //GeometryData geometryData = triangleVertices();

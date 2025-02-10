@@ -70,7 +70,7 @@ namespace boitatah
         SwapchainSupport support = getSwapchainSupport(vulkan->getPhysicalDevice());
 
         VkSurfaceFormatKHR format = chooseSwapSurfaceFormat(support.formats,
-                                                            FORMAT::BGRA_8_SRGB,
+                                                            IMAGE_FORMAT::BGRA_8_SRGB,
                                                             COLOR_SPACE::SRGB_NON_LINEAR);
 
         VkPresentModeKHR mode = chooseSwapPresentMode(support.presentModes);
@@ -231,7 +231,7 @@ namespace boitatah
         return support;
     }
 
-    VkSurfaceFormatKHR Swapchain::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats, FORMAT scFormat, COLOR_SPACE scColorSpace)
+    VkSurfaceFormatKHR Swapchain::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats, IMAGE_FORMAT scFormat, COLOR_SPACE scColorSpace)
     {
         for (const auto &surfaceFormat : availableFormats)
         {

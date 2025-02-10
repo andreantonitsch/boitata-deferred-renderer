@@ -19,7 +19,7 @@ namespace bvk = boitatah::vk;
 
 using boitatah::COLOR_SPACE;
 using boitatah::COMMAND_BUFFER_LEVEL;
-using boitatah::FORMAT;
+using boitatah::IMAGE_FORMAT;
 using boitatah::FRAME_BUFFERING;
 using boitatah::Image;
 using boitatah::IMAGE_LAYOUT;
@@ -571,6 +571,10 @@ void boitatah::vk::Vulkan::bindPipelineCommand(const BindPipelineCommandVk &comm
                       command.pipeline);
 }
 
+void boitatah::vk::Vulkan::bindDescriptorSet(const BindDescriptorSetCommandVk &command)
+{
+}
+
 void boitatah::vk::Vulkan::submitCmdBuffer(const SubmitCommandVk &command)
 {
     vkResetFences(device, 1, &(command.fence));
@@ -867,19 +871,16 @@ VkPipelineLayout boitatah::vk::Vulkan::createShaderLayout(const ShaderLayoutDesc
 {
     VkPipelineLayout layout;
     
+    std::vector<VkDescriptorSetLayout> descripLayouts;
     // add camera layout
+    descripLayouts.push_back(desc.baseLayout);
     // add shader custom layout
+    descripLayouts.push_back(desc.materialLayout);
     
     //add model push constants
     std::vector<VkPushConstantRange> ranges;
 
-    ranges.push_back(
-        VkPushConstantRange{
-          .stageFlags = castEnum<VkShaderStageFlags>(STAGE_FLAG::ALL_GRAPHICS), 
-          .offset = 0,
-          .size = sizeof(glm::mat4) * 2,
-        });
-    for(auto& push_constant : desc.customPushConstants){
+    for(auto& push_constant : desc.pushConstants){
         ranges.push_back(
         VkPushConstantRange{
           .stageFlags = castEnum<VkShaderStageFlags>(push_constant.stages), 
@@ -887,14 +888,12 @@ VkPipelineLayout boitatah::vk::Vulkan::createShaderLayout(const ShaderLayoutDesc
           .size = push_constant.size,
         });
     }
-    std::vector<VkDescriptorSetLayout> descripLayouts;
-    descripLayouts.push_back(desc.baseLayout);
-    descripLayouts.push_back(desc.materialLayout);
     
     VkPipelineLayoutCreateInfo layoutCreate{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .pNext = nullptr,
         .setLayoutCount = static_cast<uint32_t>(descripLayouts.size()),
-        .pSetLayouts = descripLayouts.size() == 0 ? 0 : descripLayouts.data(),
+        .pSetLayouts = descripLayouts.size() == 0 ? nullptr : descripLayouts.data(),
         .pushConstantRangeCount = static_cast<uint32_t>(ranges.size()),
         .pPushConstantRanges = ranges.data(),
     };
@@ -918,8 +917,8 @@ VkDescriptorSetLayout boitatah::vk::Vulkan::createDescriptorLayout(const Descrip
         VkDescriptorSetLayoutBinding binding{
             .binding = binding_index,
             .descriptorType = castEnum<VkDescriptorType>(bindingDesc.type),
-            .descriptorCount = binding.descriptorCount,
-            .stageFlags = castEnum<VkShaderStageFlags>(bindingDesc.stages)
+            .descriptorCount = bindingDesc.descriptorCount,
+            .stageFlags = castEnum<VkShaderStageFlags>(bindingDesc.stages),
         };
         bindings.push_back(binding);
         binding_index++;
@@ -928,7 +927,7 @@ VkDescriptorSetLayout boitatah::vk::Vulkan::createDescriptorLayout(const Descrip
     VkDescriptorSetLayoutCreateInfo info{
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         .bindingCount = static_cast<uint32_t>(bindings.size()),
-        .pBindings = bindings.data(),
+        .pBindings = bindings.size() == 0 ? 0 : bindings.data(),
     };
 
     if(vkCreateDescriptorSetLayout(device, &info, nullptr, &layout) != VK_SUCCESS){
@@ -1258,7 +1257,7 @@ void boitatah::vk::Vulkan::destroyImage(Image image)
 
 void boitatah::vk::Vulkan::destroyPipelineLayout(ShaderLayout &layout)
 {
-    vkDestroyPipelineLayout(device, layout.layout, nullptr);
+    vkDestroyPipelineLayout(device, layout.pipeline, nullptr);
 }
 
 void boitatah::vk::Vulkan::destroyRenderTargetCmdData(const RenderTargetCmdBuffers &sync)

@@ -4,9 +4,11 @@
 #include <glm/glm.hpp>
 #include <memory>
 
-#include "../vulkan/Vulkan.hpp"
+#include <vulkan/Vulkan.hpp>
 
 #include "../collections/Pool.hpp"
+#include <vulkan/VulkanStructs.hpp>
+
 #include "BufferStructs.hpp"
 #include "BufferAllocator.hpp"
 

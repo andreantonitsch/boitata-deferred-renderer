@@ -25,9 +25,9 @@ int main()
     Renderer r({.windowDimensions = {windowWidth, windowHeight},
                 .appName = "Test Frame Buffer",
                 .debug = true,
-                .swapchainFormat = FORMAT::BGRA_8_UNORM,
+                .swapchainFormat = IMAGE_FORMAT::BGRA_8_UNORM,
                 .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR},
-                                   .attachmentFormats = {FORMAT::BGRA_8_UNORM},
+                                   .attachmentFormats = {IMAGE_FORMAT::BGRA_8_UNORM},
                                    .dimensions = {windowWidth, windowHeight}}});
 
 

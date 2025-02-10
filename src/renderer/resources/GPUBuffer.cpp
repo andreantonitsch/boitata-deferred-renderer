@@ -4,6 +4,15 @@
 
 namespace boitatah{
 
+    BufferAccessData GPUBuffer::getAccessData(uint32_t frame_index)
+    {
+        auto& content = get_content(frame_index);
+        std::shared_ptr<GPUResourceManager> manager(m_manager);
+        auto addr = manager->getBufferManager()->getBufferAccessData(content.buffer);
+
+        return addr;
+    }
+
     void GPUBuffer::copyData(void *data, uint32_t length)
     {
         

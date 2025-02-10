@@ -3,9 +3,12 @@
 #include "BttEnums.hpp"
 #include <vector>
 #include <span>
+//#include <renderer/resources/GPUBuffer.hpp>
 
 namespace boitatah
 {
+    class GPUBuffer;
+
     struct BindingDesc{
         //uint32_t binding = 0;
         DESCRIPTOR_TYPE type;
@@ -14,7 +17,6 @@ namespace boitatah
     };
     
     struct DescriptorSetLayoutDesc{
-        uint32_t m_set = 1;
         std::vector<BindingDesc> bindingDescriptors;
     };
 
@@ -25,11 +27,9 @@ namespace boitatah
 
     struct DescriptorSetLayout
     {
-        std::span<DescriptorSetRatio> ratios;
+        std::vector<DescriptorSetRatio> ratios;
         VkDescriptorSetLayout layout;
     };
-
-
 
     // TODO hide all this.
     struct DescriptorSet 
@@ -39,9 +39,16 @@ namespace boitatah
 
 
     struct DescriptorSetRequest{
-        DescriptorSetLayout layout;
+        std::span<DescriptorSetRatio> layout;
     };
  
+    struct BindBindingDesc{
+        //uint32_t set;
+        uint32_t binding;
+        DESCRIPTOR_TYPE type;
+        Handle<GPUBuffer> buffer;
+    };
+
 };
 
 

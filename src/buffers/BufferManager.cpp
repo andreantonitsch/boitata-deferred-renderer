@@ -2,11 +2,14 @@
 #include "Buffer.hpp"
 #include "BufferStructs.hpp"
 #include <algorithm>
-
+#include <vulkan/Vulkan.hpp>
+#include <vulkan/VkCommandBufferWriter.hpp>
 
 namespace boitatah::buffer
 {
-
+    using Vulkan = boitatah::vk::Vulkan;
+    using VkCommandBufferWriter = boitatah::vk::VkCommandBufferWriter;
+    
     BufferManager::BufferManager(std::shared_ptr<vk::Vulkan> vk_instance)
     {
         m_vk = vk_instance;
@@ -135,6 +138,18 @@ namespace boitatah::buffer
         BufferReservation reserv;
         getAddressReservation(handle, reserv);
         return handle;
+    }
+
+    BufferAccessData BufferManager::getBufferAccessData(const Handle<BufferAddress> &handle)
+    {
+        BufferAccessData data;
+        getAddressBuffer(handle, data.buffer);
+        BufferReservation reserv;
+        data.buffer->getReservationData(getAddressReservation(handle), reserv);
+        data.offset = reserv.offset;
+        data.size = reserv.size;
+
+        return data;
     }
 
     bool BufferManager::copyToBuffer(const BufferUploadDesc &desc)

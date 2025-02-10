@@ -10,6 +10,8 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 
+#include <vulkan/VulkanStructs.hpp>
+
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
 #include "../types/commands/CommandBuffer.hpp"
@@ -17,6 +19,7 @@
 #include "../types/Memory.hpp"
 #include "../types/Image.hpp"
 #include "CommandsVk.hpp"
+
 //#include "VkCommandBufferWriter.hpp"
 
 
@@ -24,69 +27,6 @@ namespace boitatah::vk
 {
     class WindowManager;
     
-    struct BufferDescVk
-    {
-        // uint32_t alignment;
-        uint32_t size;
-        BUFFER_USAGE usage;
-        SHARING_MODE sharing;
-    };
-
-    struct BufferVkData{
-        VkBuffer buffer;
-        VkDeviceMemory memory;
-        uint64_t alignment;
-        uint64_t actualSize;
-
-        uint32_t memoryTypeBits;
-    };
-
-    struct CommandPools
-    {
-        VkCommandPool graphicsPool;
-        VkCommandPool transferPool;
-        VkCommandPool presentPool;
-    };
-
-    struct CommandQueues
-    {
-        VkQueue graphicsQueue;
-        VkQueue transferQueue;
-        VkQueue presentQueue;
-    };
-
-    struct QueueFamilyIndices
-    {
-        std::optional<uint32_t> graphicsFamily;
-        std::optional<uint32_t> presentFamily;
-        std::optional<uint32_t> transferFamily;
-
-        bool hasFullSupport()
-        {
-            return graphicsFamily.has_value() &&
-                   presentFamily.has_value() &&
-                   transferFamily.has_value();
-        }
-    };
-
-    struct SwapchainSupport
-    {
-        VkSurfaceCapabilitiesKHR capabilities;
-        std::vector<VkSurfaceFormatKHR> formats;
-        std::vector<VkPresentModeKHR> presentModes;
-    };
-
-    struct VulkanOptions
-    {
-        char *appName = nullptr;
-        std::vector<const char *> extensions;
-        bool useValidationLayers = false;
-        bool debugMessages = false;
-
-        // TODO glfw requires instance to create a surface.
-        // I would like to keep both things separate.
-        GLFWwindow *window;
-    };
 
     class Vulkan : public std::enable_shared_from_this<Vulkan>
     {
@@ -168,7 +108,7 @@ namespace boitatah::vk
         void recordDrawCommand(const DrawCommandVk &command);
         void submitDrawCmdBuffer(const SubmitDrawCommandVk &command);
         void bindPipelineCommand(const BindPipelineCommandVk &command);
-
+        void bindDescriptorSet(const BindDescriptorSetCommandVk& command);
 
         // Transfer Commands
         void CmdCopyImage(const CopyImageCommandVk &command);

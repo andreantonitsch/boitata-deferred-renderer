@@ -1,5 +1,5 @@
 #include "Camera.hpp"
-
+#include <iostream>
 namespace boitatah
 {
     Camera::Camera(const CameraDesc &desc) : m_aspect(desc.aspect),
@@ -8,13 +8,18 @@ namespace boitatah
                                              m_farPlane(desc.far),
                                              m_position(desc.position)
     {
-        lookAt(desc.lookAtTarget);
+        m_rotation = glm::quat(1.0, 0.0, 0.0, 0.0);
+        m_direction = glm::vec3(0, 0, 1);
+        m_up = glm::vec3(0, 1, 0);
+        //lookAt(desc.lookAtTarget);
     }
 
     CameraUniforms Camera::getCameraUniforms()
     {
+        updateMatrices();
+
         return CameraUniforms{
-            .vp = getView() * getProjection(),
+            .vp = getProjection()* getView() ,
             .projection = getProjection(),
             .view = getView(),
             .viewPos = m_position,
@@ -24,39 +29,38 @@ namespace boitatah
 
     void Camera::translate(glm::vec3 direction)
     {
-        dirty();
+        dirty_view();
         m_position += direction;
+    }
+
+    void Camera::setPosition(glm::vec3 position)
+    {
+        dirty_view();
+        m_position = position;
     }
 
     void Camera::lookAt(glm::vec3 target)
     {
-        dirty();
-        glm::vec3 direction = glm::normalize(target - m_position);
-        float d = glm::dot(direction, m_up);
-        if (glm::abs(d) > 0.999)
-        {
-            m_rotation = glm::quat(1, 0, 0, 0);
-            return;
-        }
-        glm::vec3 a = glm::cross(direction, m_up);
-
-        m_rotation = glm::quat(glm::root_two<float>() + d, a);
+        dirty_view();
+        m_direction = glm::normalize(target - m_position);
     }
 
     void Camera::rotate(glm::quat rotation)
     {
-        dirty();
-        m_rotation = rotation * m_rotation;
+        dirty_view();
+        m_direction = rotation * m_direction;
     }
 
     void Camera::rotate(glm::vec3 eulerAngles)
     {
-        rotate(glm::quat(eulerAngles));
+        dirty_view();
+
+        m_rotation = glm::rotate(m_rotation, glm::length(eulerAngles), glm::normalize(eulerAngles));
     }
 
     void Camera::roll(float rollAngle)
     {
-        dirty();
+        dirty_view();
         glm::vec3 direction = glm::normalize(getDirection());
         glm::quat roll_quat = glm::angleAxis(rollAngle, direction);
         m_up = roll_quat * m_up;
@@ -64,63 +68,83 @@ namespace boitatah
 
     glm::mat4 Camera::getProjection()
     {
-        if (!m_dirty)
+        if (!m_dirty_proj)
         {
             return m_projection;
         }
-        computeMatrices();
+        updateMatrices();
         return m_projection;
     }
 
     glm::mat4 Camera::getView()
     {
-        if (!m_dirty)
+        if (!m_dirty_view)
         {
             return m_view;
         }
-        computeMatrices();
+        updateMatrices();
         return m_view;
     }
 
     glm::vec3 Camera::getDirection()
     {
         // Z is foward.
-        glm::vec3 direction(0.0f, 0.0f, 1.0f);
-        return m_rotation * direction;
+        //glm::vec3 direction(0.0f, 0.0f, 1.0f);
+        //auto dir = m_rotation * direction;
+        return m_direction;
     }
+
     void Camera::setFar(float far)
     {
-        dirty();
+        dirty_proj();
         m_farPlane = far;
     }
+    
     void Camera::setNear(float near)
     {
-        dirty();
+        dirty_proj();
         m_nearPlane = near;
     }
 
     void Camera::setFoV(float fov)
     {
-        dirty();
+        dirty_proj();
         m_fov = fov;
     }
 
     void Camera::setAspect(float aspect)
     {
-        dirty();
+        dirty_proj();
         m_aspect = aspect;
     }
 
-    void Camera::dirty()
+    void Camera::dirty_view()
     {
-        m_dirty = true;
+        m_dirty_view = true;
     }
 
-    void Camera::computeMatrices()
+    void Camera::dirty_proj()
     {
-        m_view = glm::lookAt(m_position,
+        m_dirty_proj = true;
+    }
+
+    void Camera::updateView(){
+        m_view = glm::lookAtLH(m_position,
                              m_position + getDirection(),
                              m_up);
-        m_projection = glm::perspective(m_fov, m_aspect, m_nearPlane, m_farPlane);
+        m_dirty_view = false;
+    }
+    void Camera::updateProj() {
+        m_projection = glm::perspectiveLH(m_fov, m_aspect, m_nearPlane, m_farPlane);
+        m_dirty_proj = false;
+    };
+
+    void Camera::updateMatrices()
+    {
+        if(m_dirty_view)
+            updateView();
+        if(m_dirty_proj)
+            updateProj();
+        
     }
 }

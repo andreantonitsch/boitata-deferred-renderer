@@ -14,7 +14,7 @@ namespace boitatah{
 
     struct AttachmentDesc{
         uint32_t index;
-        FORMAT format;
+        IMAGE_FORMAT format;
         IMAGE_LAYOUT layout;
         SAMPLES samples = SAMPLES::SAMPLES_1;
         IMAGE_LAYOUT initialLayout;

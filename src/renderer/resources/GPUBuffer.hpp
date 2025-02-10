@@ -70,6 +70,7 @@ namespace boitatah
                                                     .mutability = RESOURCE_MUTABILITY::MUTABLE,
                                                   }, manager) 
                                                   { };
+            BufferAccessData getAccessData(uint32_t frame_index);
 
             void copyData(void * data, uint32_t length);
 

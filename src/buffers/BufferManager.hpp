@@ -1,26 +1,25 @@
 #pragma once
 
 #include <vector>
-
-#include "../vulkan/Vulkan.hpp"
 #include "BufferStructs.hpp"
 #include "Buffer.hpp"
-
+#include <vulkan/Vulkan.hpp>
 #include "../collections/Pool.hpp"
-#include "../vulkan/VkCommandBufferWriter.hpp"
+#include <types/commands/CommandBuffer.hpp>
+
 
 namespace boitatah::buffer
 {
-    class Buffer;
     using namespace boitatah::vk;
     using namespace boitatah::command_buffers;
-
+    class Buffer;
+    class VkCommnadBufferWriter;
     class BufferManager : public std::enable_shared_from_this<BufferManager>
     {
         private:
             uint32_t partitionsPerBuffer = 1u << 10;
 
-            std::shared_ptr<vk::Vulkan>  m_vk;
+            std::shared_ptr<Vulkan>  m_vk;
             std::vector<Handle<Buffer *>> m_activeBuffers;
 
             Pool<Buffer *> m_bufferPool = Pool<Buffer *>({.size = 1<<16, .name = "uniforms pool"});
@@ -39,9 +38,10 @@ namespace boitatah::buffer
             
 
         public:
-            BufferManager(std::shared_ptr<vk::Vulkan>  vk_instance);
+            BufferManager(std::shared_ptr<Vulkan>  vk_instance);
             ~BufferManager(void);
             Handle<BufferAddress> reserveBuffer(const BufferReservationRequest &request);
+            BufferAccessData getBufferAccessData(const Handle<BufferAddress> &handle);
             bool copyToBuffer(const BufferUploadDesc &desc);
             
             bool queueCopy(const Handle<BufferAddress> src, const Handle<BufferAddress> dst);

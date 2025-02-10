@@ -113,4 +113,12 @@ namespace boitatah
         std::vector<PushConstant> push_constants;
     };
 
+    struct BindSetCommand{
+        CommandBuffer drawBuffer;
+        uint32_t set_index;
+        DescriptorSetLayout set_layout;
+        ShaderLayout shader_layout;
+        std::vector<BindBindingDesc> bindings;
+    };
+
 }

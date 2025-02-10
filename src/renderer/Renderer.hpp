@@ -28,21 +28,13 @@
 #include "modules/BackBuffer.hpp"
 
 #include "modules/Swapchain.hpp"
-#include "modules/DescriptorPoolManager.hpp"
+#include <vulkan/DescriptorPoolManager.hpp>
 #include "modules/Camera.hpp"
 
 #include "../collections/Pool.hpp"
 
 #include "../scene/Scene.hpp"
 
-
-
-
-
-// Objective here is to have expose no lone vulkan types.
-// so that we can manage them. Thats what the vulkan class is for.
-// Renderer manages and exposes them
-// from a higher-level point of view
 
 namespace boitatah
 {
@@ -61,7 +53,7 @@ namespace boitatah
         glm::u32vec2 windowDimensions = {800, 600};
         const char *appName = "Window";
         bool debug = false;
-        FORMAT swapchainFormat = FORMAT::BGRA_8_SRGB;
+        IMAGE_FORMAT swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB;
         BackBufferDesc backBufferDesc;
     };
 
@@ -102,7 +94,9 @@ namespace boitatah
         Handle<Image> addImage(Image image);
         Handle<Image> createImage(const ImageDesc &desc);
         Handle<ShaderLayout> createShaderLayout(const ShaderLayoutDesc &desc);
-
+        Handle<DescriptorSetLayout> createDescriptorLayout(const DescriptorSetLayoutDesc &desc);
+        
+        
         // Command Buffers
         CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
         void beginBuffer(const BeginBufferCommand &command);
@@ -121,6 +115,7 @@ namespace boitatah
 
         void bindDummyPipeline(const BindPipelineCommand& command);
         void bindPipelineCommand(const BindPipelineCommand& command);
+        void bindDescriptorSetCommand(const BindSetCommand& command);
 
         void pushPushConstants(const PushConstantsCommand& command);
 
@@ -144,6 +139,7 @@ namespace boitatah
         std::shared_ptr<Swapchain> m_swapchain;
         std::shared_ptr<BackBufferManager> m_backBufferManager;
         std::shared_ptr<GPUResourceManager> m_resourceManager;
+        std::shared_ptr<DescriptorPoolManager> m_descriptorManager;
         std::shared_ptr<Vulkan> m_vk;
         std::shared_ptr<WindowManager> m_window;
 
@@ -152,10 +148,11 @@ namespace boitatah
         Handle<GPUBuffer> m_frameUniform;
         void updateCameraUniforms(Camera& camera);
         void updateFrameUniforms(uint32_t frame_index);
-
+        void bindDescriptorSet();
 
         // Handle<Uniform> m_cameraUniforms;
-        DescriptorSetLayout m_baseLayout;
+        Handle<DescriptorSetLayout> base_setLayout;
+        Handle<ShaderLayout> m_baseLayout;
         Handle<Shader> m_dummyPipeline;
 
         CommandBuffer m_transferCommandBuffer;
@@ -170,10 +167,11 @@ namespace boitatah
         Pool<RenderPass> renderpassPool = Pool<RenderPass>({.size = 50, .name = "render pass pool"});
         Pool<Image> imagePool = Pool<Image>({.size = 50, .name = "image pool"});
         Pool<ShaderLayout> pipelineLayoutPool = Pool<ShaderLayout>({.size = 50, .name = "pipeline layout pool"});
+        Pool<DescriptorSetLayout> setLayoutPool = Pool<DescriptorSetLayout>({.size = 50, .name = "descriptor layout pool"});
         Pool<RenderTargetCmdBuffers> rtCmdPool = Pool<RenderTargetCmdBuffers>({.size = 50, .name = "rtcmd buffers pool"});
         Pool<Geometry> geometryPool = Pool<Geometry>({.size = 50, .name = "geometry pool"});
         Pool<Uniform> uniformPool = Pool<Uniform>({.size = 1<<16, .name = "uniforms pool"});
-
+        
 
 #pragma region UPDATE QUEUES
         std::vector<Handle<Uniform>> uniformUpdateQueue = std::vector<Handle<Uniform>>();

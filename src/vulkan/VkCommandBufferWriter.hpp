@@ -4,7 +4,8 @@
 #include <memory>
 #include <vulkan/vulkan.h>
 
-#include "Vulkan.hpp"
+#include <vulkan/Vulkan.hpp>
+
 #include "VkCommandBufferWriterStructs.hpp"
 #include "../command_buffers/CommandBufferWriterStructs.hpp"
 #include "../command_buffers/CommandBufferWriter.hpp"
@@ -109,8 +110,6 @@ namespace boitatah::vk{
                 auto vk = std::shared_ptr<Vulkan>(vk_instance);
                 return vk->waitForFence(m_fence);
             };
-
-
     };
 
 

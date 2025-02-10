@@ -12,9 +12,12 @@ namespace boitatah{
         SHARING_MODE sharing_mode;
     };
 
+    struct TextureCreateDescription;
+
     enum class RESOURCE_TYPE{
         GPU_BUFFER,
         GEOMETRY,
+        TEXTURE,
     };
 
     enum class RESOURCE_MUTABILITY{

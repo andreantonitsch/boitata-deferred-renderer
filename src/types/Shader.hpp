@@ -30,21 +30,21 @@ namespace boitatah
     struct ShaderLayoutDesc
     {
         DescriptorSetLayoutDesc materialLayout;
-        std::vector<PushConstantDesc> customPushConstants;
+        //std::vector<PushConstantDesc> pushConstants;
     };
 
     struct ShaderLayoutDescVk
     {
         VkDescriptorSetLayout materialLayout;
         VkDescriptorSetLayout baseLayout;
-        std::vector<PushConstantDesc> customPushConstants;
+        std::vector<PushConstantDesc> pushConstants;
 
     };
 
     struct ShaderLayout
     {
-        VkPipelineLayout layout;
-        VkDescriptorSetLayout setLayout;
+        VkPipelineLayout pipeline;
+        std::vector<DescriptorSetLayout> descriptorSets;
     };
 
     struct ShaderModule
@@ -67,7 +67,7 @@ namespace boitatah
 
     struct VertexAttribute
     {
-        FORMAT format;
+        IMAGE_FORMAT format;
         uint32_t offset;
     };
 

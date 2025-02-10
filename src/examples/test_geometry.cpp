@@ -17,9 +17,9 @@ int main()
     Renderer r({.windowDimensions = {windowWidth, windowHeight},
                 .appName = "Test Frame Buffer",
                 .debug = true,
-                .swapchainFormat = FORMAT::BGRA_8_UNORM,
+                .swapchainFormat = IMAGE_FORMAT::BGRA_8_UNORM,
                 .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR},
-                                   .attachmentFormats = {FORMAT::BGRA_8_UNORM},
+                                   .attachmentFormats = {IMAGE_FORMAT::BGRA_8_UNORM},
                                    .dimensions = {windowWidth, windowHeight}}});
 
     // Pipeline Layout for the Shader.
@@ -30,7 +30,7 @@ int main()
                                                 .entryFunction = "main"},
                                             .frag = {.byteCode = utils::readFile("./src/frag.spv"), .entryFunction = "main"},
                                             .layout = layout,
-                                            .bindings = {{.stride = sizeof(float) * 6, .attributes = {{.format = FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = FORMAT::RGB_32_SFLOAT, .offset = formatSize(FORMAT::RGB_32_SFLOAT)}}}}});
+                                            .bindings = {{.stride = sizeof(float) * 6, .attributes = {{.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = formatSize(IMAGE_FORMAT::RGB_32_SFLOAT)}}}}});
     
     
     GeometryData geometryData = triangleVertices();

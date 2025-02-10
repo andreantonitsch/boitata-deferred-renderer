@@ -1,4 +1,4 @@
- glslc ./shaders/shader.frag -o ./shaders/frag.spv
- glslc ./shaders/shader.vert -o ./shaders/vert.spv
+ glslc ./shaders/$1.frag -o ./shaders/$1_frag.spv
+ glslc ./shaders/$1.vert -o ./shaders/$1_vert.spv
 
- cp ./shaders/vert.spv  ./shaders/frag.spv ../bin/examples/src/
+ cp ./shaders/$1_vert.spv  ./shaders/$1_frag.spv ../bin/examples/src/

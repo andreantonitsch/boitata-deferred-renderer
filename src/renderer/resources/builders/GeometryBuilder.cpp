@@ -17,7 +17,7 @@ namespace boitatah{
 
     GeometryBuilder& GeometryBuilder::SetIndexes(std::initializer_list<uint32_t> &&indices)
     {
-        m_description.indexData.type = GEO_BUFFER_TYPE::UIntVector;
+        m_description.indexData.data_type = GEO_DATA_TYPE::UIntVector;
         m_description.indexData.count = indices.size();
         m_description.indexData.index_vector = std::vector<uint32_t>(indices);
         return *this;
@@ -25,7 +25,7 @@ namespace boitatah{
 
     GeometryBuilder& GeometryBuilder::SetIndexes(std::vector<uint32_t> &indices)
     {
-        m_description.indexData.type = GEO_BUFFER_TYPE::Ptr;
+        m_description.indexData.data_type = GEO_DATA_TYPE::Ptr;
         m_description.indexData.count = indices.size();
         m_description.indexData.dataPtr = indices.data();
         return *this;
@@ -33,23 +33,24 @@ namespace boitatah{
 
     GeometryBuilder& GeometryBuilder::SetIndexes(Handle<GPUBuffer> indices, uint32_t count)
     {
-        m_description.indexData.type = GEO_BUFFER_TYPE::GPUBuffer;
+        m_description.indexData.data_type = GEO_DATA_TYPE::GPUBuffer;
         m_description.indexData.buffer = indices;
         m_description.indexData.count = count;
         return *this;
     }
     GeometryBuilder& GeometryBuilder::SetIndexes(uint32_t *indices, uint32_t count)
     {
-        m_description.indexData.type = GEO_BUFFER_TYPE::Ptr;
+        m_description.indexData.data_type = GEO_DATA_TYPE::Ptr;
         m_description.indexData.dataPtr = indices;
         m_description.indexData.count = count;
         return *this;
     }
 
-    GeometryBuilder& GeometryBuilder::AddBuffer(Handle<GPUBuffer> buffer)
+    GeometryBuilder& GeometryBuilder::AddBuffer(VERTEX_BUFFER_TYPE type, Handle<GPUBuffer> buffer)
     {
         m_description.bufferData.push_back(GeometryBufferDataDesc{
-            .type = GEO_BUFFER_TYPE::GPUBuffer,
+            .buffer_type = type,
+            .data_type = GEO_DATA_TYPE::GPUBuffer,
             .buffer = buffer,
         });
         return *this;

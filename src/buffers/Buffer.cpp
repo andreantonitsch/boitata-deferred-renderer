@@ -1,11 +1,12 @@
 #include "Buffer.hpp"
 #include "BufferManager.hpp"
-#include "../vulkan/Vulkan.hpp"
+#include <vulkan/Vulkan.hpp>
 #include <bit>
+
 namespace boitatah::buffer
 {
 
-
+    
     Buffer::Buffer(const BufferDesc &desc, const vk::Vulkan *vulkan) : vulkan(vulkan)
     {
         description = desc;
