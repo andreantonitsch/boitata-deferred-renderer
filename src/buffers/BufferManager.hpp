@@ -50,7 +50,7 @@ namespace boitatah::buffer
             bool queueCopy( CommandBufferWriter<T>& writer, const Handle<BufferAddress> src, const Handle<BufferAddress> dst);
 
             //user is responsible for releasing the staged buffer
-            void memoryCopy(uint32_t dataSize, void* data, Handle<BufferAddress>& handle);
+            void memoryCopy(uint32_t dataSize, const void* data, Handle<BufferAddress>& handle);
 
             void queueingBufferUpdates(); //queues updates
             void startBufferUpdates(); //setup queue buffer updates

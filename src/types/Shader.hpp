@@ -67,6 +67,7 @@ namespace boitatah
 
     struct VertexAttribute
     {
+        uint32_t location;
         IMAGE_FORMAT format;
         uint32_t offset;
     };

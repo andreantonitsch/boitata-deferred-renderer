@@ -25,6 +25,10 @@ namespace boitatah::vk{
             using  CommandBufferWriter<VkCommandBufferWriter>::reset;
             using  CommandBufferWriter<VkCommandBufferWriter>::end;
             using  CommandBufferWriter<VkCommandBufferWriter>::submit;
+            using  CommandBufferWriter<VkCommandBufferWriter>::transitionImage;
+            using  CommandBufferWriter<VkCommandBufferWriter>::copyBuffer;
+            using  CommandBufferWriter<VkCommandBufferWriter>::copyImage;
+
 
             VkCommandBufferWriter(std::shared_ptr<Vulkan> vk_instance) : vk_instance(vk_instance){};
 
@@ -110,6 +114,38 @@ namespace boitatah::vk{
                 auto vk = std::shared_ptr<Vulkan>(vk_instance);
                 return vk->waitForFence(m_fence);
             };
+
+            // TODO make the pipeline stage customizable?
+            void __imp_transitionImage(const VulkanWriterTransitionLayoutCommand &command, VkCommandBuffer buffer ){
+
+                auto vk = std::shared_ptr<Vulkan>(vk_instance);
+                vk->CmdTransitionLayout({
+                    .buffer = buffer,
+                    .src = command.src,
+                    .dst = command.dst,
+                    .image = command.image,
+                    .srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                    .dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    .srcAccess = 0,
+                    .dstAccess = VK_ACCESS_TRANSFER_WRITE_BIT
+                });
+
+            }
+
+            void __imp_copyImage(const VulkanWriterCopyImageCommand &command, VkCommandBuffer buffer){
+
+                auto vk = std::shared_ptr<Vulkan>(vk_instance);
+                vk->CmdCopyImage({
+                    .buffer = buffer,
+                    // VkQueue queue;
+                    .srcImage = command.srcImage,
+                    .srcImgLayout = command.srcLayout,
+                    .dstImage = command.dstImage,
+                    .dstImgLayout = command.dstLayout,
+                    .extent = command.extent
+                });
+
+            }
     };
 
 

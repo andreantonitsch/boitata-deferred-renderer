@@ -208,7 +208,7 @@ namespace boitatah::buffer
     //     //std::cout << "finished queue buffer updates" << std::endl;
     // }
 
-    void BufferManager::memoryCopy(uint32_t dataSize, void *data, Handle<BufferAddress> &handle)
+    void BufferManager::memoryCopy(uint32_t dataSize, const void *data, Handle<BufferAddress> &handle)
     {
         //TODO handle except
         auto& bufferAddr = m_addressPool.get(handle);

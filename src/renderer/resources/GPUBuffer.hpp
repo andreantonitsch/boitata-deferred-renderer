@@ -20,14 +20,6 @@ namespace boitatah
     class GPUBuffer;
     class GPUResourceManager;
 
-    struct BufferGPUData;
-
-    template<>
-    struct ResourceTraits<GPUBuffer>{
-        using ContentType = BufferGPUData;
-        using CommandBufferWriter = vk::VkCommandBufferWriter;
-    };
-
     struct BufferGPUData //: public ResourceGPUContent<GPUBuffer>
     {
         Handle<BufferAddress> buffer;
@@ -35,7 +27,15 @@ namespace boitatah
         bool dirty;
     };
 
-    struct BufferMetaData : ResourceMetaContent<GPUBuffer>{
+    template<>
+    struct ResourceTraits<GPUBuffer>{
+        using ContentType = BufferGPUData;
+        using CommandBufferWriter = vk::VkCommandBufferWriter;
+    };
+
+
+
+    struct BufferMetaData{
         uint32_t stride;
         uint32_t count;
     };
@@ -72,7 +72,7 @@ namespace boitatah
                                                   { };
             BufferAccessData getAccessData(uint32_t frame_index);
 
-            void copyData(void * data, uint32_t length);
+            void copyData(const void * data, uint32_t length);
 
             //TODO: Implement
             bool readData(void* dstPtr);

@@ -3,19 +3,32 @@
 
 namespace boitatah{
 
-    GeometryBuilder GeometryBuilder::createGeoemtry(GPUResourceManager& manager)
+
+
+    Handle<Geometry> GeometryBuilder::geometryFromGeometryData(const GeometryBuildData &data)
+    {
+        Handle<Geometry> geo = SetVertexInfo(data.vertices.size(), 0)
+                            .SetIndexes(data.indices)
+                            .AddBuffer(VERTEX_BUFFER_TYPE::POSITION, data.vertices)
+                            .AddBuffer(VERTEX_BUFFER_TYPE::UV, data.uv)
+                            .AddBuffer(VERTEX_BUFFER_TYPE::COLOR, data.color)
+                            .Finish();
+        return  geo;
+    }
+
+    GeometryBuilder GeometryBuilder::createGeometry(GPUResourceManager &manager)
     {
         GeometryBuilder builder(manager);
         return builder;
     }
 
-    GeometryBuilder GeometryBuilder::createGeoemtry(Renderer& renderer)
+    GeometryBuilder GeometryBuilder::createGeometry(Renderer& renderer)
     {
         GeometryBuilder builder(renderer.getResourceManager());
         return builder;
     }
 
-    GeometryBuilder& GeometryBuilder::SetIndexes(std::initializer_list<uint32_t> &&indices)
+    GeometryBuilder& GeometryBuilder::SetIndexes(const std::initializer_list<uint32_t> &&indices)
     {
         m_description.indexData.data_type = GEO_DATA_TYPE::UIntVector;
         m_description.indexData.count = indices.size();
@@ -23,7 +36,7 @@ namespace boitatah{
         return *this;
     }
 
-    GeometryBuilder& GeometryBuilder::SetIndexes(std::vector<uint32_t> &indices)
+    GeometryBuilder& GeometryBuilder::SetIndexes(const std::vector<uint32_t> &indices)
     {
         m_description.indexData.data_type = GEO_DATA_TYPE::Ptr;
         m_description.indexData.count = indices.size();
@@ -63,5 +76,26 @@ namespace boitatah{
     Handle<Geometry> GeometryBuilder::Finish()
     {
         return m_manager.create(m_description);
+    }
+
+    Handle<Geometry> GeometryBuilder::Triangle(GPUResourceManager &manager)
+    {
+        auto builder = createGeometry(manager);
+        Handle<Geometry> geo = builder.geometryFromGeometryData(triangleVertices());
+        return geo;
+    }
+    Handle<Geometry> GeometryBuilder::Triangle(Renderer &renderer)
+    {
+        return GeometryBuilder::Triangle(renderer.getResourceManager());
+    }
+    Handle<Geometry> GeometryBuilder::Quad(GPUResourceManager &manager)
+    {
+        auto builder = createGeometry(manager);
+        Handle<Geometry> geo = builder.geometryFromGeometryData(quadVertices());
+        return geo;
+    }
+    Handle<Geometry> GeometryBuilder::Quad(Renderer &renderer)
+    {
+        return GeometryBuilder::Quad(renderer.getResourceManager());
     }
 }

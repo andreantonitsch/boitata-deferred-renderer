@@ -1,11 +1,15 @@
-#include "../renderer/Renderer.hpp"
+#include <renderer/Renderer.hpp>
 #include <iostream>
 // #include <unistd.h>
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
 #include "../utils/utils.hpp"
 #include "../collections/Pool.hpp"
+#include "../renderer/modules/Camera.hpp"
+
 #include <renderer/resources/builders/GeometryBuilder.hpp>
+
+#include <utils/ImageLoader.hpp>
 
 using namespace boitatah;
 
@@ -25,48 +29,50 @@ int main()
 
     // Pipeline Layout for the Shader.
     Handle<ShaderLayout> layout = r.createShaderLayout({
+
     });
 
     Handle<Shader> shader = r.createShader({.name = "test",
                                             .vert = {
-                                                .byteCode = utils::readFile("./src/push_constants_vert.spv"),
+                                                .byteCode = utils::readFile("./src/camera_vert.spv"),
                                                 .entryFunction = "main"},
-                                            .frag = {.byteCode = utils::readFile("./src/push_constants_frag.spv"), .entryFunction = "main"},
+                                            .frag = {.byteCode = utils::readFile("./src/camera_frag.spv"), .entryFunction = "main"},
                                             .layout = layout,
                                             .bindings = {{.stride = 24, .attributes = {{.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = formatSize(IMAGE_FORMAT::RG_32_SFLOAT)}}}}});
     
-    
-    //GeometryData geometryData = triangleVertices();
-    //GeometryData geometryData = squareVertices();
-    //GeometryData geometryData = planeVertices(1.0, 1.0, 100, 200);
-
-    Handle<Geometry> geometry = GeometryBuilder::Triangle(r.getResourceManager());
 
 
-    std::cout << "Created Geometry" << std::endl;
-            
+    Handle<Geometry> geometry = GeometryBuilder::Quad(r.getResourceManager());
+
+    Handle<RenderTexture> texture = util::TextureLoader::loadRenderTexture("./src/test.png", r.getResourceManager());
 
     SceneNode triangle({
         .name = "triangle",
         .geometry = geometry,
         .shader = shader,
-        });
+    });
 
     // Scene Description.
     SceneNode scene({.name = "root scene"});
     scene.add(&triangle);
-    boitatah::utils::Timewatch timewatch(1000);
 
-    r.waitIdle();
-    
-    float rotateSpeed = (2 * glm::pi<float>() / 9000 );
+    Camera camera({
+                   .position = glm::float3(0,0,-10),
+
+                   .aspect = static_cast<float>(windowWidth) / windowHeight,
+                   
+                   });
+
+    if(false);
+
+    camera.lookAt(glm::vec3(0));
+    boitatah::utils::Timewatch timewatch(1000);
 
     while (!r.isWindowClosed())
     {
-        r.render(scene);
-
-        triangle.rotate({0.0f, 0.0f, 1.0}, rotateSpeed); //<-- is a push constant update
-
+        r.render(scene, camera);
+        ///camera.rotate(glm::vec3(0.0, 0.01, 0.0));
+        camera.roll(0.01);
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
     }
     r.waitIdle();

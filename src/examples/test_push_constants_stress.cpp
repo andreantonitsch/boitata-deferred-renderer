@@ -6,6 +6,7 @@
 #include "../utils/utils.hpp"
 #include "../collections/Pool.hpp"
 #include <random>
+#include <renderer/resources/builders/GeometryBuilder.hpp>
 
 using namespace boitatah;
 
@@ -36,21 +37,10 @@ int main()
                                             .bindings = {{.stride = 24, .attributes = {{.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = formatSize(IMAGE_FORMAT::RG_32_SFLOAT)}}}}});
     
     
-    GeometryData geometryData = triangleVertices();
-    //GeometryData geometryData = squareVertices();
-    //GeometryData geometryData = planeVertices(1.0, 1.0, 10, 20);
 
-    Handle<Geometry> geometry = r.getResourceManager().create(GeometryCreateDescription{
-        .vertexInfo = { static_cast<uint32_t>(geometryData.vertices.size()), 0},
-        .bufferData = { {   .vertexCount = static_cast<uint32_t>(geometryData.vertices.size()),
-                            .vertexSize = static_cast<uint32_t>(sizeof(Vertex)),
-                            .vertexDataPtr = geometryData.vertices.data()
-                        }},
-        .indexData = {
-                      .count = static_cast<uint32_t>(geometryData.indices.size()),
-                      .dataPtr = geometryData.indices.data(),
-                      },
-    });
+    Handle<Geometry> geometry = GeometryBuilder::Triangle(r.getResourceManager());
+
+
 
     std::cout << "Created Geometry" << std::endl;
             

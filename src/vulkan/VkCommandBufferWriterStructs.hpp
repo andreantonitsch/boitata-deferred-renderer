@@ -23,8 +23,18 @@ namespace boitatah::vk{
 
     struct VulkanWriterDrawCommand {};
     struct VulkanWriterBindPipelineCommand {};
-    struct VulkanWriterCopyImageCommand {};
-    struct VulkanWriterTransitionLayoutCommand {};
+    struct VulkanWriterCopyImageCommand {
+        VkImageLayout srcLayout;
+        VkImageLayout dstLayout;
+        glm::vec2 extent;
+        VkImage srcImage;
+        VkImage dstImage;
+    };
+    struct VulkanWriterTransitionLayoutCommand {
+        VkImageLayout src;
+        VkImageLayout dst;
+        VkImage image;
+    };
 
     struct VulkanWriterCopyBufferCommand 
     {

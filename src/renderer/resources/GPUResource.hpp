@@ -1,19 +1,17 @@
 #pragma once
 
 #include "ResourceStructs.hpp"
-#include <renderer/modules/GPUResourceManager.hpp>
+//#include <renderer/modules/GPUResourceManager.hpp>
 #include <collections/Pool.hpp>
-#include <buffers/BufferStructs.hpp>
-#include <buffers/Buffer.hpp>
 #include <types/BttEnums.hpp>
 #include <stdexcept>
 #include <array>
 
 namespace boitatah{
-    using namespace boitatah::buffer;
 
+    class GPUResourceManager;
     template<template <typename > class DerivedResource, typename Resource>
-    class GPUResource // gpu data + metadata object
+    class GPUResource //gpu data + metadata object
     {
         friend GPUResourceManager;
         protected:
@@ -46,11 +44,17 @@ namespace boitatah{
 
             void write(int frameIndex = 0){};
 
-            void release(std::shared_ptr<GPUResourceManager> manager){
-                self().__impl_release(manager);
+            void release(){
+                self().__impl_release();
             };
 
-            //ResourceTraits<Resource>::CommandBufferWriter getWriterFromManager
+            /// @brief commits to update this resource next time resources are updated
+            void commit(uint32_t frame_index, ResourceTraits<Resource>::CommandBufferWriter& writer)
+            {
+                commited = true;
+                self().__impl_commit(frame_index, writer);
+                set_commited(frame_index);
+            };
 
         public:
 
@@ -87,14 +91,7 @@ namespace boitatah{
                  commited = commited & ~(static_cast<uint8_t>(1) << (frame_index%2));
             };
 
-            /// @brief commits to update this resource next time resources are updated
-            void commit(uint32_t frame_index)
-            {
-                commited = true;
-                auto manager = std::shared_ptr<GPUResourceManager>(m_manager);
-                self().__impl_commit(frame_index, manager->getCommandBufferWriter());
-                set_commited(frame_index);
-            };
+
 
             uint32_t get_data(void* const dstPtr, uint32_t frame_index) const {
                 if(commited)
@@ -108,8 +105,6 @@ namespace boitatah{
 
     };
 
-
-    using namespace boitatah::buffer;
     template<typename Resource>
     class  MutableGPUResource : public GPUResource<MutableGPUResource, Resource>// gpu data + metadata object
     {
@@ -157,7 +152,7 @@ namespace boitatah{
                 return self().check_dirt(frame_index) ;
             };
 
-            void __impl_release(std::shared_ptr<GPUResourceManager> manager){
+            void __impl_release(){
                 resource().ReleaseData(replicated_content[0]);
                 resource().ReleaseData(replicated_content[1]);
                 resource().Release();
@@ -170,32 +165,62 @@ namespace boitatah{
 
     };
 
-    using namespace boitatah::buffer;
-    template<typename DerivedResource>
-    class ImmutableGPUResource : GPUResource<ImmutableGPUResource, DerivedResource>// gpu data + metadata object
+    template<typename Resource>
+    class  ImmutableGPUResource : public GPUResource<ImmutableGPUResource, Resource>/// gpu data + metadata object
     {   
 
-        protected :   
-            ResourceTraits<DerivedResource>::ContentType gpu_content;
+        friend class GPUResource<ImmutableGPUResource, Resource>;
+
+        protected :
+            ResourceTraits<Resource>::ContentType content; //<< clear up on release
+
+            ImmutableGPUResource() = default;
+            ImmutableGPUResource(const ResourceDescriptor &descriptor, std::shared_ptr<GPUResourceManager> manager) 
+                              : GPUResource<ImmutableGPUResource, Resource>(descriptor, manager){
+
+                content = resource().CreateGPUData();
+            }; //Constructor
+
         public :
+            using GPUResource<ImmutableGPUResource, Resource>::get_content;
+            using GPUResource<ImmutableGPUResource, Resource>::self;
+            using GPUResource<ImmutableGPUResource, Resource>::commit;
 
-            void __impl_resource_update(ResourceUpdateDescription<DerivedResource>& description){{
+            Resource& resource(){return *static_cast<Resource *>(this); };
 
+            bool __impl_check_content_ready(uint32_t frame_index){
+                return true;
+            }
+
+            void __impl_resource_update(){{
+                
             }};
 
-            ResourceTraits<DerivedResource>& __impl_resource_get_content(uint32_t frame_index){
-                return gpu_content;
+            ResourceTraits<Resource>::ContentType& __impl_get_resource_content(uint32_t frame_index){
+                return content;
             };
 
             uint32_t __impl_get_data(void* dstPtr, uint32_t frame_index){
                 return 0;
             };
 
-            void __impl_set_content(uint32_t frameIndex, ResourceTraits<DerivedResource>::ContentType content_data){
-                gpu_content = this->self().__impl_set_content(content_data);
+            void __impl_set_content(uint32_t frame_index, ResourceTraits<Resource>::ContentType &content_data){
+                content = resource().__impl_set_content(content_data);
             };
 
-            void get_data(){};
+            bool __impl_ready_for_use(uint32_t frame_index){
+                return self().check_dirt(frame_index) ;
+            };
+
+            void __impl_release(std::shared_ptr<GPUResourceManager> manager){
+                resource().ReleaseData(content);
+                resource().Release();
+                
+            };
+
+            void __impl_commit(uint32_t frame_index, ResourceTraits<Resource>::CommandBufferWriter& writer){
+                resource().WriteTransfer(content, writer.self());
+            }
     };
 
 

@@ -2,16 +2,16 @@
 
 #include <vulkan/vulkan.h>
 
-#include "../../buffers/Buffer.hpp"
+#include <buffers/Buffer.hpp>
 #include "../Shader.hpp"
 #include "../RenderTarget.hpp"
 #include "CommandBuffer.hpp"
 #include "../../collections/Pool.hpp"
 #include "../BttEnums.hpp"
-#include "../Material.hpp"
 
 namespace boitatah
 {
+    using namespace boitatah::buffer;
 
     struct SubmitDrawCommand
     {
@@ -59,30 +59,14 @@ namespace boitatah
         uint64_t dataSize;
     };
 
-    struct TransferUniformCommand{
-        Handle<Uniform> uniform;
-        uint32_t frameIndex;
-    };
-
     struct DrawCommand
     {
         CommandBuffer drawBuffer;
-        RenderTarget renderTarget;
-        RenderPass renderPass;
-        //Shader shader;
-        glm::ivec2 dimensions;
-
-        VkBuffer vertexBuffer;
-        uint32_t vertexBufferOffset;
-
-        VkBuffer indexBuffer;
-        uint32_t indexBufferOffset;
         uint32_t indexCount;
-
         // count, first
         glm::uvec2 vertexInfo;
         glm::uvec2 instanceInfo;
-
+        bool indexed = true;
         //std::vector<PushConstant> pushConstants;
 
     };
@@ -119,6 +103,14 @@ namespace boitatah
         DescriptorSetLayout set_layout;
         ShaderLayout shader_layout;
         std::vector<BindBindingDesc> bindings;
+    };
+
+    class Geometry;
+    struct BindVertexBuffersCommand{
+        CommandBuffer commandBuffer;
+        uint32_t frame;
+        Handle<Geometry> geometry;
+        bool bindIndex = true;
     };
 
 }

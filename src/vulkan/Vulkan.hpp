@@ -65,10 +65,6 @@ namespace boitatah::vk
         BufferVkData createBuffer(const BufferDescVk & desc) const;
         BufferVkData getBufferAlignmentMemoryType(const BufferDescVk & desc) const;
 
-        VkDescriptorPool createSetPool();
-        void resetPool(const VkDescriptorPool pool);
-
-
         void buildShader(const ShaderDescVk &desc, Shader &shader);
 
         // Manage Memory
@@ -114,6 +110,9 @@ namespace boitatah::vk
         void CmdCopyImage(const CopyImageCommandVk &command);
         void CmdCopyBuffer(const CopyBufferCommandVk &command) const;
         void CmdTransitionLayout(const TransitionLayoutCmdVk &command);
+
+        void CmdBindVertexBuffers(const BindBuffersCommandVk &command);
+        void CmdBindIndexBuffer(const BindBuffersCommandVk &command);
 
 #pragma endregion Commands
 

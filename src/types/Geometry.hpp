@@ -5,14 +5,16 @@
 #include "../buffers/BufferStructs.hpp"
 #include "../buffers/Buffer.hpp"
 #include "../collections/Pool.hpp"
+#include <renderer/resources/GPUBuffer.hpp>
 #include <renderer/resources/GPUResource.hpp>
 #include <renderer/resources/ResourceStructs.hpp>
-
+//#include <renderer/modules/GPUResourceManager.hpp>
 #include <array>
 
 namespace boitatah
 {
     class Geometry;
+    class GPUResourceManager;
 
     /// Type also Defines the Buffer Indexes.
     enum class VERTEX_BUFFER_TYPE : uint8_t{
@@ -45,7 +47,7 @@ namespace boitatah
         GEO_DATA_TYPE data_type;
         uint32_t vertexCount;
         uint32_t vertexSize;
-        void* vertexDataPtr;
+        const void* vertexDataPtr;
         Handle<GPUBuffer> buffer;
     };
 
@@ -53,7 +55,7 @@ namespace boitatah
     struct GeometryIndexDataDesc{   
         GEO_DATA_TYPE data_type;
         uint32_t count;
-        void* dataPtr;
+        const void* dataPtr;
         std::vector<uint32_t> index_vector;
         Handle<GPUBuffer> buffer;
     };
@@ -68,10 +70,8 @@ namespace boitatah
 
 
 
-    class Geometry : public MutableGPUResource<Geometry>
+    class Geometry : public ImmutableGPUResource<Geometry>
     {
-
-
         friend class GPUResourceManager;
         private:
             std::vector<Handle<GPUBuffer>> m_ownedBuffers;
@@ -86,19 +86,18 @@ namespace boitatah
 
             uint8_t typeToIndex(VERTEX_BUFFER_TYPE type){
                 uint8_t index = static_cast<uint8_t>(type);
-                index = m_bufferIndexes[index];
-                return index;
+                return m_bufferIndexes[index];
             };
 
         public:
             Geometry() = default;
             Geometry(std::shared_ptr<GPUResourceManager> manager):
-                MutableGPUResource<Geometry>({ //Base Constructor
+                ImmutableGPUResource<Geometry>({ //Base Constructor
                                                     .sharing = SHARING_MODE::EXCLUSIVE,
-                                                    .type = RESOURCE_TYPE::GPU_BUFFER,
+                                                    .type = RESOURCE_TYPE::GEOMETRY,
                                                     .mutability = RESOURCE_MUTABILITY::MUTABLE,
                                                   }, manager) 
-                                                  { };;
+                                                  { };
             ~Geometry() = default;
             Geometry(const Geometry& other) = default;
 
@@ -117,16 +116,16 @@ namespace boitatah
                 m_buffers.push_back(buffer);
             }
 
-            // TODO this is very jank
             Handle<GPUBuffer> getBuffer(VERTEX_BUFFER_TYPE type){
                 uint8_t index = typeToIndex(type);
-                
                 //if unset buffer type, return null handle
                 if(index > 8)
                     return Handle<GPUBuffer>();
 
                 return m_buffers[index];
             };
+
+            void ComputeNormals();
 
             glm::ivec2 VertexInfo(){
                 return vertexInfo;
@@ -144,109 +143,20 @@ namespace boitatah
             bool ReadyForUse(GeometryGPUData& content){ return true; };
             void SetContent(GeometryGPUData& content){};
             void ReleaseData(GeometryGPUData& content){};
-            void Release() {
+            void Release();
+            // {
                 
-                auto manager = std::shared_ptr<GPUResourceManager>(m_manager);
+            //     auto manager = std::shared_ptr<GPUResourceManager>(m_manager);
 
-                for(auto& buffer : m_ownedBuffers ){
-                    manager->destroy(buffer);
-                }
-                manager->destroy(indexBuffer);
-             };
+            //     for(auto& buffer : m_ownedBuffers ){
+            //         manager->destroy(buffer);
+            //     }
+            //     manager->destroy(indexBuffer);
+            //  };
 
 
     };
 
-    //geom data
-    struct Vertex
-    {
-        glm::vec3 pos;
-        glm::vec3 color;
-    };
-
-    struct GeometryData
-    {
-        std::vector<Vertex> vertices;
-        std::vector<uint32_t> indices;
-    };
-
-    static GeometryData triangleVertices()
-    {
-        return {
-            .vertices = {
-                {{0.0f, -0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}},
-                {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 1.0f}},
-                {{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 1.0f}}},
-            .indices = {0U, 1U, 2U},
-        };
-    }
-
-    static GeometryData quadVertices()
-    {
-        return {
-            .vertices = {
-                {{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}},
-                {{0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 1.0f}},
-                {{-0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 1.0f}},
-                {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 1.0f}},
-                },
-            .indices = {0U, 1U, 2U,
-                        1U, 3U, 2U,
-            }
-        };
-    }
-
-    static GeometryData squareVertices()
-    {
-        return {
-            .vertices = {
-                {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-                {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-                {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}},
-                {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}}},
-            .indices = {0, 1, 2, 2, 3, 0},
-        };
-    }
-
-    static GeometryData planeVertices(const float width,
-                                      const float height,
-                                      const uint32_t widthSegments,
-                                      const uint32_t heightSegments)
-    {
-        std::vector<Vertex> vertices;
-        std::vector<uint32_t> indices;
-
-        float w = width / widthSegments;
-        float h = height / heightSegments;
-        for(uint32_t j = 0; j <= heightSegments; j++){
-            for(uint32_t i = 0; i <= widthSegments; i ++ ){
-                float iw = i * w;
-                float jh = j * h;
-
-                vertices.push_back({
-                    {iw - (0.5 * width), jh - (0.5 * height), 0.0f}, 
-                    {iw, jh, 0.0f},
-                });
-            }
-        }
-
-        for(uint32_t i = 0; i < widthSegments; i ++ ){
-            for(uint32_t j = 0; j < heightSegments; j++){
-
-                
-                indices.push_back(j * (widthSegments+1) + i);
-                indices.push_back(j * (widthSegments+1) + i + 1);
-                indices.push_back((j+1) * (widthSegments+1) + i);
-
-
-                indices.push_back(j * (widthSegments+1) + i + 1);
-                indices.push_back((j+1) * (widthSegments+1) + i + 1);
-                indices.push_back((j+1) *(widthSegments+1) + i);
-            }
-        }
-        
-        return {.vertices = vertices, .indices = indices,};
-    }
 
 }
 

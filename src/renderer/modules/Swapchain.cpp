@@ -5,6 +5,7 @@
 #include <limits>
 #include <algorithm>
 
+
 namespace boitatah
 {
     Swapchain::Swapchain(SwapchainOptions options)
@@ -49,10 +50,9 @@ namespace boitatah
                 .sc = swapchain};
     }
 
-    void Swapchain::attach(std::shared_ptr<Vulkan> vulkan, Renderer *renderer, std::shared_ptr<WindowManager> window)
+    void Swapchain::attach(std::shared_ptr<Vulkan> vulkan, std::shared_ptr<WindowManager> window)
     {
         this->vulkan = vulkan;
-        this->renderer = renderer;
         this->window = window;
     }
 
@@ -149,7 +149,7 @@ namespace boitatah
     {
         swapchainViews.resize(swapchainImages.size());
 
-        for (size_t i = 0; i < swapchainViews.size(); i++)
+        for (std::size_t i = 0; i < swapchainViews.size(); i++)
         {
             VkImageViewCreateInfo createInfo{
                 .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,

@@ -60,8 +60,11 @@ namespace boitatah
     enum class IMAGE_LAYOUT
     {
         UNDEFINED = 0,
-        COLOR_ATT_OPTIMAL = 1,
+        COLOR_ATT = 1,
         PRESENT_SRC = 2,
+        WRITE = 3,
+        READ = 4,
+        TRANSFER_DST = 5,
     };
 
     enum class IMAGE_USAGE
@@ -135,6 +138,23 @@ namespace boitatah
         FRAGMENT = 2,
         VERTEX_FRAGMENT = 3,
         ALL_GRAPHICS = 4
+    };
+
+    enum class SAMPLER_TILE_MODE{
+        REPEAT,
+        MIRRORED_REPEAT,
+        CLAMP_EDGE
+    };
+
+    enum class SAMPLER_MIPMAP_MODE{
+        NEAREST,
+        LINEAR
+    };
+
+    enum class SAMPLER_FILTER{
+        NEAREST,
+        LINEAR,
+        CUBIC,
     };
 
     template <typename To, typename From>
@@ -241,7 +261,7 @@ namespace boitatah
     {
         switch (imageLayout)
         {
-        case IMAGE_LAYOUT::COLOR_ATT_OPTIMAL:
+        case IMAGE_LAYOUT::COLOR_ATT:
             return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         case IMAGE_LAYOUT::PRESENT_SRC:
             return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;

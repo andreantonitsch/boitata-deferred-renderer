@@ -111,23 +111,13 @@ namespace boitatah::vk
     struct DrawCommandVk
     {
         VkCommandBuffer drawBuffer;
-        VkRenderPass pass;
-        VkFramebuffer frameBuffer;
-        //VkPipelineLayout layout;
-
-        VkBuffer vertexBuffer;
-        uint32_t vertexBufferOffset;
-
-        VkBuffer indexBuffer;
-        uint32_t indexBufferOffset;
-        uint32_t indexCount;
-
-        glm::ivec2 areaDims;
-        glm::ivec2 areaOffset;
         uint32_t vertexCount;
         uint32_t instaceCount;
         uint32_t firstVertex;
         uint32_t firstInstance;
+
+        bool indexed;
+        uint32_t indexCount;
         //std::vector<PushConstant> pushConstants;
     };
 
@@ -150,6 +140,16 @@ namespace boitatah::vk
         uint32_t elementCount;
         void *map;
         void *data;
+    };
+
+    struct BindBuffersCommandVk{
+        VkCommandBuffer drawBuffer;
+        std::vector<VkBuffer> buffers;
+        std::vector<VkDeviceSize> offsets;
+    };
+
+    struct BindIndexBufferCommandVk{
+        
     };
 
 }

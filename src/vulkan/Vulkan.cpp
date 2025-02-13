@@ -502,26 +502,23 @@ void boitatah::vk::Vulkan::beginRenderpassCommand(const BeginRenderpassCommandVk
 void boitatah::vk::Vulkan::endRenderpassCommand(const EndRenderpassCommandVk &command)
 {
     vkCmdEndRenderPass(command.commandBuffer);
-    // if (vkEndCommandBuffer(command.commandBuffer) != VK_SUCCESS)
-    // {
-    //     throw std::runtime_error("Failed to record a draw command buffer");
-    // }
 }
+
+void boitatah::vk::Vulkan::CmdBindVertexBuffers(const BindBuffersCommandVk &command){
+        vkCmdBindVertexBuffers(command.drawBuffer, 
+                               0, 
+                               static_cast<uint32_t>(command.buffers.size()), 
+                               command.buffers.data(), 
+                               command.offsets.data());
+}
+void boitatah::vk::Vulkan::CmdBindIndexBuffer(const BindBuffersCommandVk &command) {
+        vkCmdBindIndexBuffer(command.drawBuffer, command.buffers[0], command.offsets[0],VK_INDEX_TYPE_UINT32);
+};
 
 void boitatah::vk::Vulkan::recordDrawCommand(const DrawCommandVk &command)
 {
     
-    if (command.vertexBuffer != VK_NULL_HANDLE)
-    {
-        VkBuffer vertexBuffers[] = {command.vertexBuffer};
-        VkDeviceSize offsets[] = {command.vertexBufferOffset}; //<-- for buffer suballocation
-        vkCmdBindVertexBuffers(command.drawBuffer, 0, 1, vertexBuffers, offsets);
-    }
-
-    if(command.indexBuffer != VK_NULL_HANDLE){
-        vkCmdBindIndexBuffer(command.drawBuffer, command.indexBuffer,
-        command.indexBufferOffset, //<-- for buffer suballocation
-         VK_INDEX_TYPE_UINT32);
+    if(command.indexed){
         vkCmdDrawIndexed(command.drawBuffer, command.indexCount,
                 command.instaceCount, command.firstVertex, 
                 0 //command.vertexBufferOffset <-- for instanced drawing. not for suballocated buffers.
@@ -1067,6 +1064,7 @@ void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
 
     uint32_t bindingCount = static_cast<uint32_t>(desc.bindings.size());
     uint32_t attributeCount = static_cast<uint32_t>(desc.attributes.size());
+
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,

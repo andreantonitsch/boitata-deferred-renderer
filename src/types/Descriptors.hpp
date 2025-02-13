@@ -3,11 +3,11 @@
 #include "BttEnums.hpp"
 #include <vector>
 #include <span>
-//#include <renderer/resources/GPUBuffer.hpp>
+#include <buffers/BufferStructs.hpp>
 
 namespace boitatah
 {
-    class GPUBuffer;
+    using namespace boitatah::buffer;
 
     struct BindingDesc{
         //uint32_t binding = 0;
@@ -46,7 +46,8 @@ namespace boitatah
         //uint32_t set;
         uint32_t binding;
         DESCRIPTOR_TYPE type;
-        Handle<GPUBuffer> buffer;
+        BufferAccessData bufferData;
+        //Handle<GPUBuffer> buffer;
     };
 
 };

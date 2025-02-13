@@ -4,7 +4,6 @@
 
 namespace boitatah::command_buffers{
 
-
     template<class T>
     class CommandBufferWriter {
         
@@ -86,6 +85,10 @@ namespace boitatah::command_buffers{
 
             void waitForTransfers(){
                 self().__imp_waitForTransfers();
+            }
+
+            void transitionImage(const TransitionLayoutCommand &command){
+                self().__imp_transitionImage(command, m_buffer);
             }
 
     };

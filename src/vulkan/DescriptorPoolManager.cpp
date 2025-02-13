@@ -1,9 +1,9 @@
 #include "DescriptorPoolManager.hpp"
-#include <renderer/resources/GPUBuffer.hpp>
+
 namespace boitatah::vk {
 
-    DescriptorPoolManager::DescriptorPoolManager(std::shared_ptr<Vulkan> vulkan,  std::shared_ptr<GPUResourceManager> resourceManager, uint32_t maximumSets)
-    : m_vk(vulkan), m_resourceManager(resourceManager), maxSets(maximumSets){};
+    DescriptorPoolManager::DescriptorPoolManager(std::shared_ptr<Vulkan> vulkan, uint32_t maximumSets)
+    : m_vk(vulkan), maxSets(maximumSets){};
 
     DescriptorPoolManager::~DescriptorPoolManager(){
         //release all pools
@@ -43,7 +43,7 @@ namespace boitatah::vk {
             switch(binding.type){
                 case DESCRIPTOR_TYPE::UNIFORM_BUFFER:{
                     VkDescriptorBufferInfo info;
-                    auto bufferAccess =  m_resourceManager->getResource(binding.buffer).getAccessData(frame_index);
+                    auto bufferAccess =  binding.bufferData;
                     info.buffer = bufferAccess.buffer->getBuffer();
                     info.offset = bufferAccess.offset;
                     info.range = bufferAccess.size;

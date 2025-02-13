@@ -1,5 +1,5 @@
 #include "BackBuffer.hpp"
-
+#include "../Renderer.hpp"
 namespace boitatah
 {
     BackBufferManager::BackBufferManager(Renderer *renderer)
@@ -34,9 +34,9 @@ namespace boitatah
                 imageDesc.samples = desc.samples;
                 imageDesc.mipLevels = 1;
 
-                attachDesc.finalLayout = IMAGE_LAYOUT::COLOR_ATT_OPTIMAL;
+                attachDesc.finalLayout = IMAGE_LAYOUT::COLOR_ATT;
                 attachDesc.initialLayout = IMAGE_LAYOUT::UNDEFINED;
-                attachDesc.layout = IMAGE_LAYOUT::COLOR_ATT_OPTIMAL;
+                attachDesc.layout = IMAGE_LAYOUT::COLOR_ATT;
                 attachDesc.index = i;
                 attachDesc.samples = desc.samples;
 

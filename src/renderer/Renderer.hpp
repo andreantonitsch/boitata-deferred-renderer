@@ -9,7 +9,7 @@
 #include <utility>
 #include <glm/vec2.hpp>
 
-#include "../vulkan/Vulkan.hpp"
+#include <vulkan/Vulkan.hpp>
 #include "../vulkan/Window.hpp"
 
 #include "../types/BackBufferDesc.hpp"
@@ -18,7 +18,6 @@
 #include "../types/commands/CommandBuffer.hpp"
 #include "../types/RenderTarget.hpp"
 #include "../types/commands/Commands.hpp"
-#include "../types/Material.hpp"
 
 #include "../buffers/Buffer.hpp"
 #include "../buffers/BufferManager.hpp"
@@ -116,7 +115,8 @@ namespace boitatah
         void bindDummyPipeline(const BindPipelineCommand& command);
         void bindPipelineCommand(const BindPipelineCommand& command);
         void bindDescriptorSetCommand(const BindSetCommand& command);
-
+        void bindVertexBuffers(const BindVertexBuffersCommand& command);
+        
         void pushPushConstants(const PushConstantsCommand& command);
 
         Handle<RenderPass> getBackBufferRenderPass();
@@ -170,13 +170,6 @@ namespace boitatah
         Pool<DescriptorSetLayout> setLayoutPool = Pool<DescriptorSetLayout>({.size = 50, .name = "descriptor layout pool"});
         Pool<RenderTargetCmdBuffers> rtCmdPool = Pool<RenderTargetCmdBuffers>({.size = 50, .name = "rtcmd buffers pool"});
         Pool<Geometry> geometryPool = Pool<Geometry>({.size = 50, .name = "geometry pool"});
-        Pool<Uniform> uniformPool = Pool<Uniform>({.size = 1<<16, .name = "uniforms pool"});
-        
-
-#pragma region UPDATE QUEUES
-        std::vector<Handle<Uniform>> uniformUpdateQueue = std::vector<Handle<Uniform>>();
-        std::vector<Handle<BufferAddress>> stagingBufferQueue = std::vector<Handle<BufferAddress>>();
-#pragma endregion 
 
         std::vector<Buffer *> buffers; 
 

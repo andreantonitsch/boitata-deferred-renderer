@@ -3,6 +3,7 @@
 #include "../resources/GPUResource.hpp"
 #include <types/Geometry.hpp>
 #include "../../types/BttEnums.hpp"
+#include <types/Texture.hpp>
 
 namespace boitatah{
     GPUResourceManager::GPUResourceManager( std::shared_ptr<vk::Vulkan>  vk_instance,
@@ -58,7 +59,7 @@ namespace boitatah{
     Handle<Geometry> GPUResourceManager::create(const GeometryCreateDescription& description)
     {
 
-        Geometry geo{};
+        Geometry geo(shared_from_this());
         for(auto& bufferDesc : description.bufferData)
         {
 
@@ -105,6 +106,16 @@ namespace boitatah{
         commitGeometryData(geo);
         std::cout << "commited" << std::endl;
         return m_resourcePool->set(geo);
+    }
+
+    Handle<RenderTexture> GPUResourceManager::create(const TextureCreateDescription &description)
+    {
+
+        RenderTexture tex(description, shared_from_this());
+            
+            
+        return Handle<RenderTexture>();
+
     }
 
     void GPUResourceManager::commitGeometryData(Geometry &geo)

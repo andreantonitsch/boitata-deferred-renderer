@@ -8,24 +8,25 @@
 #include "../../vulkan/VkCommandBufferWriter.hpp" 
 
 #include "../../collections/Pool.hpp"
-#include "GPUResourcePool.hpp"
 #include "../../buffers/Buffer.hpp"
 #include "../../buffers/BufferManager.hpp"
 #include "../resources/ResourceStructs.hpp"
-
+#include "GPUResourcePool.hpp"
+#include <renderer/resources/GPUBuffer.hpp>
+#include <types/Texture.hpp>
+#include <types/Geometry.hpp>
 
 #include "../../command_buffers/CommandBufferWriter.hpp"
 
 namespace boitatah
 {
-    class GPUBuffer;
-    class Geometry;
+    // class GPUBuffer;
+    // class Geometry;
+    // class RenderTexture;
+
     template<template <typename > class DerivedResource, typename Resource>
     class GPUResource;
 
-    // template<typename T>
-    // using ResourceType = typename std::enable_if<std::is_base_of<GPUResource<T>, T>::value>::type;
-    
     class GPUResourceManager : public std::enable_shared_from_this<GPUResourceManager>
     {
         
@@ -40,13 +41,6 @@ namespace boitatah
             vk::VkCommandBufferWriter& getCommandBufferWriter(){
                 return *m_commandBufferWriter;
             }
-
-            // Uniform Handling
-            template<class ResourceType>
-            void update(Handle<ResourceType> handle, ResourceUpdateDescription<ResourceType>& updateDescription ){
-                auto& resource = getResource(resource);
-                resource.self().update(updateDescription);
-            };
             
             template<typename ResourceType>
             bool checkReady(Handle<ResourceType> handle, uint32_t frame_index);
@@ -83,18 +77,12 @@ namespace boitatah
             bool checkTransfers();
             void waitForTransfers();
 
-
-            template<typename ResourceType>
-            ResourceMetaContent<ResourceType>& getResourceMetaData(Handle<ResourceType> &handle, uint32_t frame_index);
-            
-            template<typename ResourceType>
-            ResourceTraits<ResourceType>::ContentType& getResourceGPUData(Handle<ResourceType> &handle, uint32_t frame_index);
-
             std::shared_ptr<buffer::BufferManager> getBufferManager();
 
             Handle<GPUBuffer> create(const GPUBufferCreateDescription& description);
             Handle<Geometry> create(const GeometryCreateDescription& description);
-            
+            Handle<RenderTexture> create(const TextureCreateDescription& description);
+
             template <typename ResourceType>
             void destroy(const Handle<ResourceType>& handle);
 
@@ -144,14 +132,14 @@ namespace boitatah
         inline void GPUResourceManager::commitResourceCommand(Handle<ResourceType> handle, uint32_t frameIndex)
         {
             auto& resource = m_resourcePool->get(handle);
-            resource.commit(frameIndex);
+            resource.commit(frameIndex, getCommandBufferWriter());
         }
 
         template <typename ResourceType>
         inline void GPUResourceManager::destroy(const Handle<ResourceType> &handle)
         {
             auto& resource = getResource(handle);
-            resource.release(shared_from_this());
+            resource.release();
             m_resourcePool->clear(handle);
         }
 

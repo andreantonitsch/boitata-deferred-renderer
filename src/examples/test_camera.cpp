@@ -35,19 +35,19 @@ int main()
                                                 .entryFunction = "main"},
                                             .frag = {.byteCode = utils::readFile("./src/camera_frag.spv"), .entryFunction = "main"},
                                             .layout = layout,
-                                            .bindings = {{.stride = 24, .attributes = {{.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = formatSize(IMAGE_FORMAT::RG_32_SFLOAT)}}}}});
+                                            .bindings = {
+                                                {.stride = 12, .attributes = {{.location = 0, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},
+                                                {.stride = 12, .attributes = {{.location = 1, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},
+                                                {.stride = 8, .attributes = {{.location = 2, .format = IMAGE_FORMAT::RG_32_SFLOAT, .offset = 0}}},
+                                                }});
     
 
     //GeometryData geometryData = triangleVertices();
-    GeometryData geometryData = quadVertices();
+    //GeometryData geometryData = quadVertices();
     //GeometryData geometryData = squareVertices();
     //GeometryData geometryData = planeVertices(1.0, 1.0, 100, 200);
 
-    Handle<Geometry> geometry = GeometryBuilder::createGeoemtry(r.getResourceManager())
-                                .SetVertexInfo(geometryData.vertices.size(), 0)
-                                .SetIndexes(geometryData.indices)
-                                .AddBuffer(VERTEX_BUFFER_TYPE::POSITION, geometryData.vertices)
-                                .Finish();
+    Handle<Geometry> geometry = GeometryBuilder::Quad(r.getResourceManager());
 
 
     SceneNode triangle({
@@ -67,6 +67,7 @@ int main()
                    
                    });
 
+    if(false);
 
     camera.lookAt(glm::vec3(0));
     boitatah::utils::Timewatch timewatch(1000);

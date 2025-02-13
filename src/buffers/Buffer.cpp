@@ -90,7 +90,7 @@ namespace boitatah::buffer
         return true;
     }
 
-    void Buffer::copyData(const Handle<BufferReservation> handle, void *data)
+    void Buffer::copyData(const Handle<BufferReservation> handle, const void *data)
     {
         BufferReservation reservation;
             if(!mainReservPool->tryGet(handle, reservation)) 
@@ -105,7 +105,7 @@ namespace boitatah::buffer
                 .elementSize = reservation.size,
                 .elementCount = static_cast<uint32_t>(1),
                 .map = mappedMemory,
-                .data = data,
+                .data = const_cast<void*>(data),
             });
         }
         // else{
@@ -242,7 +242,7 @@ namespace boitatah::buffer
                mainAllocator->getLargestFreeBlockSize() >= compatibility.request;
     }
 
-    void Buffer::copyData(const Handle<BufferReservation> handle, void *data, uint32_t size)
+    void Buffer::copyData(const Handle<BufferReservation> handle, const void *data, uint32_t size)
     {
         BufferReservation reservation;
             if(!mainReservPool->tryGet(handle, reservation)) 
@@ -255,7 +255,7 @@ namespace boitatah::buffer
                 .elementSize = std::min(reservation.size, size),
                 .elementCount = static_cast<uint32_t>(1),
                 .map = static_cast<std::byte*>(mappedMemory) + reservation.offset,
-                .data = data,
+                .data = const_cast<void*>(data),
             });
         }
     }

@@ -35,12 +35,39 @@ int main()
                                             .layout = layout,
                                             .bindings = {{.stride = sizeof(float) * 6, .attributes = {{.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = formatSize(IMAGE_FORMAT::RGB_32_SFLOAT)}}}}});
     
-    
-    GeometryData geometryData = triangleVertices();
-    //GeometryData geometryData = squareVertices();
+    struct GeometryData
+    {
+        std::vector<glm::vec3> vertices;
+        std::vector<glm::vec3> color;
+        std::vector<glm::vec2> uv;
+        
+        std::vector<uint32_t> indices;
+    };
+
+    auto triangles = []()
+    {
+        return GeometryData{
+            .vertices = {
+                {0.0f, -0.5f, 0.0f},
+                {0.5f, 0.5f, 0.0f},
+                {-0.5f, 0.5f, 0.0f},},
+
+            .color ={{1.0f, 1.0f, 0.0f}, 
+                    {1.0f, 0.0f, 1.0f},
+                    {0.0f, 1.0f, 1.0f}},
+            
+            .uv = {{0.5f, 0.0f},
+                   {0.0f, 1.0f},
+                   {1.0f, 1.0f}},
+
+            .indices = {0U, 1U, 2U},
+        };
+    };
+
+    GeometryData geometryData = triangles();
     //GeometryData geometryData = planeVertices(1.0, 1.0, 100, 200);
 
-    Handle<Geometry> geometry = GeometryBuilder::createGeoemtry(r.getResourceManager())
+    Handle<Geometry> geometry = GeometryBuilder::createGeometry(r.getResourceManager())
                                 .SetVertexInfo(geometryData.vertices.size(), 0)
                                 .SetIndexes(geometryData.indices)
                                 .AddBuffer(VERTEX_BUFFER_TYPE::POSITION, geometryData.vertices)
@@ -48,7 +75,6 @@ int main()
 
     // std::cout << "Created Geometry" << std::endl;
             
-
     SceneNode triangle({
         .name = "triangle",
         .geometry = geometry,

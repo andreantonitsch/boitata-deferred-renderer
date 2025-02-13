@@ -63,7 +63,7 @@ namespace boitatah
         //create base layout with push constants for model matrices
         Handle<ShaderLayout> m_baseShaderLayout = createShaderLayout({});
 
-        m_descriptorManager = std::make_shared<DescriptorPoolManager>(m_vk, m_resourceManager, 4096);
+        m_descriptorManager = std::make_shared<DescriptorPoolManager>(m_vk, 4096);
         m_dummyPipeline = createShader({
             .vert = {.byteCode = utils::readFile("./src/09_shader_base_vert.spv"),
                      .entryFunction = "main"},
@@ -90,6 +90,10 @@ namespace boitatah
         
     }
 
+    void Renderer::bindDescriptorSet()
+    {
+    }
+
     void Renderer::handleWindowResize()
     {
         m_vk->waitIdle();
@@ -110,7 +114,7 @@ namespace boitatah
     {
         m_swapchain = std::make_shared<Swapchain>(SwapchainOptions{.format = m_options.swapchainFormat,
                                    .useValidationLayers = m_options.debug});
-        m_swapchain->attach(m_vk, this, m_window);
+        m_swapchain->attach(m_vk, m_window);
         m_swapchain->createSwapchain(); // options.windowDimensions, false, false);
     }
 
@@ -154,10 +158,9 @@ namespace boitatah
         }
 
         RenderTargetCmdBuffers buffers;
-        if (!rtCmdPool.tryGet(target.cmdBuffers, buffers))
-            throw std::runtime_error("Failed to Render to Target");
+        if (!rtCmdPool.tryGet(target.cmdBuffers, buffers)){
+            throw std::runtime_error("Failed to Render to Target");}
 
-        // for scene in scene
         Shader shader;
         if (!shaderPool.tryGet(scene.shader, shader))
         {
@@ -167,48 +170,23 @@ namespace boitatah
         // vertex and mesh data
         Geometry geom = m_resourceManager->getResource(scene.geometry);
 
-        Handle<GPUBuffer> vertexBufferHandle = geom.getBuffer(VERTEX_BUFFER_TYPE::POSITION);
+        auto vertexBufferHandle = geom.getBuffer(VERTEX_BUFFER_TYPE::POSITION);
+        auto vertexBufferData = m_resourceManager->getResource(vertexBufferHandle).getAccessData(frameIndex);
 
-        auto vertexGPUBuffer = m_resourceManager->getResource(vertexBufferHandle);
-        auto vertexGPUBufferContent = vertexGPUBuffer.get_content(frameIndex);
+        auto indexBufferData = m_resourceManager->getResource(geom.IndexBuffer()).getAccessData(frameIndex);
         
 
-        Buffer* vertexBuffer;
-        BufferReservation vertexBufferReservation;
-        m_bufferManager->getAddressReservation(vertexGPUBufferContent.buffer, vertexBufferReservation);
-        m_bufferManager->getAddressBuffer(vertexGPUBufferContent.buffer, vertexBuffer);
+        auto indexVkBuffer = indexBufferData.buffer->getBuffer();
+        auto vertexVkBuffer = vertexBufferData.buffer->getBuffer();
 
-        auto indexBufferAddressHandle = m_resourceManager->getResource(geom.IndexBuffer()).get_content(frameIndex).buffer;
-        Buffer* indexBuffer;
-        BufferReservation indexBufferReservation;
-        m_bufferManager->getAddressBuffer(indexBufferAddressHandle, indexBuffer);
-        
-        m_bufferManager->getAddressReservation(indexBufferAddressHandle, indexBufferReservation);
 
-        auto indexVkBuffer = indexBuffer->getBuffer();
-        auto vertexVkBuffer = vertexBuffer->getBuffer();
 
         drawCommand({
             .drawBuffer = buffers.drawBuffer,
-            .renderTarget = target,
-            .renderPass = pass,
-            //.shader = shader,
-            .dimensions = {
-                static_cast<int>(image.dimensions.x),
-                static_cast<int>(image.dimensions.y),
-            },
-
-            //.vertexBuffer = vertexBufferHandle.isNull() ? VK_NULL_HANDLE : vertexBuffer->getBuffer(),
-            .vertexBuffer = vertexVkBuffer,
-            .vertexBufferOffset = vertexBufferReservation.offset,
-            //.indexBuffer = geom.indexBuffer.isNull() ? VK_NULL_HANDLE : indexBuffer->getBuffer(),
-            .indexBuffer = indexVkBuffer,
-            .indexBufferOffset  = indexBufferReservation.offset,
             .indexCount = geom.IndexCount(),
-
             .vertexInfo = geom.VertexInfo(),
-            .instanceInfo = {1, 0}, // scene.instanceInfo
-
+            .instanceInfo = {1, 0},
+            .indexed = true,
         });
     }
     void Renderer::render(SceneNode &scene)
@@ -279,11 +257,13 @@ namespace boitatah
         RenderPass pass = renderpassPool.get(target.renderpass);
         Image image = imagePool.get(target.attachments[0]);
 
+        uint32_t frame_index = m_backBufferManager->getCurrentIndex();
+        
         m_vk->waitForFrame(buffers);
 
         m_vk->resetCmdBuffer(buffers.drawBuffer.buffer);
         m_vk->resetCmdBuffer(buffers.transferBuffer.buffer);
-        m_descriptorManager->resetPools(m_backBufferManager->getCurrentIndex());
+        m_descriptorManager->resetPools(frame_index);
 
         beginBuffer({.buffer = buffers.drawBuffer});
 
@@ -311,7 +291,7 @@ namespace boitatah
                                    .bindings = {{
                                             .binding = 0,
                                             .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
-                                            .buffer = m_frameUniform
+                                            .bufferData = m_resourceManager->getResource(m_frameUniform).getAccessData(frame_index)
                                   }}});
 
         //Bind Pipeline <-- relevant when shader is reused.
@@ -332,6 +312,15 @@ namespace boitatah
                 boundPipeline = node->shader;
             }
 
+            // TODO separate to avoid rebinding when drawing a lot of the same object
+            bindVertexBuffers({
+                .commandBuffer = buffers.drawBuffer,
+                .frame = m_backBufferManager->getCurrentIndex(),
+                .geometry = node->geometry,
+                .bindIndex = true
+            });
+
+
             glm::mat4 model_mat = scene.getGlobalMatrix();
 
             pushPushConstants({
@@ -345,7 +334,6 @@ namespace boitatah
                     .stages = STAGE_FLAG::ALL_GRAPHICS
                 }}}
             );
-
             renderToRenderTarget(*node, rendertarget, m_backBufferManager->getCurrentIndex());
         }
  
@@ -426,27 +414,59 @@ namespace boitatah
         return buffer;
     }
 
+    void Renderer::bindVertexBuffers(const BindVertexBuffersCommand& command ){
+
+        auto geom = m_resourceManager->getResource(command.geometry);
+        auto vertexBufferHandle = geom.getBuffer(VERTEX_BUFFER_TYPE::POSITION);
+        auto colorBufferHandle = geom.getBuffer(VERTEX_BUFFER_TYPE::COLOR);
+        auto uvBufferHandle = geom.getBuffer(VERTEX_BUFFER_TYPE::UV);
+        std::array<BufferAccessData, 3> bufferData;
+        bufferData[0] = m_resourceManager->getResource(vertexBufferHandle).getAccessData(command.frame);
+        bufferData[1] = m_resourceManager->getResource(vertexBufferHandle).getAccessData(command.frame);
+        bufferData[2] = m_resourceManager->getResource(vertexBufferHandle).getAccessData(command.frame);
+
+        std::vector<VkDeviceSize> offsets; 
+        std::vector<VkBuffer> buffers;
+
+        for (std::size_t i = 0; i < 3; i++)
+        {
+            offsets.push_back(static_cast<VkDeviceSize>(bufferData[i].offset));
+            buffers.push_back(bufferData[i].buffer->getBuffer());
+        }
+        
+
+        m_vk->CmdBindVertexBuffers({
+            .drawBuffer = command.commandBuffer.buffer,
+            .buffers = buffers,
+            .offsets = offsets
+        });
+        // auto vertexBufferData = m_resourceManager->getResource(vertexBufferHandle).getAccessData(frameIndex);
+
+        // auto indexBufferData = m_resourceManager->getResource(geom.IndexBuffer()).getAccessData(frameIndex);
+        
+
+        // auto indexVkBuffer = indexBufferData.buffer->getBuffer();
+        // auto vertexVkBuffer = vertexBufferData.buffer->getBuffer();
+        if(command.bindIndex)
+        {
+            auto indexHandle = geom.IndexBuffer();
+            auto indexData = m_resourceManager->getResource(indexHandle).getAccessData(command.frame);
+            m_vk->CmdBindIndexBuffer({.drawBuffer = command.commandBuffer.buffer,
+                                    .buffers = {indexData.buffer->getBuffer()},
+                                    .offsets = {indexData.offset}});
+        }
+    };
+
     void Renderer::drawCommand(const DrawCommand &command)
     {
         m_vk->recordDrawCommand({
             .drawBuffer = command.drawBuffer.buffer,
-            .pass = command.renderPass.renderPass,
-            .frameBuffer = command.renderTarget.buffer,
-            //.pipeline = command.shader.pipeline,
-            //.layout = command.shader.layout.layout,
-            .vertexBuffer = command.vertexBuffer,
-            .vertexBufferOffset = command.vertexBufferOffset,
-            .indexBuffer = command.indexBuffer,
-            .indexBufferOffset = command.indexBufferOffset,
-            .indexCount = command.indexCount,
-            .areaDims = {static_cast<int>(command.dimensions.x),
-                         static_cast<int>(command.dimensions.y)},
-            .areaOffset = {0, 0},
             .vertexCount = command.vertexInfo.x,
             .instaceCount = 1,
             .firstVertex = command.vertexInfo.y,
             .firstInstance = 0,
-            //.pushConstants = command.pushConstants,
+            .indexed = command.indexed,
+            .indexCount = command.indexCount,
         });
     }
 
@@ -639,7 +659,7 @@ namespace boitatah
         // TODO Convert bindings in vulkan class?
         std::vector<VkVertexInputAttributeDescription> vkattributes;
         std::vector<VkVertexInputBindingDescription> vkbindings;
-
+        //uint32_t location = 0;
         for (int i = 0; i < data.bindings.size(); i++)
         {
             auto binding = data.bindings[i];
@@ -658,9 +678,11 @@ namespace boitatah
                 attributeDesc.binding = i;
                 attributeDesc.format = castEnum<VkFormat>(attribute.format);
                 attributeDesc.offset = runningOffset;
-                runningOffset = runningOffset + formatSize(attribute.format);
-                attributeDesc.location = j;
+                //attributeDesc.location = location++;
+                attributeDesc.location = attribute.location;
                 vkattributes.push_back(attributeDesc);
+
+                runningOffset += formatSize(attribute.format);
             }
         }
 

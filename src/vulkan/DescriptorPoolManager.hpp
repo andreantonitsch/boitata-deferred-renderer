@@ -118,7 +118,7 @@ namespace boitatah::vk
     {
 
     public:
-        DescriptorPoolManager(std::shared_ptr<Vulkan> vulkan, std::shared_ptr<GPUResourceManager> resourceManager, uint32_t maximumSets);
+        DescriptorPoolManager(std::shared_ptr<Vulkan> vulkan, uint32_t maximumSets);
         ~DescriptorPoolManager();
         DescriptorSet getSet(const DescriptorSetLayout &request, uint32_t frame_index);
         void writeSet(const std::span<const BindBindingDesc> &bindings, 
@@ -133,7 +133,6 @@ namespace boitatah::vk
     private:
         // Members
         std::shared_ptr<Vulkan> m_vk;
-        std::shared_ptr<GPUResourceManager> m_resourceManager;
         uint32_t maxSets = 4096;
         std::vector<DescriptorSetPool> m_pools;
 

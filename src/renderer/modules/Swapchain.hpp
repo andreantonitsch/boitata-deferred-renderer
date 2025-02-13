@@ -11,7 +11,6 @@
 #include <vulkan/vulkan.h>
 #include "../../vulkan/Vulkan.hpp"
 #include "../../vulkan/Window.hpp"
-#include "../Renderer.hpp"
 #include "../../collections/Pool.hpp"
 #include <vector>
 #include <string>
@@ -21,8 +20,6 @@
 namespace boitatah
 {
     using namespace vk;
-
-    class Renderer;
 
     struct SwapchainOptions
     {
@@ -43,7 +40,7 @@ namespace boitatah
         ~Swapchain(void);
         SwapchainImage getNext(VkSemaphore &semaphore);
         SwapchainImage getCurrent();
-        void attach(std::shared_ptr<Vulkan> vulkan, Renderer *renderer, std::shared_ptr<WindowManager> window);
+        void attach(std::shared_ptr<Vulkan> vulkan, std::shared_ptr<WindowManager> window);
         void createSwapchain();//Vector2<uint32_t> dimensions, bool vsync, bool fullscreen);
         // void populateBuffers();
 
@@ -51,7 +48,6 @@ namespace boitatah
         SwapchainOptions options;
         //VkSurfaceKHR surface;
         std::shared_ptr<vk::Vulkan> vulkan;
-        Renderer *renderer;
         std::shared_ptr<WindowManager> window;
         uint32_t currentIndex;
 

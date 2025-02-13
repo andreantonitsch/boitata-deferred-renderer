@@ -13,7 +13,7 @@ namespace boitatah{
         return addr;
     }
 
-    void GPUBuffer::copyData(void *data, uint32_t length)
+    void GPUBuffer::copyData(const void *data, uint32_t length)
     {
         
         dirty = true;
