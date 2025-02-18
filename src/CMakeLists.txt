@@ -11,6 +11,7 @@ set(LIB_DR_SOURCES
             buffers/Buffer.cpp
             buffers/BufferManager.cpp
             renderer/resources/builders/GeometryBuilder.cpp
+            renderer/modules/MaterialManager.cpp
             renderer/modules/GPUResourceManager.cpp
             renderer/modules/GPUResourcePool.cpp
             types/Texture.cpp

@@ -125,8 +125,6 @@ namespace boitatah
                 return m_buffers[index];
             };
 
-            void ComputeNormals();
-
             glm::ivec2 VertexInfo(){
                 return vertexInfo;
              };
@@ -153,6 +151,12 @@ namespace boitatah
             //     }
             //     manager->destroy(indexBuffer);
             //  };
+
+            //expensive call
+            void ComputeSmoothNormals();
+
+            //expensive call
+            void ComputeFlatNormals();
 
 
     };

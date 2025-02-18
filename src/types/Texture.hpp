@@ -100,29 +100,29 @@ namespace boitatah{
             void WriteTransfer(TextureGPUData& data, CommandBufferWriter<vk::VkCommandBufferWriter> &writer) {};
     };
 
-    // class FixedTexture : public Texture, public MutableGPUResource<FixedTexture>{
+    class FixedTexture : public Texture, public MutableGPUResource<FixedTexture>{
             
-    //         public:
-    //             FixedTexture() = default;
-    //             ~FixedTexture() = default;
-    //             FixedTexture(const FixedTexture& other) = default;
+            public:
+                FixedTexture() = default;
+                ~FixedTexture() = default;
+                FixedTexture(const FixedTexture& other) = default;
 
-    //             FixedTexture(const TextureCreateDescription& description, std::shared_ptr<GPUResourceManager> manager);
+                FixedTexture(const TextureCreateDescription& description, std::shared_ptr<GPUResourceManager> manager);
 
-    //             TextureGPUData CreateGPUData() 
-    //                 {return Texture::CreateGPUData();};
-    //             bool ReadyForUse(TextureGPUData& content)
-    //                 {return Texture::ReadyForUse(content);};
-    //             void SetContent(TextureGPUData& content)
-    //                 {Texture::SetContent(content);};
-    //             void ReleaseData(TextureGPUData& content)
-    //                 {Texture::ReleaseData(content);};
-    //             void Release(TextureGPUData& content)
-    //                 {Texture::Release(content);};
-    //             void WriteTransfer(TextureGPUData& data, CommandBufferWriter<vk::VkCommandBufferWriter> &writer)
-    //                 {return Texture::WriteTransfer(data, writer);};
+                TextureGPUData CreateGPUData() 
+                    {return Texture::CreateGPUData();};
+                bool ReadyForUse(TextureGPUData& content)
+                    {return Texture::ReadyForUse(content);};
+                void SetContent(TextureGPUData& content)
+                    {Texture::SetContent(content);};
+                void ReleaseData(TextureGPUData& content)
+                    {Texture::ReleaseData(content);};
+                void Release(TextureGPUData& content)
+                    {Texture::Release(content);};
+                void WriteTransfer(TextureGPUData& data, CommandBufferWriter<vk::VkCommandBufferWriter> &writer)
+                    {return Texture::WriteTransfer(data, writer);};
 
-    // };
+    };
 
 
     class RenderTexture : public Texture, public MutableGPUResource<RenderTexture>{

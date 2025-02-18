@@ -33,7 +33,7 @@
 #include "../collections/Pool.hpp"
 
 #include "../scene/Scene.hpp"
-
+#include <renderer/modules/MaterialManager.hpp>
 
 namespace boitatah
 {
@@ -94,7 +94,7 @@ namespace boitatah
         Handle<Image> createImage(const ImageDesc &desc);
         Handle<ShaderLayout> createShaderLayout(const ShaderLayoutDesc &desc);
         Handle<DescriptorSetLayout> createDescriptorLayout(const DescriptorSetLayoutDesc &desc);
-        
+        Handle<Material> createMaterial(const MaterialCreate& description);
         
         // Command Buffers
         CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
@@ -142,6 +142,7 @@ namespace boitatah
         std::shared_ptr<DescriptorPoolManager> m_descriptorManager;
         std::shared_ptr<Vulkan> m_vk;
         std::shared_ptr<WindowManager> m_window;
+        std::shared_ptr<MaterialManager> m_materialManager;
 
         // Frame Uniforms
         FrameUniforms2 frame_uniforms;
@@ -150,7 +151,8 @@ namespace boitatah
         void updateFrameUniforms(uint32_t frame_index);
         void bindDescriptorSet();
 
-        // Handle<Uniform> m_cameraUniforms;
+
+        Handle<Material> m_baseMaterial;
         Handle<DescriptorSetLayout> base_setLayout;
         Handle<ShaderLayout> m_baseLayout;
         Handle<Shader> m_dummyPipeline;
@@ -160,6 +162,8 @@ namespace boitatah
 
         void handleWindowResize();
         void createSwapchain();
+
+        std::vector<SceneNode*> orderSceneNodes(const std::vector<SceneNode*>& nodes) const;
 
         // Pools
         Pool<Shader> shaderPool = Pool<Shader>({.size = 10, .name = "shader pool"});

@@ -1,11 +1,15 @@
-#include "../renderer/Renderer.hpp"
+#include <renderer/Renderer.hpp>
 #include <iostream>
 // #include <unistd.h>
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
 #include "../utils/utils.hpp"
 #include "../collections/Pool.hpp"
+#include "../renderer/modules/Camera.hpp"
+
 #include <renderer/resources/builders/GeometryBuilder.hpp>
+
+#include <utils/ImageLoader.hpp>
 
 using namespace boitatah;
 
@@ -25,6 +29,7 @@ int main()
 
     // Pipeline Layout for the Shader.
     Handle<ShaderLayout> layout = r.createShaderLayout({
+
     });
 
     Handle<Shader> shader = r.createShader({.name = "test",
@@ -61,18 +66,24 @@ int main()
     // Scene Description.
     SceneNode scene({.name = "root scene"});
     scene.add(&triangle);
-    boitatah::utils::Timewatch timewatch(1000);
 
-    r.waitIdle();
-    
-    float rotateSpeed = (2 * glm::pi<float>() / 9000 );
+    Camera camera({
+                   .position = glm::float3(0,0,-10),
+
+                   .aspect = static_cast<float>(windowWidth) / windowHeight,
+                   
+                   });
+
+    if(false);
+
+    camera.lookAt(glm::vec3(0));
+    boitatah::utils::Timewatch timewatch(1000);
 
     while (!r.isWindowClosed())
     {
-        r.render(scene);
-
-        triangle.rotate({0.0f, 0.0f, 1.0}, rotateSpeed); //<-- is a push constant update
-
+        r.render(scene, camera);
+        ///camera.rotate(glm::vec3(0.0, 0.01, 0.0));
+        camera.roll(0.01);
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
     }
     r.waitIdle();

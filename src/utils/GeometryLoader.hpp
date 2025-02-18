@@ -3,7 +3,7 @@
 #include <types/Geometry.hpp>
 #include <string>
 #include <vector>
-namespace boitatah::util{
+namespace boitatah::utils{
 
 
     class GeometryLoader{

@@ -10,6 +10,18 @@
 namespace boitatah::utils
 {
 
+    template <typename T>
+    static std::vector<T> flatten(const std::vector<std::vector<T>>& v) {
+        std::size_t total_size = 0;
+        for (const auto& sub : v)
+            total_size += sub.size(); // I wish there was a transform_accumulate
+        std::vector<T> result;
+        result.reserve(total_size);
+        for (const auto& sub : v)
+            result.insert(result.end(), sub.begin(), sub.end());
+        return result;
+    }
+
     static std::vector<char> readFile(const std::string &filename)
     {
         // ate starts from the back of the file

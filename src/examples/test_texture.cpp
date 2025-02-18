@@ -38,18 +38,31 @@ int main()
                                                 .entryFunction = "main"},
                                             .frag = {.byteCode = utils::readFile("./src/camera_frag.spv"), .entryFunction = "main"},
                                             .layout = layout,
-                                            .bindings = {{.stride = 24, .attributes = {{.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = formatSize(IMAGE_FORMAT::RG_32_SFLOAT)}}}}});
-    
+                                            .vertexBindings = {
+                                                {.stride = 12, .attributes = {{.location = 0, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},
+                                                {.stride = 12, .attributes = {{.location = 1, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},
+                                                {.stride = 8, .attributes = {{.location = 2, .format = IMAGE_FORMAT::RG_32_SFLOAT, .offset = 0}}},
+                                                }});
 
 
     Handle<Geometry> geometry = GeometryBuilder::Quad(r.getResourceManager());
 
-    Handle<RenderTexture> texture = util::TextureLoader::loadRenderTexture("./src/test.png", r.getResourceManager());
+    Handle<RenderTexture> texture = utils::TextureLoader::loadRenderTexture("./src/test.png", r.getResourceManager());
+
+    auto material = r.createMaterial({
+        .shader = shader,
+        .bindings = {},
+        .vertexBufferBindings = {VERTEX_BUFFER_TYPE::POSITION, 
+                                 VERTEX_BUFFER_TYPE::COLOR,
+                                 VERTEX_BUFFER_TYPE::UV,
+                                 },
+        .name = "material test"
+    });
 
     SceneNode triangle({
         .name = "triangle",
         .geometry = geometry,
-        .shader = shader,
+        .material = material,
     });
 
     // Scene Description.

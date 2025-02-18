@@ -29,12 +29,15 @@ int main()
     Handle<ShaderLayout> layout = r.createShaderLayout({});
     Handle<Shader> shader = r.createShader({.name = "test",
                                             .vert = {
-                                                .byteCode = utils::readFile("./src/vert.spv"),
+                                                .byteCode = utils::readFile("./src/camera_vert.spv"),
                                                 .entryFunction = "main"},
-                                            .frag = {.byteCode = utils::readFile("./src/frag.spv"), .entryFunction = "main"},
+                                            .frag = {.byteCode = utils::readFile("./src/camera_frag.spv"), .entryFunction = "main"},
                                             .layout = layout,
-                                            .bindings = {{.stride = sizeof(float) * 6, .attributes = {{.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = formatSize(IMAGE_FORMAT::RGB_32_SFLOAT)}}}}});
-    
+                                            .vertexBindings = {
+                                                {.stride = 12, .attributes = {{.location = 0, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},
+                                                {.stride = 12, .attributes = {{.location = 1, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},
+                                                {.stride = 8, .attributes = {{.location = 2, .format = IMAGE_FORMAT::RG_32_SFLOAT, .offset = 0}}},
+                                                }});
     struct GeometryData
     {
         std::vector<glm::vec3> vertices;
@@ -75,11 +78,22 @@ int main()
 
     // std::cout << "Created Geometry" << std::endl;
             
+    auto material = r.createMaterial({
+        .shader = shader,
+        .bindings = {},
+        .vertexBufferBindings = {VERTEX_BUFFER_TYPE::POSITION, 
+                                 VERTEX_BUFFER_TYPE::COLOR,
+                                 VERTEX_BUFFER_TYPE::UV,
+                                 },
+        .name = "material test"
+    });
+
+
     SceneNode triangle({
         .name = "triangle",
         .geometry = geometry,
-        .shader = shader,
-        });
+        .material = material,
+    });
 
     // Scene Description.
     SceneNode scene({.name = "root scene"});

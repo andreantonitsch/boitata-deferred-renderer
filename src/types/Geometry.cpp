@@ -11,6 +11,11 @@ namespace boitatah{
             manager->destroy(buffer);
         }
         manager->destroy(indexBuffer);
+        }
+        void Geometry::ComputeSmoothNormals() {
+            std::cout << "Compute smooth normals not implemented yet" << std::endl;
         };
-
+        void Geometry::ComputeFlatNormals() {
+            std::cout << "Compute flat normals not implemented yet" << std::endl;
+        };
 };

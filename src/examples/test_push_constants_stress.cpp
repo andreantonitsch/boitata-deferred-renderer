@@ -30,26 +30,34 @@ int main()
 
     Handle<Shader> shader = r.createShader({.name = "test",
                                             .vert = {
-                                                .byteCode = utils::readFile("./src/push_constants_vert.spv"),
+                                                .byteCode = utils::readFile("./src/camera_vert.spv"),
                                                 .entryFunction = "main"},
-                                            .frag = {.byteCode = utils::readFile("./src/push_constants_frag.spv"), .entryFunction = "main"},
+                                            .frag = {.byteCode = utils::readFile("./src/camera_frag.spv"), .entryFunction = "main"},
                                             .layout = layout,
-                                            .bindings = {{.stride = 24, .attributes = {{.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}, {.format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = formatSize(IMAGE_FORMAT::RG_32_SFLOAT)}}}}});
-    
-    
+                                            .vertexBindings = {
+                                                {.stride = 12, .attributes = {{.location = 0, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},
+                                                {.stride = 12, .attributes = {{.location = 1, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},
+                                                {.stride = 8, .attributes = {{.location = 2, .format = IMAGE_FORMAT::RG_32_SFLOAT, .offset = 0}}},
+                                                }});
 
-    Handle<Geometry> geometry = GeometryBuilder::Triangle(r.getResourceManager());
+    auto material = r.createMaterial({
+        .shader = shader,
+        .bindings = {},
+        .vertexBufferBindings = {VERTEX_BUFFER_TYPE::POSITION, 
+                                 VERTEX_BUFFER_TYPE::COLOR,
+                                 VERTEX_BUFFER_TYPE::UV,
+                                 },
+        .name = "material test"
+    });
 
 
-
-    std::cout << "Created Geometry" << std::endl;
-            
+    Handle<Geometry> geometry = GeometryBuilder::Quad(r.getResourceManager());
 
     SceneNode triangle({
         .name = "triangle",
         .geometry = geometry,
-        .shader = shader,
-        });
+        .material = material,
+    });
 
     // Scene Description.
     SceneNode scene({.name = "root scene"});
@@ -65,7 +73,7 @@ int main()
         SceneNode* other = new SceneNode({
         .name = "triangle",
         .geometry = geometry,
-        .shader = shader,
+        .material = material,
         });
         // other->translate({pos_dist(rng),pos_dist(rng),pos_dist(rng)});
         // other->translate({scale_dist(rng),scale_dist(rng),scale_dist(rng)});

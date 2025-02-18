@@ -13,6 +13,7 @@
 
 #include <vector>
 #include "../types/Shader.hpp"
+#include "../types/Material.hpp"
 #include <optional>
 #include <string>
 #include "../types/Geometry.hpp"
@@ -28,7 +29,7 @@ namespace boitatah
         std::vector<SceneNode *> children;
         std::optional<SceneNode *> parentNode;
         Handle<Geometry> geometry = Handle<Geometry>();
-        Handle<Shader> shader = Handle<Shader>();
+        Handle<Material> material = Handle<Material>();
         glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -43,7 +44,7 @@ namespace boitatah
             std::string name = "node";
             std::vector<SceneNode *> children;
             std::optional<SceneNode *> parentNode;
-            Handle<Shader> shader;
+            Handle<Material> material;
 
             // Transform
             glm::mat4 m_localTransform;
@@ -56,7 +57,7 @@ namespace boitatah
             // Material
 
             // Constructor
-            SceneNode(const SceneNodeDesc &desc) : shader(desc.shader),
+            SceneNode(const SceneNodeDesc &desc) : material(desc.material),
                                             //children(desc.children),
                                             name(desc.name),
                                             //parentNode(desc.parentNode),

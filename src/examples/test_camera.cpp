@@ -25,9 +25,7 @@ int main()
                                    .dimensions = {windowWidth, windowHeight}}});
 
     // Pipeline Layout for the Shader.
-    Handle<ShaderLayout> layout = r.createShaderLayout({
-
-    });
+    Handle<ShaderLayout> layout = r.createShaderLayout({ });
 
     Handle<Shader> shader = r.createShader({.name = "test",
                                             .vert = {
@@ -35,25 +33,30 @@ int main()
                                                 .entryFunction = "main"},
                                             .frag = {.byteCode = utils::readFile("./src/camera_frag.spv"), .entryFunction = "main"},
                                             .layout = layout,
-                                            .bindings = {
+                                            .vertexBindings = {
                                                 {.stride = 12, .attributes = {{.location = 0, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},
                                                 {.stride = 12, .attributes = {{.location = 1, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},
                                                 {.stride = 8, .attributes = {{.location = 2, .format = IMAGE_FORMAT::RG_32_SFLOAT, .offset = 0}}},
                                                 }});
     
 
-    //GeometryData geometryData = triangleVertices();
-    //GeometryData geometryData = quadVertices();
-    //GeometryData geometryData = squareVertices();
-    //GeometryData geometryData = planeVertices(1.0, 1.0, 100, 200);
+    auto material = r.createMaterial({
+        .shader = shader,
+        .bindings = {},
+        .vertexBufferBindings = {VERTEX_BUFFER_TYPE::POSITION, 
+                                 VERTEX_BUFFER_TYPE::COLOR,
+                                 VERTEX_BUFFER_TYPE::UV,
+                                 },
+        .name = "material test"
+    });
+
 
     Handle<Geometry> geometry = GeometryBuilder::Quad(r.getResourceManager());
-
 
     SceneNode triangle({
         .name = "triangle",
         .geometry = geometry,
-        .shader = shader,
+        .material = material,
     });
 
     // Scene Description.

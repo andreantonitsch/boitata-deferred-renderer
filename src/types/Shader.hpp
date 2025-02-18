@@ -90,7 +90,7 @@ namespace boitatah
         Handle<RenderTarget> framebuffer; // optional
         Handle<ShaderLayout> layout;
 
-        std::vector<VertexBindings> bindings;
+        std::vector<VertexBindings> vertexBindings;
     };
 
     struct ShaderDescVk

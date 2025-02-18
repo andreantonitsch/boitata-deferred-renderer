@@ -5,7 +5,7 @@
 #include <vector>
 #include <renderer/modules/GPUResourceManager.hpp>
 
-namespace boitatah::util{
+namespace boitatah::utils{
 
 
     class TextureLoader{

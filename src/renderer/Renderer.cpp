@@ -44,6 +44,8 @@ namespace boitatah
         
         m_resourceManager = std::make_shared<GPUResourceManager>(m_vk, m_bufferManager, m_ResourceManagerTransferWriter);
 
+        m_materialManager = std::make_unique<MaterialManager>();
+
         // frame uniforms
         m_frameUniform = m_resourceManager->create(GPUBufferCreateDescription{
             .size = sizeof(FrameUniforms2),
@@ -71,8 +73,10 @@ namespace boitatah
                      .entryFunction = "main"},
                                             
             .layout = m_baseShaderLayout,
-            .bindings = {}
+            .vertexBindings = {}
             });
+        m_baseMaterial = m_materialManager->createMaterial({});
+
         
     }
 
@@ -118,6 +122,30 @@ namespace boitatah
         m_swapchain->createSwapchain(); // options.windowDimensions, false, false);
     }
 
+    std::vector<SceneNode *> Renderer::orderSceneNodes(const std::vector<SceneNode *> &nodes) const
+    {
+        // BIN THE NODES ACCORDING TO THE MATERIAL ORDER 
+        auto cpy_nodes = nodes;
+        std::vector<std::vector<SceneNode*>>bins;
+        auto& material_order = m_materialManager->orderMaterials();
+        for(auto& material : material_order){
+            bins.push_back({});
+
+            auto it = cpy_nodes.begin();
+            it = std::find_if(it, cpy_nodes.end(),[&material](SceneNode*& node){
+                return node->material == material;
+            });
+            while(it != cpy_nodes.end()){
+                bins.back().push_back(*it);
+                it = cpy_nodes.erase(it);
+                            it = std::find_if(it, cpy_nodes.end(),[&material](SceneNode*& node){
+                return node->material == material;
+            });
+            }
+        }
+        return boitatah::utils::flatten(bins);
+    }
+
     void Renderer::createVulkan()
     {
         uint32_t extensionCount = 0;
@@ -161,8 +189,9 @@ namespace boitatah
         if (!rtCmdPool.tryGet(target.cmdBuffers, buffers)){
             throw std::runtime_error("Failed to Render to Target");}
 
+        auto& material = m_materialManager->getMaterialContent(scene.material);
         Shader shader;
-        if (!shaderPool.tryGet(scene.shader, shader))
+        if (!shaderPool.tryGet(material.shader, shader))
         {
             throw std::runtime_error("Failed to retrieve material");
         }
@@ -252,6 +281,8 @@ namespace boitatah
         // TRANSFORM UPDATES
         // ETC
         
+        auto ordered_nodes = orderSceneNodes(nodes);
+        
         RenderTarget target = renderTargetPool.get(rendertarget);
         RenderTargetCmdBuffers buffers = rtCmdPool.get(target.cmdBuffers);
         RenderPass pass = renderpassPool.get(target.renderpass);
@@ -294,22 +325,28 @@ namespace boitatah
                                             .bufferData = m_resourceManager->getResource(m_frameUniform).getAccessData(frame_index)
                                   }}});
 
+
         //Bind Pipeline <-- relevant when shader is reused.
         //std::cout << "began RenderPass" << std::endl;
         Handle<Shader> boundPipeline;
-        for (const auto &node : nodes)
+        Handle<Geometry> boundVertices;
+        std::vector<VERTEX_BUFFER_TYPE> boundVertexTypes;
+
+        for (const auto &node : ordered_nodes)
         {
-            if (node->shader.isNull())
-                {
-                    std::cout << "skip drawing node" << std::endl;
-                    continue;
-                }
-            if(boundPipeline != node->shader){
+            if (node->material.isNull())
+            {
+                std::cout << "skip drawing node" << std::endl;
+                continue;
+            }
+            auto& material = m_materialManager->getMaterialContent(scene.material);
+            Handle<Shader> shader = material.shader;
+            if(boundPipeline != shader){
                 bindPipelineCommand({
                     .commandBuffer = buffers.drawBuffer,
-                    .shader = node->shader
+                    .shader = shader
                 });
-                boundPipeline = node->shader;
+                boundPipeline = shader;
             }
 
             // TODO separate to avoid rebinding when drawing a lot of the same object
@@ -325,7 +362,7 @@ namespace boitatah
 
             pushPushConstants({
                 .drawBuffer = buffers.drawBuffer,
-                .layout = shaderPool.get(node->shader).layout.pipeline,
+                .layout = shaderPool.get(shader).layout.pipeline,
                 .push_constants = {
                 PushConstant{ //camera constant
                     .ptr = &model_mat,
@@ -660,14 +697,14 @@ namespace boitatah
         std::vector<VkVertexInputAttributeDescription> vkattributes;
         std::vector<VkVertexInputBindingDescription> vkbindings;
         //uint32_t location = 0;
-        for (int i = 0; i < data.bindings.size(); i++)
+        for (int i = 0; i < data.vertexBindings.size(); i++)
         {
-            auto binding = data.bindings[i];
+            auto binding = data.vertexBindings[i];
             VkVertexInputBindingDescription bindingDesc{};
             bindingDesc.stride = binding.stride;
             bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
             bindingDesc.binding = i;
-            std::cout << data.bindings[i].stride;
+            std::cout << data.vertexBindings[i].stride;
             vkbindings.push_back(bindingDesc);
             uint32_t runningOffset = 0;
 
@@ -803,6 +840,15 @@ namespace boitatah
             }            
         }
         return setLayoutPool.set(layout);
+    }
+
+    Handle<Material> Renderer::createMaterial(const MaterialCreate &description)
+    {
+        auto d = description;
+        if(!description.parent)
+            d.parent = m_baseMaterial;
+
+        return m_materialManager->createMaterial(d);
     }
 
     Handle<ShaderLayout> Renderer::createShaderLayout(const ShaderLayoutDesc &desc)

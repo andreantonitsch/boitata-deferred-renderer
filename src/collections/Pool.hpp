@@ -30,6 +30,21 @@ namespace boitatah
 
     };
 
+    struct HandleHasher
+    {
+        template <typename T>
+        std::size_t operator()(const Handle<T>& handle) const
+        {
+            using std::hash;
+                // Compute individual hash values for first, second and third
+                // http://stackoverflow.com/a/1646913/126995
+                std::size_t res = 17;
+                res = res * 31 + hash<uint32_t>()( handle.i );
+                res = res * 31 + hash<uint32_t>()( handle.gen );
+                return res;
+        };
+    };
+
     struct PoolOptions
     {
         uint32_t size = 100;
