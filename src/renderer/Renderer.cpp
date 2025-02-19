@@ -26,6 +26,8 @@ namespace boitatah
         m_vk->attachWindow(m_window);
         m_vk->completeInit();
 
+        m_imageManager = std::make_unique<ImageManager>(m_vk);
+
         createSwapchain();
 
         m_backBufferManager = std::make_shared<BackBufferManager>(this);
@@ -43,8 +45,9 @@ namespace boitatah
         m_ResourceManagerTransferWriter->setSignal(nullptr);
         
         m_resourceManager = std::make_shared<GPUResourceManager>(m_vk, m_bufferManager, m_ResourceManagerTransferWriter);
+        m_descriptorManager = std::make_shared<DescriptorSetManager>(m_vk, 4096);
 
-        m_materialManager = std::make_unique<MaterialManager>();
+        m_materialManager = std::make_unique<MaterialManager>(m_vk); 
 
         // frame uniforms
         m_frameUniform = m_resourceManager->create(GPUBufferCreateDescription{
@@ -54,18 +57,25 @@ namespace boitatah
             });
 
         
-        base_setLayout = createDescriptorLayout({
-                                                    .bindingDescriptors = {
-                                                    {//.binding = 0,
-                                                        .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
-                                                        .stages = STAGE_FLAG::ALL_GRAPHICS,
-                                                        .descriptorCount= 1,
-                                                        }}});
-
+        // base_setLayout = createDescriptorLayout({
+        //                                             .bindingDescriptors = {
+        //                                             {//.binding = 0,
+        //                                                 .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
+        //                                                 .stages = STAGE_FLAG::ALL_GRAPHICS,
+        //                                                 .descriptorCount= 1,
+        //                                                 }}});
+        base_setLayout = m_descriptorManager->getLayout({
+                                                            .bindingDescriptors = {
+                                                                {//.binding = 0,
+                                                                .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
+                                                                .stages = STAGE_FLAG::ALL_GRAPHICS,
+                                                                .descriptorCount= 1,
+                                                                }
+                                                            }
+                                                        });
         //create base layout with push constants for model matrices
         Handle<ShaderLayout> m_baseShaderLayout = createShaderLayout({});
 
-        m_descriptorManager = std::make_shared<DescriptorPoolManager>(m_vk, 4096);
         m_dummyPipeline = createShader({
             .vert = {.byteCode = utils::readFile("./src/09_shader_base_vert.spv"),
                      .entryFunction = "main"},
@@ -75,6 +85,7 @@ namespace boitatah
             .layout = m_baseShaderLayout,
             .vertexBindings = {}
             });
+
         m_baseMaterial = m_materialManager->createMaterial({});
 
         
@@ -179,11 +190,8 @@ namespace boitatah
             throw std::runtime_error("Failed to write command buffer \n\tRender Pass");
         }
 
-        Image image;
-        if (!imagePool.tryGet(target.attachments[0], image))
-        {
-            throw std::runtime_error("Failed to write command buffer \n\tImage");
-        }
+        Image image = m_imageManager->getImage(target.attachments[0]);
+
 
         RenderTargetCmdBuffers buffers;
         if (!rtCmdPool.tryGet(target.cmdBuffers, buffers)){
@@ -238,8 +246,7 @@ namespace boitatah
         if (!rtCmdPool.tryGet(fb.cmdBuffers, buffers))
             throw std::runtime_error("failed to framebuffer for Presentation");
 
-        Image image;
-        if (!imagePool.tryGet(fb.attachments[0], image))
+        Image image = m_imageManager->getImage(fb.attachments[0]);
             throw std::runtime_error("failed to framebuffer for Presentation");
 
         m_vk->waitForFrame(buffers);
@@ -286,7 +293,7 @@ namespace boitatah
         RenderTarget target = renderTargetPool.get(rendertarget);
         RenderTargetCmdBuffers buffers = rtCmdPool.get(target.cmdBuffers);
         RenderPass pass = renderpassPool.get(target.renderpass);
-        Image image = imagePool.get(target.attachments[0]);
+        Image image = m_imageManager->getImage(target.attachments[0]);
 
         uint32_t frame_index = m_backBufferManager->getCurrentIndex();
         
@@ -523,14 +530,8 @@ namespace boitatah
         if (!renderTargetPool.tryGet(command.src, srcBuffer))
             throw std::runtime_error("failed to transfer buffers");
 
-        Image dstImage;
-        if (!imagePool.tryGet(dstBuffer.attachments[0], dstImage))
-            throw std::runtime_error("failed to transfer buffers");
-
-        Image srcImage;
-        if (!imagePool.tryGet(srcBuffer.attachments[0], srcImage))
-            throw std::runtime_error("failed to transfer buffers");
-
+        Image dstImage = m_imageManager->getImage(dstBuffer.attachments[0]);
+        Image srcImage = m_imageManager->getImage(srcBuffer.attachments[0]);
 
         m_vk->CmdCopyImage({.buffer = command.buffer.buffer,
                             .srcImage = srcImage.image,
@@ -773,9 +774,8 @@ namespace boitatah
 
         for (auto &imagehandle : images)
         {
-            Image image;
-            if (imagePool.tryGet(imagehandle, image))
-                imageViews.push_back(image.view);
+            Image image = m_imageManager->getImage(imagehandle);
+            imageViews.push_back(image.view);
         }
 
         FramebufferDescVk vkDesc{
@@ -801,18 +801,9 @@ namespace boitatah
         return renderpassPool.set(pass);
     }
 
-    Handle<Image> Renderer::addImage(Image image)
-    {
-        return imagePool.set(image);
-    }
-
     Handle<Image> Renderer::createImage(const ImageDesc &desc)
     {
-        Image image = m_vk->createImage(desc);
-        image.view = m_vk->createImageView(image.image, desc);
-
-        // Add to Image Pool.
-        return imagePool.set(image);
+        return m_imageManager->createImage(desc);
     }
 
     Handle<DescriptorSetLayout> Renderer::createDescriptorLayout(const DescriptorSetLayoutDesc &desc)
@@ -912,14 +903,9 @@ namespace boitatah
         {
             for (auto &imagehandle : framebuffer.attachments)
             {
-                Image image;
-                if (imagePool.clear(imagehandle, image))
-                {
-                    if (!image.swapchain)
-                    {
-                        m_vk->destroyImage(image);
-                    }
-                }
+                Image image = m_imageManager->getImage(imagehandle);
+                if(!image.swapchain)
+                    m_imageManager->destroyImage(imagehandle);
             }
 
             destroyRenderPass(framebuffer.renderpass);

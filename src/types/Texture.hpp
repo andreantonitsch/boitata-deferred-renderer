@@ -88,15 +88,12 @@ namespace boitatah{
             void copyImageFromBuffer(void *data, uint32_t size);
 
             void transition(TextureMode mode);
-
-
+            
             TextureGPUData CreateGPUData() {return CreateGPUData();};
             bool ReadyForUse(TextureGPUData& content){return true;};
             void SetContent(TextureGPUData& content) {};
             void ReleaseData(TextureGPUData& content) {};
             void Release(TextureGPUData& content);                
-            //  {   auto manager = std::shared_ptr<GPUResourceManager>(m_manager);
-            // };
             void WriteTransfer(TextureGPUData& data, CommandBufferWriter<vk::VkCommandBufferWriter> &writer) {};
     };
 

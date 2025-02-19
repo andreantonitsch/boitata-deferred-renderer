@@ -93,6 +93,22 @@ namespace boitatah
         std::vector<VertexBindings> vertexBindings;
     };
 
+    struct MakeShaderDesc
+    {
+        // required arguments
+        std::string name;
+        ShaderStage vert;
+        ShaderStage frag;
+
+        // A compatible framebuffer.
+        // sets the RenderPass for this PSO.
+        RenderPass renderPass; // optional
+        Handle<ShaderLayout> layout;
+
+        std::vector<VertexBindings> vertexBindings;
+    };
+
+
     struct ShaderDescVk
     {
         // required arguments

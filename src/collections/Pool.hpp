@@ -65,6 +65,7 @@ namespace boitatah
         Handle<T> set(T &elem);
         bool clear(Handle<T> handle, T& item);
         bool clear(Handle<T> handle);
+        bool contains(Handle<T> handle);
 
     private:
         PoolOptions options;
@@ -186,6 +187,16 @@ inline bool boitatah::Pool<T>::clear(Handle<T> handle)
     pushStack(handle.i);
     quantity -=1;
     destroyed += 1;
+    return true;
+}
+
+template <typename T>
+inline bool boitatah::Pool<T>::contains(Handle<T> handle)
+{
+    if (generations[handle.i] != handle.gen)
+    {
+        return false;
+    }
     return true;
 }
 

@@ -22,18 +22,17 @@
 #include "../buffers/Buffer.hpp"
 #include "../buffers/BufferManager.hpp"
 
+#include <renderer/modules/ImageManager.hpp>
 #include "modules/GPUResourceManager.hpp"
-
 #include "modules/BackBuffer.hpp"
-
 #include "modules/Swapchain.hpp"
-#include <vulkan/DescriptorPoolManager.hpp>
 #include "modules/Camera.hpp"
+#include <renderer/modules/MaterialManager.hpp>
+#include <vulkan/DescriptorSetManager.hpp>
 
 #include "../collections/Pool.hpp"
 
 #include "../scene/Scene.hpp"
-#include <renderer/modules/MaterialManager.hpp>
 
 namespace boitatah
 {
@@ -90,7 +89,6 @@ namespace boitatah
         // Creates a framebuffer with a renderpass.
         Handle<RenderTarget> createRenderTarget(const RenderTargetDesc &data);
         Handle<RenderPass> createRenderPass(const RenderPassDesc &data);
-        Handle<Image> addImage(Image image);
         Handle<Image> createImage(const ImageDesc &desc);
         Handle<ShaderLayout> createShaderLayout(const ShaderLayoutDesc &desc);
         Handle<DescriptorSetLayout> createDescriptorLayout(const DescriptorSetLayoutDesc &desc);
@@ -133,17 +131,17 @@ namespace boitatah
         // if this is a value member, then i have to deal with member initialization
         // This being a reference makes the code simpler for now
         // this however is not ideal
-        DescriptorPoolManager *descriptorPoolManager;
+        DescriptorSetManager *descriptorPoolManager;
         std::shared_ptr<BufferManager> m_bufferManager;
         std::shared_ptr<VkCommandBufferWriter> m_ResourceManagerTransferWriter;
         std::shared_ptr<Swapchain> m_swapchain;
         std::shared_ptr<BackBufferManager> m_backBufferManager;
         std::shared_ptr<GPUResourceManager> m_resourceManager;
-        std::shared_ptr<DescriptorPoolManager> m_descriptorManager;
+        std::shared_ptr<DescriptorSetManager> m_descriptorManager;
         std::shared_ptr<Vulkan> m_vk;
         std::shared_ptr<WindowManager> m_window;
         std::shared_ptr<MaterialManager> m_materialManager;
-
+        std::shared_ptr<ImageManager> m_imageManager;
         // Frame Uniforms
         FrameUniforms2 frame_uniforms;
         Handle<GPUBuffer> m_frameUniform;
@@ -169,13 +167,13 @@ namespace boitatah
         Pool<Shader> shaderPool = Pool<Shader>({.size = 10, .name = "shader pool"});
         Pool<RenderTarget> renderTargetPool = Pool<RenderTarget>({.size = 50, .name = "render target pool"});
         Pool<RenderPass> renderpassPool = Pool<RenderPass>({.size = 50, .name = "render pass pool"});
-        Pool<Image> imagePool = Pool<Image>({.size = 50, .name = "image pool"});
+        //Pool<Image> imagePool = Pool<Image>({.size = 50, .name = "image pool"});
         Pool<ShaderLayout> pipelineLayoutPool = Pool<ShaderLayout>({.size = 50, .name = "pipeline layout pool"});
         Pool<DescriptorSetLayout> setLayoutPool = Pool<DescriptorSetLayout>({.size = 50, .name = "descriptor layout pool"});
         Pool<RenderTargetCmdBuffers> rtCmdPool = Pool<RenderTargetCmdBuffers>({.size = 50, .name = "rtcmd buffers pool"});
-        Pool<Geometry> geometryPool = Pool<Geometry>({.size = 50, .name = "geometry pool"});
+        //Pool<Geometry> geometryPool = Pool<Geometry>({.size = 50, .name = "geometry pool"});
 
-        std::vector<Buffer *> buffers; 
+        //std::vector<Buffer *> buffers; 
 
         // Options Members
         RendererOptions m_options;

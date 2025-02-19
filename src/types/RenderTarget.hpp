@@ -29,6 +29,7 @@ namespace boitatah{
 
     struct RenderPass{
         VkRenderPass renderPass;
+        std::vector<AttachmentDesc> attachments;
     };
 
     struct FramebufferDescVk{

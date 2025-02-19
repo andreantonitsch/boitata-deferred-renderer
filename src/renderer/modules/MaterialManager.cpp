@@ -109,6 +109,16 @@ namespace boitatah{
         return m_currentOrder;
     };
 
+    MaterialManager::MaterialManager(std::shared_ptr<Vulkan> vulkan) : m_vk(vulkan)
+    {
+        m_shaderManager = std::make_unique<ShaderManager>(m_vk);
+        m_materialPool = std::make_unique<Pool<Material>>(PoolOptions{
+            .size = 4096,
+            .dynamic = true,
+            .name = "Material Pool"
+        });
+    }
+
     ShaderManager &MaterialManager::getShaderManager()
     {
         return *m_shaderManager;
@@ -122,10 +132,27 @@ namespace boitatah{
 
     const std::vector<Handle<Material>>& MaterialManager::orderMaterials()
     {
-        return m_materialGraph->getOrder();
+        return m_materialGraph.getOrder();
     }
     Material& MaterialManager::getMaterialContent(const Handle<Material> &handle)
     {
         return m_materialPool->get(handle);
+    }
+    ShaderModule ShaderManager::compileShaderModule(const std::vector<char> &bytecode, std::string entryPoint)
+    {
+        return {.shaderModule = m_vk->createShaderModule(bytecode), .entryFunction = entryPoint};
+    }
+    Handle<Shader> ShaderManager::makeShader(const MakeShaderDesc &data)
+    {
+        Shader shader{
+            .name = data.name,
+            .vert = compileShaderModule(data.vert.byteCode, data.vert.entryFunction),
+            .frag = compileShaderModule(data.frag.byteCode, data.vert.entryFunction)};
+
+        ShaderLayout layoutData = m_layoutPool->get(data.layout);
+
+
+
+        return Handle<Shader>();
     }
 };

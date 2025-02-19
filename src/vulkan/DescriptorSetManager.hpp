@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <string>
 #include <renderer/modules/GPUResourceManager.hpp>
+#include <vulkan/DescriptorSetTree.hpp>
 
 namespace boitatah::vk
 {
@@ -114,12 +115,14 @@ namespace boitatah::vk
 
     };
 
-    class DescriptorPoolManager
+    class DescriptorSetManager
     {
 
     public:
-        DescriptorPoolManager(std::shared_ptr<Vulkan> vulkan, uint32_t maximumSets);
-        ~DescriptorPoolManager();
+        DescriptorSetManager(std::shared_ptr<Vulkan> vulkan, uint32_t maximumSets);
+        ~DescriptorSetManager();
+        Handle<DescriptorSetLayout> getLayout(const DescriptorSetLayoutDesc& description);
+        DescriptorSetLayout getLayoutContent(Handle<DescriptorSetLayout>& handle);
         DescriptorSet getSet(const DescriptorSetLayout &request, uint32_t frame_index);
         void writeSet(const std::span<const BindBindingDesc> &bindings, 
                       const DescriptorSet& set,
@@ -135,7 +138,11 @@ namespace boitatah::vk
         std::shared_ptr<Vulkan> m_vk;
         uint32_t maxSets = 4096;
         std::vector<DescriptorSetPool> m_pools;
+        std::unique_ptr<descriptor_sets::DescriptorSetTree> m_descriptorTree;
 
+        // Handle<DescriptorSetLayout> createLayout(const DescriptorSetLayoutDesc& description);
+        // DescriptorSetLayout findCreateLayout(const DescriptorSetLayoutDesc& description);
+        
         size_t createPool(const DescriptorSetLayout &request);
         size_t findPool(const DescriptorSetLayout &request, uint32_t frame_index);
         DescriptorSetPool& findCreatePool(const DescriptorSetLayout &request, uint32_t frame_index);

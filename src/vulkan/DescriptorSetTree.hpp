@@ -15,16 +15,18 @@ namespace boitatah::vk::descriptor_sets{
     class DescriptorSetTreeNode{
 
         private:
+            bool empty = false;
             DESCRIPTOR_TYPE m_descType;
             uint32_t m_descQuant;
             Handle<DescriptorSetLayout> m_setLayout;
             std::vector<std::shared_ptr<DescriptorSetTreeNode>> m_children;
         
         public:
+            DescriptorSetTreeNode() : empty(true) {  };
             DescriptorSetTreeNode(DESCRIPTOR_TYPE type, uint32_t quant) :
                                   m_descQuant(quant), m_descType(type){  }
 
-            Handle<DescriptorSetLayout> getSetLayout(DescriptorSetLayoutDesc& description,
+            Handle<DescriptorSetLayout> getSetLayout(const DescriptorSetLayoutDesc& description,
                                                      DescriptorSetTree& tree);
             DescriptorSetTreeNode& findNode(std::vector<BindingDesc>& binds);
             DescriptorSetTreeNode& addChild(DESCRIPTOR_TYPE type, uint32_t quant);
@@ -39,13 +41,13 @@ namespace boitatah::vk::descriptor_sets{
             /// @brief special case empty set.
             //Handle<DescriptorSetLayout> m_emptySet; 
 
-            DescriptorSetTree(std::shared_ptr<Vulkan> vulkan);
 
-            Handle<DescriptorSetLayout> createSetLayout(DescriptorSetLayoutDesc& description);
-            Handle<DescriptorSetLayout> getSetLayout(DescriptorSetLayoutDesc& description,
+            Handle<DescriptorSetLayout> createSetLayout(const DescriptorSetLayoutDesc& description);
+            Handle<DescriptorSetLayout> getSetLayout(const DescriptorSetLayoutDesc& description,
                                                      std::vector<BindingDesc>& binds);
         public:
-            Handle<DescriptorSetLayout> getSetLayout(DescriptorSetLayoutDesc& description);
+            DescriptorSetTree(std::shared_ptr<Vulkan> vulkan);
+            Handle<DescriptorSetLayout> getSetLayout(const DescriptorSetLayoutDesc& description);
             DescriptorSetLayout& getSetLayoutData(Handle<DescriptorSetLayout>& handle);
 
     };

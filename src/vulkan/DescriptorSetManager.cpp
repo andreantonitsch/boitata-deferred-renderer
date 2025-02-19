@@ -1,11 +1,11 @@
-#include "DescriptorPoolManager.hpp"
+#include "DescriptorSetManager.hpp"
 
 namespace boitatah::vk {
 
-    DescriptorPoolManager::DescriptorPoolManager(std::shared_ptr<Vulkan> vulkan, uint32_t maximumSets)
-    : m_vk(vulkan), maxSets(maximumSets){};
+    DescriptorSetManager::DescriptorSetManager(std::shared_ptr<Vulkan> vulkan, uint32_t maximumSets)
+    : m_vk(vulkan), maxSets(maximumSets), m_descriptorTree(std::make_unique<descriptor_sets::DescriptorSetTree>(vulkan)){};
 
-    DescriptorPoolManager::~DescriptorPoolManager(){
+    DescriptorSetManager::~DescriptorSetManager(){
         //release all pools
         while(m_pools.size() > 0){
             releasePool(m_pools.size()-1);
@@ -13,7 +13,17 @@ namespace boitatah::vk {
         }
     }
 
-    DescriptorSet DescriptorPoolManager::getSet(const DescriptorSetLayout &request, uint32_t frame_index)
+    Handle<DescriptorSetLayout> DescriptorSetManager::getLayout(const DescriptorSetLayoutDesc &description)
+    {
+        return m_descriptorTree->getSetLayout(description);
+    }
+
+    DescriptorSetLayout DescriptorSetManager::getLayoutContent(Handle<DescriptorSetLayout> &handle)
+    {
+        return m_descriptorTree->getSetLayoutData(handle);
+    }
+
+    DescriptorSet DescriptorSetManager::getSet(const DescriptorSetLayout &request, uint32_t frame_index)
     {
         DescriptorSetPool pool = findCreatePool(request, frame_index);
         DescriptorSet set;
@@ -22,7 +32,7 @@ namespace boitatah::vk {
         return set;
     }
 
-    void DescriptorPoolManager::writeSet(const std::span<const BindBindingDesc> &bindings, 
+    void DescriptorSetManager::writeSet(const std::span<const BindBindingDesc> &bindings, 
                                         const DescriptorSet &set,
                                         uint32_t frame_index)
     {   
@@ -61,7 +71,7 @@ namespace boitatah::vk {
         vkUpdateDescriptorSets(m_vk->getDevice(), writes.size(), writes.data(), 0, nullptr);
     }
 
-    void DescriptorPoolManager::bindSet(const CommandBuffer drawBuffer,
+    void DescriptorSetManager::bindSet(const CommandBuffer drawBuffer,
                                         const ShaderLayout &layout,
                                         const DescriptorSet &set, 
                                         uint32_t set_index, 
@@ -76,14 +86,14 @@ namespace boitatah::vk {
     //     vkCmdBindDescriptorSets()
     // }
 
-    void DescriptorPoolManager::resetPools(uint32_t frame_index)
+    void DescriptorSetManager::resetPools(uint32_t frame_index)
     {
         for(auto& pool : m_pools){
             pool.reset(frame_index, m_vk);
         }
     }
 
-    size_t DescriptorPoolManager::createPool(const DescriptorSetLayout &request)
+    size_t DescriptorSetManager::createPool(const DescriptorSetLayout &request)
     {
         DescriptorSetPool pool(maxSets, request.ratios, m_vk);
         m_pools.push_back(pool);
@@ -92,7 +102,7 @@ namespace boitatah::vk {
         return m_pools.size()-1;
     }
 
-    size_t DescriptorPoolManager::findPool(const DescriptorSetLayout &request, uint32_t frame_index)
+    size_t DescriptorSetManager::findPool(const DescriptorSetLayout &request, uint32_t frame_index)
     {
         for(size_t i = 0; i < m_pools.size(); i++){
             if(m_pools[i].fits(request, frame_index))
@@ -102,7 +112,7 @@ namespace boitatah::vk {
         return UINT32_MAX;
     }
     
-    DescriptorSetPool& DescriptorPoolManager::findCreatePool(const DescriptorSetLayout &request, uint32_t frame_index)
+    DescriptorSetPool& DescriptorSetManager::findCreatePool(const DescriptorSetLayout &request, uint32_t frame_index)
     {
         uint32_t pool_idx = findPool(request, frame_index);
 
@@ -113,7 +123,7 @@ namespace boitatah::vk {
         return m_pools[pool_idx];
     }
 
-    void DescriptorPoolManager::releasePool(size_t index)
+    void DescriptorSetManager::releasePool(size_t index)
     {
         m_pools[index].release(m_vk);  
     };
