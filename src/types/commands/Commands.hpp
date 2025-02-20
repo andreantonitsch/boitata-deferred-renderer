@@ -15,7 +15,7 @@ namespace boitatah
 
     struct SubmitDrawCommand
     {
-        RenderTargetCmdBuffers bufferData;
+        RenderTargetSync bufferData;
         COMMAND_BUFFER_TYPE submitType;
     };
 

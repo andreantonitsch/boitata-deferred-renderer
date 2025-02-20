@@ -44,8 +44,8 @@ namespace boitatah{
         Handle<RenderPass> renderpass;
 
         std::vector<AttachmentDesc> attachments;
-        std::vector<Handle<Image>> attachmentImages;
         //If attachmentImages are nullptr imageDesc is mandatory.
+        std::vector<Handle<Image>> attachmentImages;
         std::vector<ImageDesc> imageDesc;
         glm::u32vec2 dimensions;
     };
@@ -55,7 +55,7 @@ namespace boitatah{
         VkFramebuffer buffer;
         std::vector<Handle<Image>> attachments;
         Handle<RenderPass> renderpass;
-        Handle<RenderTargetCmdBuffers> cmdBuffers;
+        Handle<RenderTargetSync> cmdBuffers;
     };
 }
 

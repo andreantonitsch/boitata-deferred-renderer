@@ -1,11 +1,8 @@
 #include "BackBuffer.hpp"
-#include "../Renderer.hpp"
 namespace boitatah
 {
-    BackBufferManager::BackBufferManager(Renderer *renderer)
-    {
-        this->renderer = renderer;
-    }
+    BackBufferManager::BackBufferManager(std::shared_ptr<RenderTargetManager> targetManager)
+    : m_renderTargetManager(targetManager){ };
 
     BackBufferManager::~BackBufferManager(void)
     {
@@ -50,7 +47,7 @@ namespace boitatah
         }
 
         RenderPass pass;
-        renderpass = renderer->createRenderPass({.attachments = attachmentDescriptions });
+        renderpass = m_renderTargetManager->createRenderPass({.attachments = attachmentDescriptions });
 
 
         RenderTargetDesc targetDesc{
@@ -60,8 +57,8 @@ namespace boitatah
             .dimensions = desc.dimensions,
         };
 
-        buffers.push_back(renderer->createRenderTarget(targetDesc));
-        buffers.push_back(renderer->createRenderTarget(targetDesc));
+        buffers.push_back(m_renderTargetManager->createRenderTarget(targetDesc));
+        buffers.push_back(m_renderTargetManager->createRenderTarget(targetDesc));
     }
 
     Handle<RenderPass> BackBufferManager::getRenderPass()
@@ -89,7 +86,7 @@ namespace boitatah
     {
         for (auto &attach : buffers)
         {
-            renderer->destroyRenderTarget(attach);
+            m_renderTargetManager->destroyRenderTarget(attach);
         }
         buffers.clear();
     }

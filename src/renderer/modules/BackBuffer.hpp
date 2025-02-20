@@ -2,20 +2,18 @@
 // #define GLM_FORCE_RADIANS
 // #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/vec2.hpp>
-
+#include <memory>
 #include <vulkan/vulkan.h>
 #include <vector>
 #include "../../types/RenderTarget.hpp"
 #include "../../types/BackBufferDesc.hpp"
+#include <renderer/modules/RenderTargetManager.hpp>
 
 namespace boitatah{
 
-    class Renderer;
-
-
     class BackBufferManager{
         public:
-        BackBufferManager(Renderer *renderer);
+        BackBufferManager(std::shared_ptr<RenderTargetManager> targetManager);
         ~BackBufferManager(void);
 
         void setup(BackBufferDesc &desc);
@@ -26,7 +24,7 @@ namespace boitatah{
         uint32_t getCurrentIndex();
 
         private:
-            Renderer* renderer;
+            std::shared_ptr<RenderTargetManager> m_renderTargetManager;
             Handle<RenderPass> renderpass;
             int current;
             void clearBackBuffer();

@@ -21,7 +21,7 @@ namespace boitatah{
     };
 
     //Render Target Command Buffers
-    struct RenderTargetCmdBuffers{
+    struct RenderTargetSync{
 
         CommandBuffer drawBuffer;
         CommandBuffer transferBuffer;

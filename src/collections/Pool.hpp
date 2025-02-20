@@ -63,10 +63,11 @@ namespace boitatah
         T* tryGet(const Handle<T> handle);
         T& get(const Handle<T> handle) noexcept(false);
         Handle<T> set(T &elem);
+        Handle<T> getHandle();
         bool clear(Handle<T> handle, T& item);
         bool clear(Handle<T> handle);
         bool contains(Handle<T> handle);
-
+        
     private:
         PoolOptions options;
         std::vector<uint32_t> generations;
@@ -139,7 +140,16 @@ T& boitatah::Pool<T>::get(const Handle<T> handle) noexcept(false)
 template <typename T>
 boitatah::Handle<T> boitatah::Pool<T>::set(T &elem)
 {
-    if (stackTop == pool.size()){
+    auto handle = getHandle();
+    pool[handle.i] = elem;
+
+    return handle;
+}
+
+template <typename T>
+inline boitatah::Handle<T> boitatah::Pool<T>::getHandle()
+{
+        if (stackTop == pool.size()){
         if(!options.dynamic){
             std::cout << options.name << " is full " << std::endl;
             return Handle<T>{.gen = 0};
@@ -157,7 +167,6 @@ boitatah::Handle<T> boitatah::Pool<T>::set(T &elem)
     }
 
     uint32_t i = popStack();
-    pool[i] = elem;
     Handle<T> handle{.i = i, .gen = generations[i]};
     created+=1;
     quantity += 1;

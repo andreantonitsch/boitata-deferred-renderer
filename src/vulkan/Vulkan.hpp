@@ -92,7 +92,7 @@ namespace boitatah::vk
         
 
         // Generic Commands
-        VkCommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
+        CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
         void beginCmdBuffer(const BeginCommandVk &command);
         void resetCmdBuffer(const VkCommandBuffer buffer);
         void submitCmdBuffer(const SubmitCommandVk &command);
@@ -118,7 +118,7 @@ namespace boitatah::vk
 
 
         // Sync Methods
-        void waitForFrame(RenderTargetCmdBuffers &bufferData);
+        void waitForFrame(RenderTargetSync &bufferData);
         void waitIdle();
         void waitForFence(const VkFence &fence) const;
         bool checkFenceStatus(VkFence fence) ;
@@ -129,7 +129,7 @@ namespace boitatah::vk
         void destroyFramebuffer(RenderTarget &framebuffer);
         void destroyImage(Image image);
         void destroyPipelineLayout(ShaderLayout &layout);
-        void destroyRenderTargetCmdData(const RenderTargetCmdBuffers &sync);
+        void destroyRenderTargetCmdData(const RenderTargetSync &sync);
         void destroyBuffer(BufferVkData buffer) const;
         void destroyFence(VkFence fence);
         void destroyDescriptorPool(VkDescriptorPool pool);

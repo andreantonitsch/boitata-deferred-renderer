@@ -16,10 +16,9 @@ namespace boitatah::buffer
         m_transferFence = m_vk->createFence(true);
 
 
-        m_transferBuffer.buffer = m_vk->allocateCommandBuffer({.count = 1, 
+        m_transferBuffer = m_vk->allocateCommandBuffer({.count = 1, 
                         .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                         .type = COMMAND_BUFFER_TYPE::TRANSFER });
-        m_transferBuffer.type = COMMAND_BUFFER_TYPE::TRANSFER;
     }
 
     BufferManager::~BufferManager(void)

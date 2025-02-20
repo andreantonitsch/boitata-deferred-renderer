@@ -242,7 +242,7 @@ void boitatah::vk::Vulkan::completeInit()
 #pragma endregion Initialization
 
 #pragma region Synchronization
-void boitatah::vk::Vulkan::waitForFrame(RenderTargetCmdBuffers &bufferData)
+void boitatah::vk::Vulkan::waitForFrame(RenderTargetSync &bufferData)
 {
     VkResult result = vkWaitForFences(device, 1, &bufferData.inFlightFen, VK_TRUE, UINT64_MAX);
     if (result != VK_SUCCESS)
@@ -423,7 +423,7 @@ uint32_t boitatah::vk::Vulkan::getAlignmentForBuffer(const VkBuffer buffer) cons
     return memReqs.alignment;
 }
 
-VkCommandBuffer boitatah::vk::Vulkan::allocateCommandBuffer(const CommandBufferDesc &desc)
+boitatah::CommandBuffer boitatah::vk::Vulkan::allocateCommandBuffer(const CommandBufferDesc &desc)
 {
     VkCommandBufferAllocateInfo allocateInfo{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -449,7 +449,7 @@ VkCommandBuffer boitatah::vk::Vulkan::allocateCommandBuffer(const CommandBufferD
         throw std::runtime_error("Failed to allocate Command Buffer");
     }
 
-    return buffer;
+    return CommandBuffer{.buffer = buffer, .type = desc.type};
 }
 
 void boitatah::vk::Vulkan::beginCmdBuffer(const BeginCommandVk &command)
@@ -1240,6 +1240,7 @@ void boitatah::vk::Vulkan::destroyRenderpass(RenderPass &pass)
 
 void boitatah::vk::Vulkan::destroyFramebuffer(RenderTarget &framebuffer)
 {
+    
     vkDestroyFramebuffer(device, framebuffer.buffer, nullptr);
 }
 
@@ -1258,7 +1259,7 @@ void boitatah::vk::Vulkan::destroyPipelineLayout(ShaderLayout &layout)
     vkDestroyPipelineLayout(device, layout.pipeline, nullptr);
 }
 
-void boitatah::vk::Vulkan::destroyRenderTargetCmdData(const RenderTargetCmdBuffers &sync)
+void boitatah::vk::Vulkan::destroyRenderTargetCmdData(const RenderTargetSync &sync)
 {
     vkFreeCommandBuffers(device, commandPools.graphicsPool, 1, &(sync.drawBuffer.buffer));
     vkFreeCommandBuffers(device, commandPools.transferPool, 1, &(sync.transferBuffer.buffer));

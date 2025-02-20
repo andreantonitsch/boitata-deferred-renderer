@@ -12,6 +12,7 @@ set(LIB_DR_SOURCES
             buffers/BufferManager.cpp
             renderer/resources/builders/GeometryBuilder.cpp
             renderer/modules/ImageManager.cpp
+            renderer/modules/RenderTargetManager.cpp
             renderer/modules/MaterialManager.cpp
             renderer/modules/GPUResourceManager.cpp
             renderer/modules/GPUResourcePool.cpp
@@ -20,7 +21,7 @@ set(LIB_DR_SOURCES
             renderer/modules/Swapchain.cpp
             renderer/modules/Camera.cpp
             renderer/modules/BackBuffer.cpp
-            renderer/Renderer.cpp
+            renderer/Rend''erer.cpp
             renderer/modules/Camera.cpp
             vulkan/DescriptorSetManager.cpp
             vulkan/DescriptorSetTree.cpp

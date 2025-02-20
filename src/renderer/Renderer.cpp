@@ -26,11 +26,12 @@ namespace boitatah
         m_vk->attachWindow(m_window);
         m_vk->completeInit();
 
-        m_imageManager = std::make_unique<ImageManager>(m_vk);
+        m_imageManager = std::make_shared<ImageManager>(m_vk);
+        m_renderTargetManager = std::make_shared<RenderTargetManager>(m_vk, m_imageManager);
 
         createSwapchain();
 
-        m_backBufferManager = std::make_shared<BackBufferManager>(this);
+        m_backBufferManager = std::make_shared<BackBufferManager>(m_renderTargetManager);
         m_backBufferManager->setup(m_options.backBufferDesc);
 
         m_transferCommandBuffer = allocateCommandBuffer({.count = 1,
@@ -179,23 +180,19 @@ namespace boitatah
 
     void Renderer::renderToRenderTarget(SceneNode &scene, const Handle<RenderTarget> &rendertarget, uint32_t frameIndex = 0)
     {
-        RenderTarget target;
-        if (!renderTargetPool.tryGet(rendertarget, target))
-        {
+        if (!m_renderTargetManager->isActive(rendertarget))
             throw std::runtime_error("Failed to write command buffer \n\tRender Target");
-        }
-        RenderPass pass;
-        if (!renderpassPool.tryGet(target.renderpass, pass))
-        {
+        RenderTarget& target = m_renderTargetManager->get(rendertarget);
+
+        if (!m_renderTargetManager->isActive(target.renderpass))
             throw std::runtime_error("Failed to write command buffer \n\tRender Pass");
-        }
+        RenderPass& pass = m_renderTargetManager->get(target.renderpass);
+
+        if (!m_renderTargetManager->isActive(target.cmdBuffers)){
+            throw std::runtime_error("Failed to Render to Target");}
+        RenderTargetSync& buffers = m_renderTargetManager->get(target.cmdBuffers);
 
         Image image = m_imageManager->getImage(target.attachments[0]);
-
-
-        RenderTargetCmdBuffers buffers;
-        if (!rtCmdPool.tryGet(target.cmdBuffers, buffers)){
-            throw std::runtime_error("Failed to Render to Target");}
 
         auto& material = m_materialManager->getMaterialContent(scene.material);
         Shader shader;
@@ -215,8 +212,6 @@ namespace boitatah
 
         auto indexVkBuffer = indexBufferData.buffer->getBuffer();
         auto vertexVkBuffer = vertexBufferData.buffer->getBuffer();
-
-
 
         drawCommand({
             .drawBuffer = buffers.drawBuffer,
@@ -238,15 +233,15 @@ namespace boitatah
     {
         m_window->windowEvents();
 
-        RenderTarget fb;
-        if (!renderTargetPool.tryGet(rendertarget, fb))
-            throw std::runtime_error("failed to framebuffer for Presentation");
+        if (!m_renderTargetManager->isActive(rendertarget))
+            throw std::runtime_error("Failed to write command buffer \n\tRender Pass");
+        RenderTarget& target = m_renderTargetManager->get(rendertarget);
 
-        RenderTargetCmdBuffers buffers;
-        if (!rtCmdPool.tryGet(fb.cmdBuffers, buffers))
-            throw std::runtime_error("failed to framebuffer for Presentation");
-
-        Image image = m_imageManager->getImage(fb.attachments[0]);
+        if (!m_renderTargetManager->isActive(target.cmdBuffers)){
+            throw std::runtime_error("Failed to Render to Target");}
+        RenderTargetSync& buffers = m_renderTargetManager->get(target.cmdBuffers);
+        
+        Image image = m_imageManager->getImage(target.attachments[0]);
             throw std::runtime_error("failed to framebuffer for Presentation");
 
         m_vk->waitForFrame(buffers);
@@ -290,10 +285,10 @@ namespace boitatah
         
         auto ordered_nodes = orderSceneNodes(nodes);
         
-        RenderTarget target = renderTargetPool.get(rendertarget);
-        RenderTargetCmdBuffers buffers = rtCmdPool.get(target.cmdBuffers);
-        RenderPass pass = renderpassPool.get(target.renderpass);
-        Image image = m_imageManager->getImage(target.attachments[0]);
+        RenderTarget& target = m_renderTargetManager->get(rendertarget);
+        RenderTargetSync& buffers = m_renderTargetManager->get(target.cmdBuffers);
+        RenderPass& pass = m_renderTargetManager->get(target.renderpass);
+        Image& image = m_imageManager->getImage(target.attachments[0]);
 
         uint32_t frame_index = m_backBufferManager->getCurrentIndex();
         
@@ -451,11 +446,11 @@ namespace boitatah
 
     CommandBuffer Renderer::allocateCommandBuffer(const CommandBufferDesc &desc)
     {
-        CommandBuffer buffer{
-            .buffer = m_vk->allocateCommandBuffer(desc),
-            .type = desc.type};
+        // CommandBuffer buffer{
+        //     .buffer = m_vk->allocateCommandBuffer(desc),
+        //     .type = desc.type};
 
-        return buffer;
+        return m_vk->allocateCommandBuffer(desc);
     }
 
     void Renderer::bindVertexBuffers(const BindVertexBuffersCommand& command ){
@@ -484,13 +479,7 @@ namespace boitatah
             .buffers = buffers,
             .offsets = offsets
         });
-        // auto vertexBufferData = m_resourceManager->getResource(vertexBufferHandle).getAccessData(frameIndex);
 
-        // auto indexBufferData = m_resourceManager->getResource(geom.IndexBuffer()).getAccessData(frameIndex);
-        
-
-        // auto indexVkBuffer = indexBufferData.buffer->getBuffer();
-        // auto vertexVkBuffer = vertexBufferData.buffer->getBuffer();
         if(command.bindIndex)
         {
             auto indexHandle = geom.IndexBuffer();
@@ -522,16 +511,16 @@ namespace boitatah
 
     void Renderer::transferImage(const TransferImageCommand &command)
     {
-        RenderTarget dstBuffer;
-        if (!renderTargetPool.tryGet(command.dst, dstBuffer))
-            throw std::runtime_error("failed to transfer buffers");
+        if (!m_renderTargetManager->isActive(command.src))
+            throw std::runtime_error("Failed to write transfer command buffer \n\tRender Pass");
+        RenderTarget& srcBuffer = m_renderTargetManager->get(command.src);
 
-        RenderTarget srcBuffer;
-        if (!renderTargetPool.tryGet(command.src, srcBuffer))
-            throw std::runtime_error("failed to transfer buffers");
+        if (!m_renderTargetManager->isActive(command.dst))
+            throw std::runtime_error("Failed to write transfer command buffer \n\tRender Pass");
+        RenderTarget& dstBuffer = m_renderTargetManager->get(command.src);
 
-        Image dstImage = m_imageManager->getImage(dstBuffer.attachments[0]);
-        Image srcImage = m_imageManager->getImage(srcBuffer.attachments[0]);
+        Image& dstImage = m_imageManager->getImage(dstBuffer.attachments[0]);
+        Image& srcImage = m_imageManager->getImage(srcBuffer.attachments[0]);
 
         m_vk->CmdCopyImage({.buffer = command.buffer.buffer,
                             .srcImage = srcImage.image,
@@ -681,17 +670,21 @@ namespace boitatah
         // or from description
         RenderTarget buffer;
         RenderPass pass;
-        if (data.framebuffer.isNull())
+        if (!data.framebuffer)
         {
-            if (!renderpassPool.tryGet(m_backBufferManager->getRenderPass(), pass))
+
+            if(!m_renderTargetManager->isActive(m_backBufferManager->getRenderPass()))
                 throw std::runtime_error("failed to back buffer render pass");
+            pass = m_renderTargetManager->get(m_backBufferManager->getRenderPass());
         }
         else
         {
-            if (!renderTargetPool.tryGet(data.framebuffer, buffer))
+            if(!m_renderTargetManager->isActive(data.framebuffer))
                 throw std::runtime_error("failed to get framebuffer");
-            if (!renderpassPool.tryGet(buffer.renderpass, pass))
+            buffer = m_renderTargetManager->get(data.framebuffer);
+            if(!m_renderTargetManager->isActive(buffer.renderpass))
                 throw std::runtime_error("failed to get renderpass");
+            pass = m_renderTargetManager->get(buffer.renderpass);
         }
 
         // TODO Convert bindings in vulkan class?
@@ -741,64 +734,12 @@ namespace boitatah
 
     Handle<RenderTarget> Renderer::createRenderTarget(const RenderTargetDesc &data)
     {
-        std::vector<Handle<Image>> images(data.attachmentImages);
-        if (images.empty())
-        {
-            // Create images.
-            for (const auto &imageDesc : data.imageDesc)
-            {
-                Handle<Image> newImage = createImage(imageDesc);
-                images.push_back(newImage);
-            }
-        }
-
-        Handle<RenderPass> passhandle = data.renderpass;
-        RenderPass pass;
-        if (passhandle.isNull())
-        {
-            passhandle = createRenderPass(data.renderpassDesc);
-            if (!renderpassPool.tryGet(passhandle, pass))
-            {
-                throw std::runtime_error("Failed to create renderpass.");
-            }
-        }
-        else
-        {
-            if (!renderpassPool.tryGet(passhandle, pass))
-            {
-                throw std::runtime_error("Failed to create renderpass.");
-            }
-        }
-
-        std::vector<VkImageView> imageViews;
-
-        for (auto &imagehandle : images)
-        {
-            Image image = m_imageManager->getImage(imagehandle);
-            imageViews.push_back(image.view);
-        }
-
-        FramebufferDescVk vkDesc{
-            .views = imageViews,
-            .pass = pass.renderPass,
-            .dimensions = data.dimensions,
-        };
-
-        RenderTarget framebuffer{
-            .buffer = m_vk->createFramebuffer(vkDesc),
-            .attachments = images,
-            .renderpass = passhandle,
-            .cmdBuffers = createRenderTargetCmdData()};
-
-        return renderTargetPool.set(framebuffer);
+        return m_renderTargetManager->createRenderTarget(data);
     }
 
     Handle<RenderPass> Renderer::createRenderPass(const RenderPassDesc &data)
     {
-        RenderPass pass{
-            .renderPass = m_vk->createRenderPass(data)};
-
-        return renderpassPool.set(pass);
+        return m_renderTargetManager->createRenderPass(data);
     }
 
     Handle<Image> Renderer::createImage(const ImageDesc &desc)
@@ -865,21 +806,9 @@ namespace boitatah
         return m_backBufferManager->getRenderPass();
     }
 
-    Handle<RenderTargetCmdBuffers> Renderer::createRenderTargetCmdData()
+    Handle<RenderTargetSync> Renderer::createRenderTargetCmdData()
     {
-        RenderTargetCmdBuffers sync{
-            .drawBuffer = allocateCommandBuffer({.count = 1,
-                                                 .level = COMMAND_BUFFER_LEVEL::PRIMARY,
-                                                 .type = COMMAND_BUFFER_TYPE::GRAPHICS}),
-            .transferBuffer = allocateCommandBuffer({.count = 1,
-                                                     .level = COMMAND_BUFFER_LEVEL::PRIMARY,
-                                                     .type = COMMAND_BUFFER_TYPE::TRANSFER}),
-            .schainAcqSem = m_vk->createSemaphore(),
-            .transferSem = m_vk->createSemaphore(),
-            .inFlightFen = m_vk->createFence(true),
-        };
-
-        return rtCmdPool.set(sync);
+        return m_renderTargetManager->createRenderTargetSyncData();
     }
 
 #pragma endregion Create Vulkan Objects
@@ -887,7 +816,7 @@ namespace boitatah
 
 #pragma region Destroy Vulkan Objects
 
-    void Renderer::destroyShader(Handle<Shader> handle)
+    void Renderer::destroyShader(Handle<Shader>& handle)
     {
         Shader shader;
         if (shaderPool.clear(handle, shader))
@@ -896,42 +825,17 @@ namespace boitatah
         }
     }
 
-    void Renderer::destroyRenderTarget(Handle<RenderTarget> bufferhandle)
+    void Renderer::destroyRenderTarget(Handle<RenderTarget>& bufferhandle)
     {
-        RenderTarget framebuffer;
-        if (renderTargetPool.clear(bufferhandle, framebuffer))
-        {
-            for (auto &imagehandle : framebuffer.attachments)
-            {
-                Image image = m_imageManager->getImage(imagehandle);
-                if(!image.swapchain)
-                    m_imageManager->destroyImage(imagehandle);
-            }
-
-            destroyRenderPass(framebuffer.renderpass);
-
-            RenderTargetCmdBuffers data;
-            if (rtCmdPool.clear(framebuffer.cmdBuffers, data))
-                m_vk->destroyRenderTargetCmdData(data);
-
-            m_vk->destroyFramebuffer(framebuffer);
-        }
-        else
-        {
-            std::cout << "failed delete" << std::endl;
-        }
+        m_renderTargetManager->destroyRenderTarget(bufferhandle);
     }
 
-    void Renderer::destroyRenderPass(Handle<RenderPass> passhandle)
+    void Renderer::destroyRenderPass(Handle<RenderPass>& passhandle)
     {
-        RenderPass pass;
-        if (renderpassPool.clear(passhandle, pass))
-        {
-            m_vk->destroyRenderpass(pass);
-        }
+        m_renderTargetManager->destroyRenderPass(passhandle);
     }
 
-    void Renderer::destroyLayout(Handle<ShaderLayout> layouthandle)
+    void Renderer::destroyLayout(Handle<ShaderLayout>& layouthandle)
     {
         ShaderLayout layout;
         if (pipelineLayoutPool.clear(layouthandle, layout))
