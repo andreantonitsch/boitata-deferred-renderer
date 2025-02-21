@@ -17,11 +17,6 @@ namespace boitatah::vk::descriptor_sets{
 
     Handle<DescriptorSetLayout> DescriptorSetTree::createSetLayout(const DescriptorSetLayoutDesc &description)
     {
-        auto binds = std::vector<BindingDesc>(description.bindingDescriptors);
-        std::reverse(binds.begin(), binds.end());
-
-        auto& node = m_nodes->findNode(binds);
-        
         DescriptorSetLayout layout;
         //std::vector<DescriptorSetRatio> ratios;
         std::vector<BindingDesc> bindingDesc;
@@ -52,6 +47,9 @@ namespace boitatah::vk::descriptor_sets{
                                                                 std::vector<BindingDesc> &binds)
     {
         auto& node = m_nodes->findNode(binds);
+
+        std::cout << "node found" << std::endl;
+
         return node.getSetLayout(description, *this);
     }
 
@@ -73,7 +71,10 @@ namespace boitatah::vk::descriptor_sets{
         if(!m_setLayout)
         {
             m_setLayout = tree.createSetLayout(description);
+            std::cout << "created set" << std::endl;
         }
+        else
+            std::cout << "existing set" << std::endl;
         return m_setLayout;
     }
 
@@ -82,14 +83,17 @@ namespace boitatah::vk::descriptor_sets{
         if(binds.empty()){
             return *this;
         }
+
         auto bind = binds.back();
+        binds.pop_back();
 
         for(auto& child : m_children){
             if(child->m_descType == bind.type &&
-               child->m_descQuant == bind.descriptorCount)
-                return *child;
+               child->m_descQuant == bind.descriptorCount){
+                    return child->findNode(binds);
+               }
         }
-
+        std::cout << " adding child node " << std::endl;
         auto& child = addChild(bind.type, bind.descriptorCount);
         return child.findNode(binds);
     }

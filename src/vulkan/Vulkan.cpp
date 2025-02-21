@@ -1048,6 +1048,22 @@ boitatah::vk::BufferVkData boitatah::vk::Vulkan::getBufferAlignmentMemoryType(co
         .memoryTypeBits = memReqs.memoryTypeBits};
 }
 
+boitatah::RenderTargetSync boitatah::vk::Vulkan::allocateBufferSync()
+{
+    RenderTargetSync sync{
+            .drawBuffer = allocateCommandBuffer({.count = 1,
+                                                 .level = COMMAND_BUFFER_LEVEL::PRIMARY,
+                                                 .type = COMMAND_BUFFER_TYPE::GRAPHICS}),
+            .transferBuffer = allocateCommandBuffer({.count = 1,
+                                                     .level = COMMAND_BUFFER_LEVEL::PRIMARY,
+                                                     .type = COMMAND_BUFFER_TYPE::TRANSFER}),
+            .schainAcqSem = createSemaphore(),
+            .transferSem = createSemaphore(),
+            .inFlightFen = createFence(true),
+        };
+    return sync;
+}
+
 void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
 {
     std::vector<VkDynamicState> dynamicStates = {

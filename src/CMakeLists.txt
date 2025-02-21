@@ -21,7 +21,7 @@ set(LIB_DR_SOURCES
             renderer/modules/Swapchain.cpp
             renderer/modules/Camera.cpp
             renderer/modules/BackBuffer.cpp
-            renderer/Rend''erer.cpp
+            renderer/Renderer.cpp
             renderer/modules/Camera.cpp
             vulkan/DescriptorSetManager.cpp
             vulkan/DescriptorSetTree.cpp

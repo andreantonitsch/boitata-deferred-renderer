@@ -14,7 +14,7 @@ namespace boitatah
     {
         uint32_t i = 0;
         uint32_t gen = 0;
-
+        
         bool isNull() const { return gen == 0; }
         bool operator == (const Handle &other) const
         {
@@ -132,7 +132,8 @@ T& boitatah::Pool<T>::get(const Handle<T> handle) noexcept(false)
 {
     if (generations[handle.i] != handle.gen)
     {
-        throw std::runtime_error("Invalid Handle.");
+        auto error = "Invalid Handle. on " + options.name;
+        throw std::runtime_error(error);
     }
     return pool[handle.i];
 }

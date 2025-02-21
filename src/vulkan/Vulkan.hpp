@@ -64,7 +64,7 @@ namespace boitatah::vk
         VkSemaphore createSemaphore() const;
         BufferVkData createBuffer(const BufferDescVk & desc) const;
         BufferVkData getBufferAlignmentMemoryType(const BufferDescVk & desc) const;
-
+        RenderTargetSync allocateBufferSync();
         void buildShader(const ShaderDescVk &desc, Shader &shader);
 
         // Manage Memory

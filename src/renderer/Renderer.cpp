@@ -45,10 +45,12 @@ namespace boitatah
         m_ResourceManagerTransferWriter->setFence(m_transferFence);
         m_ResourceManagerTransferWriter->setSignal(nullptr);
         
+
+
         m_resourceManager = std::make_shared<GPUResourceManager>(m_vk, m_bufferManager, m_ResourceManagerTransferWriter);
         m_descriptorManager = std::make_shared<DescriptorSetManager>(m_vk, 4096);
 
-        m_materialManager = std::make_unique<MaterialManager>(m_vk); 
+        m_materialManager = std::make_shared<MaterialManager>(m_vk); 
 
         // frame uniforms
         m_frameUniform = m_resourceManager->create(GPUBufferCreateDescription{
@@ -57,15 +59,7 @@ namespace boitatah
             .sharing_mode = SHARING_MODE::EXCLUSIVE,
             });
 
-        
-        // base_setLayout = createDescriptorLayout({
-        //                                             .bindingDescriptors = {
-        //                                             {//.binding = 0,
-        //                                                 .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
-        //                                                 .stages = STAGE_FLAG::ALL_GRAPHICS,
-        //                                                 .descriptorCount= 1,
-        //                                                 }}});
-        base_setLayout = m_descriptorManager->getLayout({
+       base_setLayout = m_descriptorManager->getLayout({
                                                             .bindingDescriptors = {
                                                                 {//.binding = 0,
                                                                 .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
@@ -74,9 +68,9 @@ namespace boitatah
                                                                 }
                                                             }
                                                         });
+
         //create base layout with push constants for model matrices
         Handle<ShaderLayout> m_baseShaderLayout = createShaderLayout({});
-
         m_dummyPipeline = createShader({
             .vert = {.byteCode = utils::readFile("./src/09_shader_base_vert.spv"),
                      .entryFunction = "main"},
@@ -87,7 +81,12 @@ namespace boitatah
             .vertexBindings = {}
             });
 
-        m_baseMaterial = m_materialManager->createMaterial({});
+        m_baseMaterial = m_materialManager->createMaterial({
+            .shader = m_dummyPipeline,
+            .bindings = {MaterialBinding{.type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
+                          .binding_handle = m_frameUniform}},
+            .name = "base material",
+        });
 
         
     }
@@ -172,6 +171,48 @@ namespace boitatah
     }
 #pragma endregion Initialization
 
+
+#pragma region CleanUp/Destructor
+    void Renderer::cleanup()
+    {
+        m_vk->waitIdle();
+        auto& layout = m_descriptorManager->getLayoutContent(base_setLayout);
+        m_vk->destroyDescriptorSetLayout(layout.layout);
+        
+        if(m_vk->checkFenceStatus(m_transferFence))
+            m_vk->waitForFence(m_transferFence);
+
+        m_vk->destroyFence(m_transferFence);
+        
+    }
+
+    Renderer::~Renderer(void)
+    {
+        cleanup();
+    }
+
+    BufferManager &Renderer::getBufferManager()
+    {
+        if(m_bufferManager == nullptr)
+            throw std::runtime_error("null buffer manager");
+        return *m_bufferManager;
+    }
+
+    GPUResourceManager &Renderer::getResourceManager()
+    {
+        if(m_resourceManager == nullptr){
+            throw std::runtime_error("null resource manager");
+        }
+        return *m_resourceManager;
+    }
+
+
+    bool Renderer::isWindowClosed()
+    {
+        return m_window->isWindowClosed();
+    }
+#pragma endregion CleanUp / Destructor
+
 #pragma region Rendering
     void Renderer::waitIdle()
     {
@@ -240,9 +281,9 @@ namespace boitatah
         if (!m_renderTargetManager->isActive(target.cmdBuffers)){
             throw std::runtime_error("Failed to Render to Target");}
         RenderTargetSync& buffers = m_renderTargetManager->get(target.cmdBuffers);
-        
-        Image image = m_imageManager->getImage(target.attachments[0]);
-            throw std::runtime_error("failed to framebuffer for Presentation");
+        if(!m_imageManager->contains(target.attachments[0]))
+        throw std::runtime_error("failed to get framebuffer for Presentation");
+        Image& image = m_imageManager->getImage(target.attachments[0]);
 
         m_vk->waitForFrame(buffers);
         // SubmitDrawCommand command{.bufferData = buffers, .submitType = COMMAND_BUFFER_TYPE::PRESENT};
@@ -319,7 +360,7 @@ namespace boitatah
         bindDescriptorSetCommand({
                                    .drawBuffer = buffers.drawBuffer,
                                    .set_index = 0,
-                                   .set_layout = setLayoutPool.get(base_setLayout),
+                                   .set_layout = m_descriptorManager->getLayoutContent(base_setLayout),
                                    .shader_layout = dummyPipeline.layout,
                                    .bindings = {{
                                             .binding = 0,
@@ -336,13 +377,13 @@ namespace boitatah
 
         for (const auto &node : ordered_nodes)
         {
-            if (node->material.isNull())
+            if (!node->material)
             {
                 std::cout << "skip drawing node" << std::endl;
                 continue;
             }
-            auto& material = m_materialManager->getMaterialContent(scene.material);
-            Handle<Shader> shader = material.shader;
+            auto& material = m_materialManager->getMaterialContent(node->material);
+            Handle<Shader>& shader = material.shader;
             if(boundPipeline != shader){
                 bindPipelineCommand({
                     .commandBuffer = buffers.drawBuffer,
@@ -400,56 +441,12 @@ namespace boitatah
 
 #pragma endregion Rendering
 
-#pragma region CleanUp/Destructor
-    void Renderer::cleanup()
-    {
-        m_vk->waitIdle();
 
-        auto& layout = setLayoutPool.get(base_setLayout);
-        m_vk->destroyDescriptorSetLayout(layout.layout);
-
-        if(m_vk->checkFenceStatus(m_transferFence))
-            m_vk->waitForFence(m_transferFence);
-
-        m_vk->destroyFence(m_transferFence);
-        
-    }
-
-    Renderer::~Renderer(void)
-    {
-        cleanup();
-    }
-
-    BufferManager &Renderer::getBufferManager()
-    {
-        if(m_bufferManager == nullptr)
-            throw std::runtime_error("null buffer manager");
-        return *m_bufferManager;
-    }
-
-    GPUResourceManager &Renderer::getResourceManager()
-    {
-        if(m_resourceManager == nullptr){
-            throw std::runtime_error("null resource manager");
-        }
-        return *m_resourceManager;
-    }
-
-
-    bool Renderer::isWindowClosed()
-    {
-        return m_window->isWindowClosed();
-    }
-#pragma endregion CleanUp / Destructor
 
 #pragma region Command Buffers
 
     CommandBuffer Renderer::allocateCommandBuffer(const CommandBufferDesc &desc)
     {
-        // CommandBuffer buffer{
-        //     .buffer = m_vk->allocateCommandBuffer(desc),
-        //     .type = desc.type};
-
         return m_vk->allocateCommandBuffer(desc);
     }
 
@@ -747,32 +744,6 @@ namespace boitatah
         return m_imageManager->createImage(desc);
     }
 
-    Handle<DescriptorSetLayout> Renderer::createDescriptorLayout(const DescriptorSetLayoutDesc &desc)
-    {
-        DescriptorSetLayout layout;
-        //std::vector<DescriptorSetRatio> ratios;
-        std::vector<BindingDesc> bindingDesc;
-        layout.layout = m_vk->createDescriptorLayout(desc);
-
-        for(auto& bindDesc : desc.bindingDescriptors){
-            for (size_t i = 0; i <= layout.ratios.size(); i++)
-            {
-                if(i == layout.ratios.size()){
-                    DescriptorSetRatio ratio;
-                    ratio.type = bindDesc.type;
-                    ratio.quantity = bindDesc.descriptorCount;
-                    layout.ratios.push_back(ratio);
-                    break;
-                }
-                if(layout.ratios[i].type == bindDesc.type)
-                {
-                    layout.ratios[i].quantity += bindDesc.descriptorCount;
-                    break;
-                }
-            }            
-        }
-        return setLayoutPool.set(layout);
-    }
 
     Handle<Material> Renderer::createMaterial(const MaterialCreate &description)
     {
@@ -785,7 +756,7 @@ namespace boitatah
 
     Handle<ShaderLayout> Renderer::createShaderLayout(const ShaderLayoutDesc &desc)
     {
-        auto& baseLayout = setLayoutPool.get(base_setLayout);
+        auto& baseLayout = m_descriptorManager->getLayoutContent(base_setLayout);
         VkDescriptorSetLayout materialLayout = m_vk->createDescriptorLayout(desc.materialLayout);
         ShaderLayout layout{.pipeline = m_vk->createShaderLayout(
                                 {

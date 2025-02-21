@@ -17,6 +17,7 @@ namespace boitatah{
             ImageManager(std::shared_ptr<vk::Vulkan> vulkan);
 
             Handle<Image> createImage(const ImageDesc &description);
+            bool contains (Handle<Image>& handle);
             void destroyImage(const Handle<Image>& handle);
             Image& getImage(Handle<Image> &handle);
     };

@@ -27,10 +27,14 @@ int main()
                                    .attachmentFormats = {IMAGE_FORMAT::BGRA_8_UNORM},
                                    .dimensions = {windowWidth, windowHeight}}});
 
+    std::cout << "renderer initialization complete" << std::endl;
+
     // Pipeline Layout for the Shader.
     Handle<ShaderLayout> layout = r.createShaderLayout({
 
     });
+
+
 
     Handle<Shader> shader = r.createShader({.name = "test",
                                             .vert = {
@@ -44,6 +48,8 @@ int main()
                                                 {.stride = 8, .attributes = {{.location = 2, .format = IMAGE_FORMAT::RG_32_SFLOAT, .offset = 0}}},
                                                 }});
 
+    std::cout << "shader created " << std::endl;
+
     auto material = r.createMaterial({
         .shader = shader,
         .bindings = {},
@@ -54,6 +60,7 @@ int main()
         .name = "material test"
     });
 
+    std::cout << "material created " << std::endl;
 
     Handle<Geometry> geometry = GeometryBuilder::Quad(r.getResourceManager());
 
@@ -69,15 +76,14 @@ int main()
 
     Camera camera({
                    .position = glm::float3(0,0,-10),
-
                    .aspect = static_cast<float>(windowWidth) / windowHeight,
                    
                    });
 
-    if(false);
-
     camera.lookAt(glm::vec3(0));
     boitatah::utils::Timewatch timewatch(1000);
+
+    std::cout << "setup complete" << std::endl;
 
     while (!r.isWindowClosed())
     {

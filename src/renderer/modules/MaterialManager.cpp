@@ -41,13 +41,15 @@ namespace boitatah{
     // }    
     void MaterialGraph::orderGraph()
     {
+        //TODO change for unique container
         std::vector<Handle<Material>> cur_mats;
 
         for(auto& k : m_nodes){
             cur_mats.push_back(k.first);
         }
-            
+
         m_currentOrder.clear();
+        m_currentOrder.resize(cur_mats.size());
         auto& nodes_ref = m_nodes;
         auto& order_ref = m_currentOrder;
 
@@ -126,7 +128,18 @@ namespace boitatah{
 
     Handle<Material> MaterialManager::createMaterial(const MaterialCreate &description)
     {
-        return Handle<Material>();
+        Material mat{};
+
+        mat.shader = description.shader;
+        mat.name = description.name;
+        mat.bindings = description.bindings;
+        mat.parent = description.parent;
+        mat.vertexBufferBindings = description.vertexBufferBindings;
+        auto handle = m_materialPool->set(mat);
+        
+        m_materialGraph.addMaterial(handle, mat.parent);
+        
+        return handle;
     }
 
 
@@ -150,8 +163,6 @@ namespace boitatah{
             .frag = compileShaderModule(data.frag.byteCode, data.vert.entryFunction)};
 
         ShaderLayout layoutData = m_layoutPool->get(data.layout);
-
-
 
         return Handle<Shader>();
     }

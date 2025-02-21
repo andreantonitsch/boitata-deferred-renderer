@@ -85,15 +85,15 @@ namespace boitatah{
 
         return m_passPool->set(pass);
     }
+
     Handle<RenderTargetSync> RenderTargetManager::createRenderTargetSyncData()
     {
-
-
-        return Handle<RenderTargetSync>();
+        RenderTargetSync sync = m_vk->allocateBufferSync(); 
+        return m_buffersPool->set(sync);
     }
+
     void RenderTargetManager::destroyRenderPass(Handle<RenderPass> &handle)
     {
-
         RenderPass& pass = m_passPool->get(handle);
         pass.attachments.clear();
         m_vk->destroyRenderpass(pass);

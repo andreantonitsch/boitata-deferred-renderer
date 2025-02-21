@@ -92,7 +92,7 @@ namespace boitatah
         Handle<RenderPass> createRenderPass(const RenderPassDesc &data);
         Handle<Image> createImage(const ImageDesc &desc);
         Handle<ShaderLayout> createShaderLayout(const ShaderLayoutDesc &desc);
-        Handle<DescriptorSetLayout> createDescriptorLayout(const DescriptorSetLayoutDesc &desc);
+        //Handle<DescriptorSetLayout> createDescriptorLayout(const DescriptorSetLayoutDesc &desc);
         Handle<Material> createMaterial(const MaterialCreate& description);
         
         // Command Buffers
@@ -168,7 +168,7 @@ namespace boitatah
         //Pool<RenderPass> renderpassPool = Pool<RenderPass>({.size = 50, .name = "render pass pool"});
         //Pool<Image> imagePool = Pool<Image>({.size = 50, .name = "image pool"});
         Pool<ShaderLayout> pipelineLayoutPool = Pool<ShaderLayout>({.size = 50, .name = "pipeline layout pool"});
-        Pool<DescriptorSetLayout> setLayoutPool = Pool<DescriptorSetLayout>({.size = 50, .name = "descriptor layout pool"});
+        //Pool<DescriptorSetLayout> setLayoutPool = Pool<DescriptorSetLayout>({.size = 50, .name = "descriptor layout pool"});
         //Pool<RenderTargetCmdBuffers> rtCmdPool = Pool<RenderTargetCmdBuffers>({.size = 50, .name = "rtcmd buffers pool"});
         //Pool<Geometry> geometryPool = Pool<Geometry>({.size = 50, .name = "geometry pool"});
 

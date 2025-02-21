@@ -20,7 +20,11 @@ Handle<Image> ImageManager::createImage(const ImageDesc &description)
 
     return m_imagePool->set(image);
 }
-void ImageManager::destroyImage(const Handle<Image>& handle)
+bool ImageManager::contains(Handle<Image> &handle)
+{
+    return m_imagePool->contains(handle);
+}
+void ImageManager::destroyImage(const Handle<Image> &handle)
 {
     if(!handle)
         return;
