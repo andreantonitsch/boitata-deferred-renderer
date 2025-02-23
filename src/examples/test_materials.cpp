@@ -27,15 +27,27 @@ int main()
                                    .attachmentFormats = {IMAGE_FORMAT::BGRA_8_UNORM},
                                    .dimensions = {windowWidth, windowHeight}}});
 
-    std::cout << "renderer initialization complete" << std::endl;
+    std::cout << "Renderer initialization complete" << std::endl;
 
-    // Pipeline Layout for the Shader.
-    Handle<ShaderLayout> layout = r.createShaderLayout({
-
+    //create set layout
+    auto& descManager = r.getDescriptorManager();
+    auto setLayout = descManager.getLayout({
+        .bindingDescriptors = {{
+            .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
+            .stages = STAGE_FLAG::ALL_GRAPHICS,
+            .descriptorCount = 1,
+        }}
     });
 
-
-
+    //create shader layout with set layours
+    // later by reflection
+    Handle<ShaderLayout> layout = r.createShaderLayout({
+        .setLayouts = {setLayout},
+        }
+    );
+    std::cout << "Created Shader Layout" << std::endl;
+    
+    // create shader
     Handle<Shader> shader = r.createShader({.name = "test",
                                             .vert = {
                                                 .byteCode = utils::readFile("./src/camera_vert.spv"),
@@ -48,17 +60,37 @@ int main()
                                                 {.stride = 8, .attributes = {{.location = 2, .format = IMAGE_FORMAT::RG_32_SFLOAT, .offset = 0}}},
                                                 }});
 
-    std::cout << "shader created " << std::endl;
+    std::cout << "Created Shader" << std::endl;
 
+    auto& mat_manager = r.getMaterialManager();
+    
+    auto buffer = r.getResourceManager().create(GPUBufferCreateDescription{
+            .size = sizeof(uint32_t) * 4,
+            .usage = BUFFER_USAGE::UNIFORM_BUFFER,
+            .sharing_mode = SHARING_MODE::EXCLUSIVE,
+            });
+
+    std::cout << "Created  a GPU buffer" << std::endl;
+
+    int a[4] = {1, 2, 3, 4};
+    r.getResourceManager().getResource(buffer).copyData(&a, sizeof(uint32_t) * 4);
+    std::cout << "Copied data to GPU buffer" << std::endl;
+    
+    //create the binding
+    auto binding = mat_manager.createBinding(setLayout);
+    mat_manager.getBinding(binding).bindings[0].binding_handle.buffer = buffer;
+
+    //fit the bindings
     auto material = r.createMaterial({
         .shader = shader,
-        .bindings = {},
+        .bindings = {binding},
         .vertexBufferBindings = {VERTEX_BUFFER_TYPE::POSITION, 
                                  VERTEX_BUFFER_TYPE::COLOR,
                                  VERTEX_BUFFER_TYPE::UV,
                                  },
         .name = "material test"
     });
+
 
     std::cout << "material created " << std::endl;
 

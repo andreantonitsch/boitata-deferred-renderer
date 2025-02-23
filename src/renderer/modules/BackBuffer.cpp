@@ -88,6 +88,7 @@ namespace boitatah
         {
             m_renderTargetManager->destroyRenderTarget(attach);
         }
+        m_renderTargetManager->destroyRenderPass(renderpass);
         buffers.clear();
     }
 }

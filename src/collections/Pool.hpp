@@ -63,6 +63,7 @@ namespace boitatah
         T* tryGet(const Handle<T> handle);
         T& get(const Handle<T> handle) noexcept(false);
         Handle<T> set(T &elem);
+        Handle<T> move_set(T& elem);
         Handle<T> getHandle();
         bool clear(Handle<T> handle, T& item);
         bool clear(Handle<T> handle);
@@ -144,6 +145,14 @@ boitatah::Handle<T> boitatah::Pool<T>::set(T &elem)
     auto handle = getHandle();
     pool[handle.i] = elem;
 
+    return handle;
+}
+
+template <typename T>
+inline boitatah::Handle<T> boitatah::Pool<T>::move_set(T &elem)
+{
+    auto handle = getHandle();
+    pool[handle.i] = std::move(elem);
     return handle;
 }
 

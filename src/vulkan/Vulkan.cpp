@@ -14,6 +14,7 @@
 #include "../types/Shader.hpp"
 #include "../types/Image.hpp"
 #include "Window.hpp"
+#include <utils/utils.hpp>
 
 namespace bvk = boitatah::vk;
 
@@ -872,7 +873,7 @@ VkPipelineLayout boitatah::vk::Vulkan::createShaderLayout(const ShaderLayoutDesc
     // add camera layout
     descripLayouts.push_back(desc.baseLayout);
     // add shader custom layout
-    descripLayouts.push_back(desc.materialLayout);
+    utils::move_concatenate_vectors(descripLayouts, desc.materialLayouts);
     
     //add model push constants
     std::vector<VkPushConstantRange> ranges;
@@ -1151,11 +1152,11 @@ void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
         {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
          .stage = VK_SHADER_STAGE_VERTEX_BIT,
          .module = shader.vert.shaderModule,
-         .pName = desc.vert.entryFunction.c_str()},
+         .pName = shader.vert.entryFunction.c_str()},
         {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
          .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
          .module = shader.frag.shaderModule,
-         .pName = desc.frag.entryFunction.c_str()}};
+         .pName = shader.frag.entryFunction.c_str()}};
 
     VkGraphicsPipelineCreateInfo pipelineInfo{
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,

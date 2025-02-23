@@ -1,44 +1,10 @@
 #include "MaterialManager.hpp"
 #include <algorithm>
+#include <utils/utils.hpp>
 namespace boitatah{
     
-    /// @brief TODO this is very inefficient
-    // void MaterialGraph::orderGraph()
-    // {
-    //     std::vector<Handle<Material>> cur_mats;
+    
 
-    //     for(auto& k : m_nodes){
-    //         cur_mats.push_back(k.first);
-    //     }
-            
-    //     m_currentOrder.clear();
-    //     m_currentOrder.push_back(Handle<Material>());
-
-    //     int depth = 0;
-    //     int i = 0;
-
-    //     //we have to order all nodes
-    //     while(!cur_mats.empty()){
-    //         while(i < cur_mats.size()){
-                
-    //             auto& curr_mat= cur_mats[i];
-    //             auto curr_node = m_nodes[curr_mat];
-
-    //             if(curr_node.parent == *(m_currentOrder.end() - depth)){
-    //                 m_currentOrder.push_back(curr_mat);
-    //                 cur_mats.erase(std::find(cur_mats.begin(), cur_mats.end(), curr_mat));
-
-    //                 i = 0;
-    //                 depth = 0;
-    //             }else{
-    //                 i++;
-    //             }
-    //         }
-    //         depth++;
-    //     }
-    //     m_currentOrder.erase(m_currentOrder.begin());
-    //     m_dirty = false;
-    // }    
     void MaterialGraph::orderGraph()
     {
         //TODO change for unique container
@@ -126,13 +92,16 @@ namespace boitatah{
         return *m_shaderManager;
     }
 
-    Handle<Material> MaterialManager::createMaterial(const MaterialCreate &description)
+    Handle<Material> MaterialManager::createMaterial(const MaterialCreate& description)
     {
         Material mat{};
+        auto bindings = std::vector<Handle<MaterialBinding>>(m_baseBindings);
+
+        utils::move_concatenate_vectors(bindings, description.bindings);
 
         mat.shader = description.shader;
         mat.name = description.name;
-        mat.bindings = description.bindings;
+        mat.bindings = bindings;
         mat.parent = description.parent;
         mat.vertexBufferBindings = description.vertexBufferBindings;
         auto handle = m_materialPool->set(mat);
@@ -142,18 +111,95 @@ namespace boitatah{
         return handle;
     }
 
-
     const std::vector<Handle<Material>>& MaterialManager::orderMaterials()
     {
         return m_materialGraph.getOrder();
     }
+
     Material& MaterialManager::getMaterialContent(const Handle<Material> &handle)
     {
         return m_materialPool->get(handle);
     }
+
+    Handle<MaterialBinding> MaterialManager::createBinding(Handle<DescriptorSetLayout> &description)
+    {
+
+        MaterialBinding binding;
+        auto& layout = m_descriptorManager->getLayoutContent(description);
+
+        for(auto& desc : layout.description.bindingDescriptors){
+            binding.bindings.push_back(MaterialBindingAtt{.type = desc.type});
+        };
+
+        return m_bindingsPool->set(binding);
+    }
+
+    MaterialBinding &MaterialManager::getBinding(Handle<MaterialBinding> &handle)
+    {
+        return m_bindingsPool->get(handle);
+    }
+
+    bool MaterialManager::BindMaterial(Handle<Material> &handle, CommandBuffer& buffer)
+    {
+        auto& material = m_materialPool->get(handle);
+        m_currentBindings.resize(material.bindings.size());
+        bool success = true;
+        if(m_currentPipeline != material.shader)
+            success &= BindPipeline(material.shader, buffer);
+
+        for(uint32_t i = 0; i <= material.bindings.size(); i++){
+            if(material.bindings[i] != m_currentBindings[i]){
+                success &= BindBinding(material.bindings[i], i, buffer);
+            }
+        }
+        return success;
+    }
+
+    bool MaterialManager::BindPipeline(Handle<Shader> &handle, CommandBuffer& buffer)
+    {
+        if(m_currentPipeline == handle ||
+           !m_shaderManager->isValid(handle))
+            return false;
+        m_currentPipeline = handle;
+
+        m_vk->bindPipelineCommand({
+            .drawBuffer = buffer.buffer,
+            .pipeline = m_shaderManager->get(m_currentPipeline).pipeline,
+        });
+        return true;
+    }
+
+    bool MaterialManager::BindBinding(Handle<MaterialBinding> &handle, uint32_t set_index, CommandBuffer& buffer)
+    {
+        if(m_currentBindings[set_index] == handle ||
+           !m_bindingsPool->contains(handle))
+           return false;
+        m_currentBindings[set_index] = handle;
+
+        return true;
+    }
+
+    void MaterialManager::setBaseBindings(std::vector<Handle<MaterialBinding>> &&handles)
+    {
+        m_baseBindings = std::move(handles);
+    }
+
+    void MaterialManager::setBaseBindings(const std::vector<Handle<MaterialBinding>> &handles)
+    {
+        m_baseBindings = handles;
+    }
+
     ShaderModule ShaderManager::compileShaderModule(const std::vector<char> &bytecode, std::string entryPoint)
     {
         return {.shaderModule = m_vk->createShaderModule(bytecode), .entryFunction = entryPoint};
+    }
+    Shader &ShaderManager::get(Handle<Shader> &handle)
+    {
+        return m_shaderPool->get(handle);
+    }
+    bool ShaderManager::isValid(Handle<Shader> &handle)
+    {
+        return m_shaderPool->contains(handle);
     }
     Handle<Shader> ShaderManager::makeShader(const MakeShaderDesc &data)
     {
@@ -163,7 +209,44 @@ namespace boitatah{
             .frag = compileShaderModule(data.frag.byteCode, data.vert.entryFunction)};
 
         ShaderLayout layoutData = m_layoutPool->get(data.layout);
+        shader.layout = layoutData;
 
-        return Handle<Shader>();
+        // TODO Convert bindings in vulkan class?
+        std::vector<VkVertexInputAttributeDescription> vkattributes;
+        std::vector<VkVertexInputBindingDescription> vkbindings;
+        //uint32_t location = 0;
+        for (int i = 0; i < data.vertexBindings.size(); i++)
+        {
+            auto binding = data.vertexBindings[i];
+            VkVertexInputBindingDescription bindingDesc{};
+            bindingDesc.stride = binding.stride;
+            bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+            bindingDesc.binding = i;
+            std::cout << data.vertexBindings[i].stride;
+            vkbindings.push_back(bindingDesc);
+            uint32_t runningOffset = 0;
+
+            for (int j = 0; j < binding.attributes.size(); j++)
+            {
+                auto attribute = binding.attributes[j];
+                VkVertexInputAttributeDescription attributeDesc;
+                attributeDesc.binding = i;
+                attributeDesc.format = castEnum<VkFormat>(attribute.format);
+                attributeDesc.offset = runningOffset;
+                //attributeDesc.location = location++;
+                attributeDesc.location = attribute.location;
+                vkattributes.push_back(attributeDesc);
+
+                runningOffset += formatSize(attribute.format);
+            }
+        }
+
+        m_vk->buildShader({
+            .name = data.name,
+            //.renderpass = data.render_compatibility.renderPass,
+            .bindings = vkbindings,
+            .attributes = vkattributes
+        }, shader);
+        return m_shaderPool->move_set(shader);
     }
 };

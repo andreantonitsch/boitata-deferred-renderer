@@ -48,7 +48,7 @@ namespace boitatah::vk::descriptor_sets{
         public:
             DescriptorSetTree(std::shared_ptr<Vulkan> vulkan);
             Handle<DescriptorSetLayout> getSetLayout(const DescriptorSetLayoutDesc& description);
-            DescriptorSetLayout& getSetLayoutData(Handle<DescriptorSetLayout>& handle);
+            DescriptorSetLayout& getSetLayoutData(const Handle<DescriptorSetLayout>& handle);
 
     };
 }

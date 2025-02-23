@@ -20,17 +20,21 @@ namespace boitatah
                         .windowName = m_options.appName};
 
         m_window = std::make_shared<WindowManager>(desc);
-        createVulkan();
 
+        // Initialize Vulkan
+        createVulkan();
         m_window->initSurface(m_vk);
         m_vk->attachWindow(m_window);
         m_vk->completeInit();
 
+        // Initialize Image and FrameBuffer Managers
         m_imageManager = std::make_shared<ImageManager>(m_vk);
         m_renderTargetManager = std::make_shared<RenderTargetManager>(m_vk, m_imageManager);
 
+        //Create the swapchain
         createSwapchain();
 
+        //Create a backbuffer
         m_backBufferManager = std::make_shared<BackBufferManager>(m_renderTargetManager);
         m_backBufferManager->setup(m_options.backBufferDesc);
 
@@ -39,26 +43,29 @@ namespace boitatah
                                                          .type = COMMAND_BUFFER_TYPE::TRANSFER});\
         
         m_transferFence = m_vk->createFence(true); //create fence signaled
+
+        //Initialize the VulkanBuffer manager
         m_bufferManager = std::make_shared<BufferManager>(m_vk);
+
+        //Initializethe command buffer writer
         m_ResourceManagerTransferWriter = std::make_shared<VkCommandBufferWriter>(m_vk);
         m_ResourceManagerTransferWriter->setCommandBuffer(m_transferCommandBuffer.buffer);
         m_ResourceManagerTransferWriter->setFence(m_transferFence);
         m_ResourceManagerTransferWriter->setSignal(nullptr);
         
 
-
+        //Initialize the renderer Modules
         m_resourceManager = std::make_shared<GPUResourceManager>(m_vk, m_bufferManager, m_ResourceManagerTransferWriter);
         m_descriptorManager = std::make_shared<DescriptorSetManager>(m_vk, 4096);
-
         m_materialManager = std::make_shared<MaterialManager>(m_vk); 
 
-        // frame uniforms
-        m_frameUniform = m_resourceManager->create(GPUBufferCreateDescription{
+
+        // Initialize base renderer data(base material, base layout etc.)
+        m_frameUniformsBuffer = m_resourceManager->create(GPUBufferCreateDescription{
             .size = sizeof(FrameUniforms2),
             .usage = BUFFER_USAGE::UNIFORM_BUFFER,
             .sharing_mode = SHARING_MODE::EXCLUSIVE,
             });
-
        base_setLayout = m_descriptorManager->getLayout({
                                                             .bindingDescriptors = {
                                                                 {//.binding = 0,
@@ -68,7 +75,9 @@ namespace boitatah
                                                                 }
                                                             }
                                                         });
-
+        m_frameUniforms = m_materialManager->createBinding(base_setLayout);
+        m_materialManager->getBinding(m_frameUniforms).bindings[0].binding_handle.buffer = m_frameUniformsBuffer;
+        
         //create base layout with push constants for model matrices
         Handle<ShaderLayout> m_baseShaderLayout = createShaderLayout({});
         m_dummyPipeline = createShader({
@@ -83,12 +92,9 @@ namespace boitatah
 
         m_baseMaterial = m_materialManager->createMaterial({
             .shader = m_dummyPipeline,
-            .bindings = {MaterialBinding{.type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
-                          .binding_handle = m_frameUniform}},
+             .bindings = {},
             .name = "base material",
         });
-
-        
     }
 
     void Renderer::updateCameraUniforms(Camera &camera)
@@ -99,9 +105,9 @@ namespace boitatah
 
     void Renderer::updateFrameUniforms(uint32_t frame_index)
     {
-        GPUBuffer& buffer = m_resourceManager->getResource(m_frameUniform);
+        GPUBuffer& buffer = m_resourceManager->getResource(m_frameUniformsBuffer);
         buffer.copyData(&frame_uniforms, sizeof(FrameUniforms2));
-        m_resourceManager->forceCommitResource(m_frameUniform, frame_index);
+        m_resourceManager->forceCommitResource(m_frameUniformsBuffer, frame_index);
         
     }
 
@@ -206,6 +212,21 @@ namespace boitatah
         return *m_resourceManager;
     }
 
+    MaterialManager &Renderer::getMaterialManager()
+    {
+        if(m_materialManager == nullptr){
+            throw std::runtime_error("null material manager");
+        }
+        return *m_materialManager;
+    }
+
+    DescriptorSetManager &Renderer::getDescriptorManager()
+    {
+        if(m_descriptorManager == nullptr){
+            throw std::runtime_error("null descriptor manager");
+        }
+        return *m_descriptorManager;
+    }
 
     bool Renderer::isWindowClosed()
     {
@@ -365,7 +386,7 @@ namespace boitatah
                                    .bindings = {{
                                             .binding = 0,
                                             .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
-                                            .bufferData = m_resourceManager->getResource(m_frameUniform).getAccessData(frame_index)
+                                            .bufferData = m_resourceManager->getResource(m_frameUniformsBuffer).getAccessData(frame_index)
                                   }}});
 
 
@@ -649,84 +670,9 @@ namespace boitatah
 
 #pragma region Create Vulkan Objects
 
-    Handle<Shader> Renderer::createShader(const ShaderDesc &data)
+    Handle<Shader> Renderer::createShader(const MakeShaderDesc &data)
     {
-        Shader shader{
-            .name = data.name,
-            .vert = {.shaderModule = m_vk->createShaderModule(data.vert.byteCode),
-                     .entryFunction = data.vert.entryFunction},
-            .frag = {.shaderModule = m_vk->createShaderModule(data.frag.byteCode),
-                     .entryFunction = data.vert.entryFunction}};
-
-        ShaderLayout layout;
-        if (!pipelineLayoutPool.tryGet(data.layout, layout))
-            throw std::runtime_error("failed to get pipeline layout");
-        shader.layout = layout;
-        // Get rendertarget and renderpass
-        // from backbuffer
-        // or from description
-        RenderTarget buffer;
-        RenderPass pass;
-        if (!data.framebuffer)
-        {
-
-            if(!m_renderTargetManager->isActive(m_backBufferManager->getRenderPass()))
-                throw std::runtime_error("failed to back buffer render pass");
-            pass = m_renderTargetManager->get(m_backBufferManager->getRenderPass());
-        }
-        else
-        {
-            if(!m_renderTargetManager->isActive(data.framebuffer))
-                throw std::runtime_error("failed to get framebuffer");
-            buffer = m_renderTargetManager->get(data.framebuffer);
-            if(!m_renderTargetManager->isActive(buffer.renderpass))
-                throw std::runtime_error("failed to get renderpass");
-            pass = m_renderTargetManager->get(buffer.renderpass);
-        }
-
-        // TODO Convert bindings in vulkan class?
-        std::vector<VkVertexInputAttributeDescription> vkattributes;
-        std::vector<VkVertexInputBindingDescription> vkbindings;
-        //uint32_t location = 0;
-        for (int i = 0; i < data.vertexBindings.size(); i++)
-        {
-            auto binding = data.vertexBindings[i];
-            VkVertexInputBindingDescription bindingDesc{};
-            bindingDesc.stride = binding.stride;
-            bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-            bindingDesc.binding = i;
-            std::cout << data.vertexBindings[i].stride;
-            vkbindings.push_back(bindingDesc);
-            uint32_t runningOffset = 0;
-
-            for (int j = 0; j < binding.attributes.size(); j++)
-            {
-                auto attribute = binding.attributes[j];
-                VkVertexInputAttributeDescription attributeDesc;
-                attributeDesc.binding = i;
-                attributeDesc.format = castEnum<VkFormat>(attribute.format);
-                attributeDesc.offset = runningOffset;
-                //attributeDesc.location = location++;
-                attributeDesc.location = attribute.location;
-                vkattributes.push_back(attributeDesc);
-
-                runningOffset += formatSize(attribute.format);
-            }
-        }
-
-        m_vk->buildShader(
-            {
-                .name = shader.name,
-                .vert = shader.vert,
-                .frag = shader.frag,
-                .renderpass = pass.renderPass,
-                .layout = layout.pipeline,
-                .bindings = vkbindings,
-                .attributes = vkattributes,
-            },
-            shader);
-
-        return shaderPool.set(shader);
+        return m_materialManager->getShaderManager().makeShader(data);
     }
 
     Handle<RenderTarget> Renderer::createRenderTarget(const RenderTargetDesc &data)
@@ -757,10 +703,15 @@ namespace boitatah
     Handle<ShaderLayout> Renderer::createShaderLayout(const ShaderLayoutDesc &desc)
     {
         auto& baseLayout = m_descriptorManager->getLayoutContent(base_setLayout);
-        VkDescriptorSetLayout materialLayout = m_vk->createDescriptorLayout(desc.materialLayout);
+        //VkDescriptorSetLayout materialLayout = m_vk->createDescriptorLayout(desc.materialLayout);
+        std::vector<VkDescriptorSetLayout> vkLayouts;
+        for(int i = 0; i < desc.setLayouts.size(); i++){
+            auto& layout = m_descriptorManager->getLayoutContent(desc.setLayouts[i]);
+            vkLayouts.push_back(layout.layout);
+        }
         ShaderLayout layout{.pipeline = m_vk->createShaderLayout(
                                 {
-                                    .materialLayout = materialLayout,
+                                    .materialLayouts = vkLayouts,
                                     .baseLayout = baseLayout.layout,
                                     .pushConstants ={
                                         PushConstantDesc{

@@ -94,6 +94,9 @@ namespace boitatah{
 
     void RenderTargetManager::destroyRenderPass(Handle<RenderPass> &handle)
     {
+        if(!m_passPool->contains(handle))
+            return;
+
         RenderPass& pass = m_passPool->get(handle);
         pass.attachments.clear();
         m_vk->destroyRenderpass(pass);
@@ -113,7 +116,7 @@ namespace boitatah{
                 m_imageManager->destroyImage(imagehandle);
         }
 
-        destroyRenderPass(target.renderpass);
+        //destroyRenderPass(target.renderpass);
         RenderTargetSync data;
             if (m_buffersPool->clear(target.cmdBuffers, data))
                 m_vk->destroyRenderTargetCmdData(data);

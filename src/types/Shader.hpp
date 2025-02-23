@@ -29,13 +29,13 @@ namespace boitatah
     // becomes a shaderlayout with 3 descriptor set layouts and push constants
     struct ShaderLayoutDesc
     {
-        DescriptorSetLayoutDesc materialLayout;
+        std::vector<Handle<DescriptorSetLayout>> setLayouts;
         //std::vector<PushConstantDesc> pushConstants;
     };
 
     struct ShaderLayoutDescVk
     {
-        VkDescriptorSetLayout materialLayout;
+        std::vector<VkDescriptorSetLayout> materialLayouts;
         VkDescriptorSetLayout baseLayout;
         std::vector<PushConstantDesc> pushConstants;
 
@@ -78,20 +78,6 @@ namespace boitatah
         std::vector<VertexAttribute> attributes;
     };
 
-    struct ShaderDesc
-    {
-        // required arguments
-        std::string name;
-        ShaderStage vert;
-        ShaderStage frag;
-
-        // A compatible framebuffer.
-        // sets the RenderPass for this PSO.
-        Handle<RenderTarget> framebuffer; // optional
-        Handle<ShaderLayout> layout;
-
-        std::vector<VertexBindings> vertexBindings;
-    };
 
     struct MakeShaderDesc
     {
@@ -100,9 +86,11 @@ namespace boitatah
         ShaderStage vert;
         ShaderStage frag;
 
-        // A compatible framebuffer.
-        // sets the RenderPass for this PSO.
-        RenderPass renderPass; // optional
+        union {
+            Handle<RenderPass> renderPass; // optional
+            Handle<RenderTarget> renderTarget;
+        }render_compatibility;
+        
         Handle<ShaderLayout> layout;
 
         std::vector<VertexBindings> vertexBindings;
@@ -113,9 +101,6 @@ namespace boitatah
     {
         // required arguments
         std::string name;
-        ShaderModule vert;
-        ShaderModule frag;
-
         VkRenderPass renderpass;
         VkPipelineLayout layout;
         std::vector<VkVertexInputBindingDescription> bindings;

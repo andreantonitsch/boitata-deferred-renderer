@@ -39,6 +39,7 @@ namespace boitatah::vk::descriptor_sets{
                 }
             }            
         }
+        layout.description = description;
         auto layout_handle = m_layoutPool->set(layout);
         return layout_handle;
     }
@@ -60,7 +61,7 @@ namespace boitatah::vk::descriptor_sets{
         return getSetLayout(description, binds);
     }
 
-    DescriptorSetLayout &DescriptorSetTree::getSetLayoutData(Handle<DescriptorSetLayout> &handle)
+    DescriptorSetLayout &DescriptorSetTree::getSetLayoutData(const Handle<DescriptorSetLayout> &handle)
     {
         return m_layoutPool->get(handle);
     }

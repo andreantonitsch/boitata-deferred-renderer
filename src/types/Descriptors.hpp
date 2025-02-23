@@ -28,6 +28,7 @@ namespace boitatah
     struct DescriptorSetLayout
     {
         std::vector<DescriptorSetRatio> ratios;
+        DescriptorSetLayoutDesc description;
         VkDescriptorSetLayout layout;
     };
 
@@ -47,7 +48,6 @@ namespace boitatah
         uint32_t binding;
         DESCRIPTOR_TYPE type;
         BufferAccessData bufferData;
-        //Handle<GPUBuffer> buffer;
     };
 
 };

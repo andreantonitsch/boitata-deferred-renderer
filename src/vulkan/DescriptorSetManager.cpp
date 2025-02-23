@@ -18,7 +18,7 @@ namespace boitatah::vk {
         return m_descriptorTree->getSetLayout(description);
     }
 
-    DescriptorSetLayout& DescriptorSetManager::getLayoutContent(Handle<DescriptorSetLayout> &handle)
+    DescriptorSetLayout& DescriptorSetManager::getLayoutContent(const Handle<DescriptorSetLayout> &handle)
     {
         return m_descriptorTree->getSetLayoutData(handle);
     }

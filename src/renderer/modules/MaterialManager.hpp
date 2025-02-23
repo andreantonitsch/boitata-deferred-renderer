@@ -45,7 +45,10 @@ namespace boitatah{
 
         public:
             ShaderManager(std::shared_ptr<Vulkan> vulkan) : m_vk(vulkan) {};
-            Handle<ShaderLayout> getShaderLayout();
+            Handle<ShaderLayout> get(Handle<ShaderLayout>& handle);
+            Shader& get(Handle<Shader>& handle);
+            bool isValid(Handle<Shader>& handle);
+            bool isValid(Handle<ShaderLayout>& handle);
             Handle<Shader> makeShader(const MakeShaderDesc &data); //a shader is a pipeline
             void destroyShader(Handle<Shader>& handle);
     };
@@ -58,12 +61,28 @@ namespace boitatah{
             void destroyMaterial(const Handle<Material>& handle);
             const std::vector<Handle<Material>>& orderMaterials();
             Material& getMaterialContent(const Handle<Material>& handle);
+            Handle<MaterialBinding> createBinding(Handle<DescriptorSetLayout>& description);
+            MaterialBinding& getBinding(Handle<MaterialBinding>& handle);
+            
 
+            bool BindMaterial(Handle<Material>& handle, CommandBuffer& buffer);
+            bool BindPipeline(Handle<Shader>& handle, CommandBuffer& buffer);
+            bool BindBinding(Handle<MaterialBinding>& handle, uint32_t set_index, CommandBuffer& buffer);
+            void setBaseBindings(std::vector<Handle<MaterialBinding>>&& handles);
+            void setBaseBindings(const std::vector<Handle<MaterialBinding>>& handles);
+        
         private:
             std::shared_ptr<Vulkan> m_vk;        
             std::unique_ptr<ShaderManager> m_shaderManager;
+            std::shared_ptr<DescriptorSetManager> m_descriptorManager;
             MaterialGraph m_materialGraph;
             std::unique_ptr<Pool<Material>> m_materialPool;
+            std::unique_ptr<Pool<MaterialBinding>> m_bindingsPool;
+
+            std::vector<Handle<MaterialBinding>> m_currentBindings;
+            Handle<Shader> m_currentPipeline;
+
+            std::vector<Handle<MaterialBinding>> m_baseBindings;
 
             void inheritMaterial();
 

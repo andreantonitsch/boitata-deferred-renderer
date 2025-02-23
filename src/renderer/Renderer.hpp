@@ -67,8 +67,8 @@ namespace boitatah
         // Manangers
         BufferManager& getBufferManager();
         GPUResourceManager& getResourceManager();
-        //RenderObjectManager& getRenderObjectManager();
-
+        MaterialManager& getMaterialManager();
+        DescriptorSetManager& getDescriptorManager();
         // Window methods
         bool isWindowClosed();
 
@@ -86,7 +86,7 @@ namespace boitatah
         // Object Creation
         // Creates PSO object, shader + pipeline.
         // Needs a Framebuffer for compatibility.
-        Handle<Shader> createShader(const ShaderDesc &data);
+        Handle<Shader> createShader(const MakeShaderDesc &data);
         // Creates a framebuffer with a renderpass.
         Handle<RenderTarget> createRenderTarget(const RenderTargetDesc &data);
         Handle<RenderPass> createRenderPass(const RenderPassDesc &data);
@@ -143,7 +143,8 @@ namespace boitatah
 
         // Frame Uniforms
         FrameUniforms2 frame_uniforms;
-        Handle<GPUBuffer> m_frameUniform;
+        Handle<GPUBuffer> m_frameUniformsBuffer;
+        Handle<MaterialBinding> m_frameUniforms;
         void updateCameraUniforms(Camera& camera);
         void updateFrameUniforms(uint32_t frame_index);
         void bindDescriptorSet();

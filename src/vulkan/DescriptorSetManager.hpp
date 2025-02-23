@@ -122,7 +122,7 @@ namespace boitatah::vk
         DescriptorSetManager(std::shared_ptr<Vulkan> vulkan, uint32_t maximumSets);
         ~DescriptorSetManager();
         Handle<DescriptorSetLayout> getLayout(const DescriptorSetLayoutDesc& description);
-        DescriptorSetLayout& getLayoutContent(Handle<DescriptorSetLayout>& handle);
+        DescriptorSetLayout& getLayoutContent(const Handle<DescriptorSetLayout>& handle);
         DescriptorSet getSet(const DescriptorSetLayout &request, uint32_t frame_index);
         void writeSet(const std::span<const BindBindingDesc> &bindings, 
                       const DescriptorSet& set,

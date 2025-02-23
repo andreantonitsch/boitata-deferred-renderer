@@ -11,7 +11,8 @@ namespace boitatah{
     class FixedTexture;
     class RenderTexture;
 
-    struct MaterialBinding{
+
+    struct MaterialBindingAtt{
         DESCRIPTOR_TYPE type;
         union {
             Handle<GPUBuffer> buffer;
@@ -19,6 +20,11 @@ namespace boitatah{
             Handle<RenderTexture> renderTex;
         }binding_handle;
     };
+    struct MaterialBinding{
+        std::vector<MaterialBindingAtt> bindings;
+    };
+
+
     
     ///each material can bind one set of variables.
     struct Material{
@@ -26,7 +32,7 @@ namespace boitatah{
         Handle<Material> parent;
         Handle<Shader> shader;
         DescriptorSetLayout layout;
-        std::vector<MaterialBinding> bindings;
+        std::vector<Handle<MaterialBinding>> bindings;
         std::vector<VERTEX_BUFFER_TYPE> vertexBufferBindings;
         std::string name;
     };
@@ -35,10 +41,8 @@ namespace boitatah{
         Handle<Material> parent;
         Handle<Shader> shader;
         //this fetches the descriptor set.
-        std::vector<MaterialBinding> bindings; 
+        std::vector<Handle<MaterialBinding>> bindings; 
         std::vector<VERTEX_BUFFER_TYPE> vertexBufferBindings;
         std::string name;
     };
-
-
 };
