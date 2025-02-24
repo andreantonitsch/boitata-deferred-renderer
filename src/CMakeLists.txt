@@ -5,7 +5,7 @@ set(LIBRARY_OUTPUT_PATH ${OUTPUT_FOLDER}/libs)
 set (LIBRARY_INCLUDE_PATH ./)
 set (UTIL_INCLUDE_PATH ./utils/)
 
-set(LIB_DR_SOURCES
+set(LIB_DIR_SOURCES
             collections/PartitionList.cpp
             buffers/BufferAllocator.cpp
             buffers/Buffer.cpp
@@ -29,6 +29,7 @@ set(LIB_DR_SOURCES
             vulkan/Window.cpp
 )
 
-add_library(boitatah STATIC ${LIB_DR_SOURCES})
+add_library(boitatah STATIC ${LIB_DIR_SOURCES})
 
-target_include_directories(boitatah PUBLIC ${LIBRARY_INCLUDE_PATH} ${UTIL_INCLUDE_PATH})
+target_include_directories(boitatah PUBLIC ${LIBRARY_INCLUDE_PATH} ${UTIL_INCLUDE_PATH} ${SPIRV_Headers_SOURCE_DIR}/include ${THIRD_PARTY_INCLUDE_PATH})
+target_compile_definitions(boitatah PUBLIC SPIRV_REFLECT_USE_SYSTEM_SPIRV_H)

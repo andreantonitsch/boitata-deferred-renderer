@@ -7,6 +7,10 @@ set(OUTPUT_FOLDER ${CMAKE_BINARY_DIR}/bin)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_FOLDER}/examples)
 
+set (THIRD_PARTY_INCLUDE_PATH ${PROJECT_SOURCE_DIR}/third_party/)
+
+set (SPIRV_Headers_SOURCE_DIR ${THIRD_PARTY_INCLUDE_PATH}/SPIRV-Headers)
+add_subdirectory(${SPIRV_Headers_SOURCE_DIR})
 
 add_subdirectory(src/)
 
@@ -30,8 +34,7 @@ find_package(Vulkan REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 
-
-set(LIBS vulkan
+set(LIBS Vulkan::Vulkan
          glfw
          glm
          boitatah)

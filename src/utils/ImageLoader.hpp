@@ -1,5 +1,5 @@
 #pragma once
-#include "stb_image.h"
+#include <stb_image.h>
 #include <types/Texture.hpp>
 #include <string>
 #include <vector>
