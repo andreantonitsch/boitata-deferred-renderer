@@ -27,7 +27,6 @@ int main()
                                    .attachmentFormats = {IMAGE_FORMAT::BGRA_8_UNORM},
                                    .dimensions = {windowWidth, windowHeight}}});
 
-    std::cout << "Renderer initialization complete" << std::endl;
 
     //create set layout
     auto& descManager = r.getDescriptorManager();
@@ -41,18 +40,20 @@ int main()
 
     //create shader layout with set layours
     // later by reflection
-    Handle<ShaderLayout> layout = r.createShaderLayout({
+    Handle<ShaderLayout> layout = r.getMaterialManager().getShaderManager().makeShaderLayout({
         .setLayouts = {setLayout},
         }
     );
     std::cout << "Created Shader Layout" << std::endl;
     
+
     // create shader
     Handle<Shader> shader = r.createShader({.name = "test",
                                             .vert = {
                                                 .byteCode = utils::readFile("./src/camera_vert.spv"),
                                                 .entryFunction = "main"},
                                             .frag = {.byteCode = utils::readFile("./src/camera_frag.spv"), .entryFunction = "main"},
+                                            .renderPass =     r.getBackBufferRenderPass(),
                                             .layout = layout,
                                             .vertexBindings = {
                                                 {.stride = 12, .attributes = {{.location = 0, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},

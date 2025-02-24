@@ -77,13 +77,21 @@ namespace boitatah{
         return m_currentOrder;
     };
 
-    MaterialManager::MaterialManager(std::shared_ptr<Vulkan> vulkan) : m_vk(vulkan)
+    MaterialManager::MaterialManager(std::shared_ptr<Vulkan> vulkan,
+                                     std::shared_ptr<RenderTargetManager> targetManager,
+                                     std::shared_ptr<DescriptorSetManager> setManager)
+     : m_vk(vulkan), m_targetManager(targetManager), m_descriptorManager(setManager)
     {
-        m_shaderManager = std::make_unique<ShaderManager>(m_vk);
+        m_shaderManager = std::make_unique<ShaderManager>(m_vk, m_targetManager, m_descriptorManager);
         m_materialPool = std::make_unique<Pool<Material>>(PoolOptions{
             .size = 4096,
             .dynamic = true,
             .name = "Material Pool"
+        });
+        m_bindingsPool  = std::make_unique<Pool<MaterialBinding>>(PoolOptions{
+            .size = 4096,
+            .dynamic = true,
+            .name = "Binding Pool"
         });
     }
 
@@ -193,13 +201,64 @@ namespace boitatah{
     {
         return {.shaderModule = m_vk->createShaderModule(bytecode), .entryFunction = entryPoint};
     }
-    Shader &ShaderManager::get(Handle<Shader> &handle)
+    Shader &ShaderManager::get(const Handle<Shader> &handle)
     {
         return m_shaderPool->get(handle);
     }
+
+    ShaderManager::ShaderManager(std::shared_ptr<Vulkan> vulkan, std::shared_ptr<RenderTargetManager> targetManager, std::shared_ptr<DescriptorSetManager> descriptorManager)
+    :   m_vk(vulkan), 
+        m_targetManager(targetManager),
+        m_descriptorManager(descriptorManager)
+    {
+        m_layoutPool = std::make_unique<Pool<ShaderLayout>>(PoolOptions{
+            .size = 4096,
+            .dynamic = true,
+            .name = "shader layout Pool"
+        });
+
+        m_shaderPool = std::make_unique<Pool<Shader>>(PoolOptions{
+            .size = 4096,
+            .dynamic = true,
+            .name = "shader Pool"
+        });
+    }
+
+    void ShaderManager::setBaseLayout(Handle<DescriptorSetLayout> handle)
+    {
+        m_baseLayout = handle;
+    }
+
+ShaderLayout& ShaderManager::get(const Handle<ShaderLayout>& handle){
+        return m_layoutPool->get(handle);
+    };
+
     bool ShaderManager::isValid(Handle<Shader> &handle)
     {
         return m_shaderPool->contains(handle);
+    }
+    Handle<ShaderLayout> ShaderManager::makeShaderLayout(const ShaderLayoutDesc &description)
+    {
+        auto& baseLayout = m_descriptorManager->getLayoutContent(m_baseLayout);
+        //VkDescriptorSetLayout materialLayout = m_vk->createDescriptorLayout(desc.materialLayout);
+        std::vector<VkDescriptorSetLayout> vkLayouts;
+        for(int i = 0; i < description.setLayouts.size(); i++){
+            auto& layout = m_descriptorManager->getLayoutContent(description.setLayouts[i]);
+            vkLayouts.push_back(layout.layout);
+        }
+        ShaderLayout layout{.pipeline = m_vk->createShaderLayout(
+                                {
+                                    .materialLayouts = vkLayouts,
+                                    .baseLayout = baseLayout.layout,
+                                    .pushConstants ={
+                                        PushConstantDesc{
+                                        .offset = 0, //<-- must be larger or equal than sizeof(glm::mat4)
+                                        .size = sizeof(glm::mat4), //<- M matrices
+                                        .stages = STAGE_FLAG::ALL_GRAPHICS}},
+                                })};
+
+        return m_layoutPool->set(layout);
+
     }
     Handle<Shader> ShaderManager::makeShader(const MakeShaderDesc &data)
     {
@@ -240,13 +299,36 @@ namespace boitatah{
                 runningOffset += formatSize(attribute.format);
             }
         }
-
+        auto& pass = m_targetManager->get(data.renderPass);
         m_vk->buildShader({
             .name = data.name,
-            //.renderpass = data.render_compatibility.renderPass,
+            .renderpass = pass.renderPass,
+            .layout = shader.layout.pipeline,
             .bindings = vkbindings,
             .attributes = vkattributes
         }, shader);
         return m_shaderPool->move_set(shader);
+    }
+    void ShaderManager::destroy(Handle<Shader> &handle)
+    {
+        Shader shader;
+        if (m_shaderPool->clear(handle, shader))
+        {
+            m_vk->destroyShader(shader);
+            m_currentShaders.erase(
+                std::find(
+                    m_currentShaders.begin(),
+                    m_currentShaders.end(), 
+                    handle));
+        }
+    }
+
+    void ShaderManager::destroy(Handle<ShaderLayout> &handle)
+    {
+        ShaderLayout layout;
+        if (m_layoutPool->clear(handle, layout))
+        {
+            m_vk->destroyPipelineLayout(layout);
+        }
     }
 };

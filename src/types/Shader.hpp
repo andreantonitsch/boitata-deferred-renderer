@@ -85,11 +85,8 @@ namespace boitatah
         std::string name;
         ShaderStage vert;
         ShaderStage frag;
-
-        union {
-            Handle<RenderPass> renderPass; // optional
-            Handle<RenderTarget> renderTarget;
-        }render_compatibility;
+        
+        Handle<RenderPass> renderPass;
         
         Handle<ShaderLayout> layout;
 

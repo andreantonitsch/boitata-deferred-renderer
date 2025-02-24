@@ -28,7 +28,6 @@ using boitatah::IMAGE_USAGE;
 using boitatah::MEMORY_PROPERTY;
 using boitatah::SAMPLES;
 using boitatah::Shader;
-using boitatah::ShaderDesc;
 using boitatah::ShaderLayout;
 using boitatah::ShaderLayoutDesc;
 
@@ -1077,7 +1076,6 @@ void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
         .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
         .pDynamicStates = dynamicStates.data()};
 
-    // TOOD add to shader description.
 
     uint32_t bindingCount = static_cast<uint32_t>(desc.bindings.size());
     uint32_t attributeCount = static_cast<uint32_t>(desc.attributes.size());

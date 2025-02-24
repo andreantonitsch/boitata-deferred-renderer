@@ -5,6 +5,7 @@
 #include <types/Shader.hpp>
 #include <vulkan/DescriptorSetManager.hpp>
 #include <vulkan/DescriptorSetTree.hpp>
+#include <renderer/modules/RenderTargetManager.hpp>
 #include <types/BttEnums.hpp>
 #include <unordered_map>
 #include <unordered_set>
@@ -35,27 +36,46 @@ namespace boitatah{
     class ShaderManager{
         private:
             std::shared_ptr<Vulkan> m_vk;
+
             std::vector<Handle<Shader>> m_currentShaders;
+
+            Handle<DescriptorSetLayout> m_baseLayout; 
+
             std::unique_ptr<Pool<ShaderLayout>> m_layoutPool;
             std::unique_ptr<Pool<Shader>> m_shaderPool;
-
+            std::shared_ptr<RenderTargetManager> m_targetManager;
+            std::shared_ptr<DescriptorSetManager> m_descriptorManager;
+            
             ShaderModule compileShaderModule(const std::vector<char>& bytecode, std::string entryPoint);
             VkPipeline compileShader();
+            void updateShadersForRenderPass(Handle<RenderPass> renderPass);
+            void updateShadersForRenderTarget(Handle<RenderPass> renderPass);
+            void updateShadersForRenderTarget(std::vector<Handle<Shader>>& shaders,
+                                              Handle<RenderPass> renderPass);
             void reflectShader();
 
         public:
-            ShaderManager(std::shared_ptr<Vulkan> vulkan) : m_vk(vulkan) {};
-            Handle<ShaderLayout> get(Handle<ShaderLayout>& handle);
-            Shader& get(Handle<Shader>& handle);
+            ShaderManager(std::shared_ptr<Vulkan> vulkan, 
+                         std::shared_ptr<RenderTargetManager> targetManager,
+                         std::shared_ptr<DescriptorSetManager> descriptorManager) 
+;
+            
+            void setBaseLayout(Handle<DescriptorSetLayout> handle);
+            ShaderLayout& get(const Handle<ShaderLayout>& handle);
+            Shader& get(const Handle<Shader>& handle);
             bool isValid(Handle<Shader>& handle);
             bool isValid(Handle<ShaderLayout>& handle);
+            Handle<ShaderLayout> makeShaderLayout(const ShaderLayoutDesc& description);
             Handle<Shader> makeShader(const MakeShaderDesc &data); //a shader is a pipeline
-            void destroyShader(Handle<Shader>& handle);
+            void destroy(Handle<Shader>& handle);
+            void destroy(Handle<ShaderLayout>& handle);
     };
 
     class MaterialManager{
         public:
-            MaterialManager(std::shared_ptr<Vulkan> vulkan);
+            MaterialManager(std::shared_ptr<Vulkan> vulkan, 
+                            std::shared_ptr<RenderTargetManager> targetManager,
+                            std::shared_ptr<DescriptorSetManager> setManager);
             ShaderManager& getShaderManager();
             Handle<Material> createMaterial(const MaterialCreate& description);
             void destroyMaterial(const Handle<Material>& handle);
@@ -73,8 +93,9 @@ namespace boitatah{
         
         private:
             std::shared_ptr<Vulkan> m_vk;        
-            std::unique_ptr<ShaderManager> m_shaderManager;
+            std::shared_ptr<RenderTargetManager> m_targetManager;
             std::shared_ptr<DescriptorSetManager> m_descriptorManager;
+            std::unique_ptr<ShaderManager> m_shaderManager;
             MaterialGraph m_materialGraph;
             std::unique_ptr<Pool<Material>> m_materialPool;
             std::unique_ptr<Pool<MaterialBinding>> m_bindingsPool;

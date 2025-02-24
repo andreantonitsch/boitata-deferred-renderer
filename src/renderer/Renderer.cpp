@@ -40,7 +40,7 @@ namespace boitatah
 
         m_transferCommandBuffer = allocateCommandBuffer({.count = 1,
                                                          .level = COMMAND_BUFFER_LEVEL::PRIMARY,
-                                                         .type = COMMAND_BUFFER_TYPE::TRANSFER});\
+                                                         .type = COMMAND_BUFFER_TYPE::TRANSFER});
         
         m_transferFence = m_vk->createFence(true); //create fence signaled
 
@@ -56,9 +56,9 @@ namespace boitatah
 
         //Initialize the renderer Modules
         m_resourceManager = std::make_shared<GPUResourceManager>(m_vk, m_bufferManager, m_ResourceManagerTransferWriter);
-        m_descriptorManager = std::make_shared<DescriptorSetManager>(m_vk, 4096);
-        m_materialManager = std::make_shared<MaterialManager>(m_vk); 
-
+        m_descriptorManager= std::make_shared<DescriptorSetManager>(m_vk, 4096);
+        m_materialMngr = std::make_shared<MaterialManager>(m_vk, m_renderTargetManager, m_descriptorManager); 
+        auto& shader_mngr = m_materialMngr->getShaderManager();
 
         // Initialize base renderer data(base material, base layout etc.)
         m_frameUniformsBuffer = m_resourceManager->create(GPUBufferCreateDescription{
@@ -75,26 +75,31 @@ namespace boitatah
                                                                 }
                                                             }
                                                         });
-        m_frameUniforms = m_materialManager->createBinding(base_setLayout);
-        m_materialManager->getBinding(m_frameUniforms).bindings[0].binding_handle.buffer = m_frameUniformsBuffer;
-        
+
+        shader_mngr.setBaseLayout(base_setLayout);
+
+        m_frameUniforms = m_materialMngr->createBinding(base_setLayout);
+        m_materialMngr->getBinding(m_frameUniforms).bindings[0].binding_handle.buffer = m_frameUniformsBuffer;
+
         //create base layout with push constants for model matrices
-        Handle<ShaderLayout> m_baseShaderLayout = createShaderLayout({});
+        Handle<ShaderLayout> m_baseShaderLayout = shader_mngr.makeShaderLayout({});
+
         m_dummyPipeline = createShader({
             .vert = {.byteCode = utils::readFile("./src/09_shader_base_vert.spv"),
                      .entryFunction = "main"},
             .frag = {.byteCode = utils::readFile("./src/09_shader_base_frag.spv"),
                      .entryFunction = "main"},
-                                            
+            .renderPass = m_backBufferManager->getRenderPass(),
             .layout = m_baseShaderLayout,
             .vertexBindings = {}
             });
 
-        m_baseMaterial = m_materialManager->createMaterial({
+        m_baseMaterial = m_materialMngr->createMaterial({
             .shader = m_dummyPipeline,
              .bindings = {},
             .name = "base material",
         });
+        std::cout << "Renderer Initialization Complete " << std::endl;
     }
 
     void Renderer::updateCameraUniforms(Camera &camera)
@@ -144,7 +149,7 @@ namespace boitatah
         // BIN THE NODES ACCORDING TO THE MATERIAL ORDER 
         auto cpy_nodes = nodes;
         std::vector<std::vector<SceneNode*>>bins;
-        auto& material_order = m_materialManager->orderMaterials();
+        auto& material_order = m_materialMngr->orderMaterials();
         for(auto& material : material_order){
             bins.push_back({});
 
@@ -214,10 +219,10 @@ namespace boitatah
 
     MaterialManager &Renderer::getMaterialManager()
     {
-        if(m_materialManager == nullptr){
+        if(m_materialMngr == nullptr){
             throw std::runtime_error("null material manager");
         }
-        return *m_materialManager;
+        return *m_materialMngr;
     }
 
     DescriptorSetManager &Renderer::getDescriptorManager()
@@ -256,12 +261,12 @@ namespace boitatah
 
         Image image = m_imageManager->getImage(target.attachments[0]);
 
-        auto& material = m_materialManager->getMaterialContent(scene.material);
-        Shader shader;
-        if (!shaderPool.tryGet(material.shader, shader))
-        {
+        auto& shader_man = m_materialMngr->getShaderManager();
+        auto& material = m_materialMngr->getMaterialContent(scene.material);
+        if (!shader_man.isValid(material.shader))
             throw std::runtime_error("Failed to retrieve material");
-        }
+
+        Shader& shader = shader_man.get(material.shader);
 
         // vertex and mesh data
         Geometry geom = m_resourceManager->getResource(scene.geometry);
@@ -360,6 +365,9 @@ namespace boitatah
         m_vk->resetCmdBuffer(buffers.transferBuffer.buffer);
         m_descriptorManager->resetPools(frame_index);
 
+        auto& shader_mngr = m_materialMngr->getShaderManager();
+
+
         beginBuffer({.buffer = buffers.drawBuffer});
 
         //std::cout << "began buffer" << std::endl;
@@ -375,7 +383,7 @@ namespace boitatah
 
         //binds dummy pipeline
         bindPipelineCommand({.commandBuffer = buffers.drawBuffer, .shader = m_dummyPipeline});
-        auto& dummyPipeline = shaderPool.get(m_dummyPipeline);
+        auto& dummyPipeline = shader_mngr.get(m_dummyPipeline);
         //bind camera uniforms.
 
         bindDescriptorSetCommand({
@@ -403,7 +411,7 @@ namespace boitatah
                 std::cout << "skip drawing node" << std::endl;
                 continue;
             }
-            auto& material = m_materialManager->getMaterialContent(node->material);
+            auto& material = m_materialMngr->getMaterialContent(node->material);
             Handle<Shader>& shader = material.shader;
             if(boundPipeline != shader){
                 bindPipelineCommand({
@@ -426,7 +434,7 @@ namespace boitatah
 
             pushPushConstants({
                 .drawBuffer = buffers.drawBuffer,
-                .layout = shaderPool.get(shader).layout.pipeline,
+                .layout = shader_mngr.get(shader).layout.pipeline,
                 .push_constants = {
                 PushConstant{ //camera constant
                     .ptr = &model_mat,
@@ -623,17 +631,19 @@ namespace boitatah
 
     void Renderer::bindDummyPipeline(const BindPipelineCommand &command)
     {
+        auto& shader_mngr = m_materialMngr->getShaderManager();
         m_vk->bindPipelineCommand({
             .drawBuffer =  command.commandBuffer.buffer,
-            .pipeline = shaderPool.get(m_dummyPipeline).pipeline
+            .pipeline = shader_mngr.get(m_dummyPipeline).pipeline
         });
     }
 
     void Renderer::bindPipelineCommand(const BindPipelineCommand &command)
     {
+        auto& shader_mngr = m_materialMngr->getShaderManager();
         m_vk->bindPipelineCommand({
             .drawBuffer = command.commandBuffer.buffer,
-            .pipeline = shaderPool.get(command.shader).pipeline,
+            .pipeline = shader_mngr.get(command.shader).pipeline,
         });
     }
 
@@ -672,7 +682,7 @@ namespace boitatah
 
     Handle<Shader> Renderer::createShader(const MakeShaderDesc &data)
     {
-        return m_materialManager->getShaderManager().makeShader(data);
+        return m_materialMngr->getShaderManager().makeShader(data);
     }
 
     Handle<RenderTarget> Renderer::createRenderTarget(const RenderTargetDesc &data)
@@ -697,30 +707,12 @@ namespace boitatah
         if(!description.parent)
             d.parent = m_baseMaterial;
 
-        return m_materialManager->createMaterial(d);
+        return m_materialMngr->createMaterial(d);
     }
 
     Handle<ShaderLayout> Renderer::createShaderLayout(const ShaderLayoutDesc &desc)
     {
-        auto& baseLayout = m_descriptorManager->getLayoutContent(base_setLayout);
-        //VkDescriptorSetLayout materialLayout = m_vk->createDescriptorLayout(desc.materialLayout);
-        std::vector<VkDescriptorSetLayout> vkLayouts;
-        for(int i = 0; i < desc.setLayouts.size(); i++){
-            auto& layout = m_descriptorManager->getLayoutContent(desc.setLayouts[i]);
-            vkLayouts.push_back(layout.layout);
-        }
-        ShaderLayout layout{.pipeline = m_vk->createShaderLayout(
-                                {
-                                    .materialLayouts = vkLayouts,
-                                    .baseLayout = baseLayout.layout,
-                                    .pushConstants ={
-                                        PushConstantDesc{
-                                        .offset = 0, //<-- must be larger or equal than sizeof(glm::mat4)
-                                        .size = sizeof(glm::mat4), //<- M matrices
-                                        .stages = STAGE_FLAG::ALL_GRAPHICS}},
-                                })};
-
-        return pipelineLayoutPool.set(layout);
+        return m_materialMngr->getShaderManager().makeShaderLayout(desc);
     }
 
     Handle<RenderPass> Renderer::getBackBufferRenderPass()
@@ -740,11 +732,8 @@ namespace boitatah
 
     void Renderer::destroyShader(Handle<Shader>& handle)
     {
-        Shader shader;
-        if (shaderPool.clear(handle, shader))
-        {
-            m_vk->destroyShader(shader);
-        }
+        auto& shader_mngr = m_materialMngr->getShaderManager();
+        shader_mngr.destroy(handle);
     }
 
     void Renderer::destroyRenderTarget(Handle<RenderTarget>& bufferhandle)
@@ -759,11 +748,7 @@ namespace boitatah
 
     void Renderer::destroyLayout(Handle<ShaderLayout>& layouthandle)
     {
-        ShaderLayout layout;
-        if (pipelineLayoutPool.clear(layouthandle, layout))
-        {
-            m_vk->destroyPipelineLayout(layout);
-        }
+        m_materialMngr->getShaderManager().destroy(layouthandle);
     }
 
 #pragma endregion Destroy Vulkan Objects

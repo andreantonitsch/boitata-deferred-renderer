@@ -137,7 +137,7 @@ namespace boitatah
         std::shared_ptr<DescriptorSetManager> m_descriptorManager;
         std::shared_ptr<Vulkan> m_vk;
         std::shared_ptr<WindowManager> m_window;
-        std::shared_ptr<MaterialManager> m_materialManager;
+        std::shared_ptr<MaterialManager> m_materialMngr;
         std::shared_ptr<ImageManager> m_imageManager;
         std::shared_ptr<RenderTargetManager> m_renderTargetManager;
 
@@ -162,18 +162,6 @@ namespace boitatah
         void createSwapchain();
 
         std::vector<SceneNode*> orderSceneNodes(const std::vector<SceneNode*>& nodes) const;
-
-        // Pools
-        Pool<Shader> shaderPool = Pool<Shader>({.size = 10, .name = "shader pool"});
-        //Pool<RenderTarget> renderTargetPool = Pool<RenderTarget>({.size = 50, .name = "render target pool"});
-        //Pool<RenderPass> renderpassPool = Pool<RenderPass>({.size = 50, .name = "render pass pool"});
-        //Pool<Image> imagePool = Pool<Image>({.size = 50, .name = "image pool"});
-        Pool<ShaderLayout> pipelineLayoutPool = Pool<ShaderLayout>({.size = 50, .name = "pipeline layout pool"});
-        //Pool<DescriptorSetLayout> setLayoutPool = Pool<DescriptorSetLayout>({.size = 50, .name = "descriptor layout pool"});
-        //Pool<RenderTargetCmdBuffers> rtCmdPool = Pool<RenderTargetCmdBuffers>({.size = 50, .name = "rtcmd buffers pool"});
-        //Pool<Geometry> geometryPool = Pool<Geometry>({.size = 50, .name = "geometry pool"});
-
-        //std::vector<Buffer *> buffers; 
 
         // Options Members
         RendererOptions m_options;

@@ -3,20 +3,20 @@
 #include <memory>
 #include <type_traits>
 
-#include "../../vulkan/Vulkan.hpp"
-#include "../../command_buffers/CommandBufferWriter.hpp"
-#include "../../vulkan/VkCommandBufferWriter.hpp" 
+#include <vulkan/Vulkan.hpp>
+#include <command_buffers/CommandBufferWriter.hpp>
+#include <vulkan/VkCommandBufferWriter.hpp>
 
-#include "../../collections/Pool.hpp"
-#include "../../buffers/Buffer.hpp"
-#include "../../buffers/BufferManager.hpp"
-#include "../resources/ResourceStructs.hpp"
+#include <collections/Pool.hpp>
+#include <buffers/Buffer.hpp>
+#include <buffers/BufferManager.hpp>
+#include <renderer/resources/ResourceStructs.hpp>
 #include "GPUResourcePool.hpp"
 #include <renderer/resources/GPUBuffer.hpp>
 #include <types/Texture.hpp>
 #include <types/Geometry.hpp>
 
-#include "../../command_buffers/CommandBufferWriter.hpp"
+#include <command_buffers/CommandBufferWriter.hpp>
 
 namespace boitatah
 {
