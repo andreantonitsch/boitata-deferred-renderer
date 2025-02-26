@@ -6,7 +6,7 @@
 #include <vulkan/Vulkan.hpp>
 #include <command_buffers/CommandBufferWriter.hpp>
 #include <vulkan/VkCommandBufferWriter.hpp>
-
+#include <renderer/modules/ImageManager.hpp>
 #include <collections/Pool.hpp>
 #include <buffers/Buffer.hpp>
 #include <buffers/BufferManager.hpp>
@@ -35,6 +35,7 @@ namespace boitatah
         public:
             GPUResourceManager(std::shared_ptr<vk::Vulkan> vk_instance,
                                std::shared_ptr<buffer::BufferManager> bufferManager,
+                               std::shared_ptr<ImageManager> imageManager,
                                std::shared_ptr<vk::VkCommandBufferWriter> commandBufferWriter); //contructor
 
 
@@ -42,11 +43,13 @@ namespace boitatah
                 return *m_commandBufferWriter;
             }
             
-            template<typename ResourceType>
-            bool checkReady(Handle<ResourceType> handle, uint32_t frame_index);
+            std::shared_ptr<buffer::BufferManager> getBufferManager();
+
+            ImageManager& getImageManager();
+
 
             template<typename ResourceType>
-            void flagResource(Handle<ResourceType> resource);
+            bool checkReady(Handle<ResourceType> handle, uint32_t frame_index);
 
             template<typename ResourceType>
             void forceCommitResource(Handle<ResourceType> resource);
@@ -54,9 +57,6 @@ namespace boitatah
             template<typename ResourceType>
             void forceCommitResource(Handle<ResourceType> resource, uint32_t frame_index);
             
-            template<typename ResourceType>
-            void freeResource(Handle<ResourceType> resource);
-
             //Pointer requires enough memory.
             template<typename ResourceType>
             bool readResourceData(Handle<ResourceType> handle, void* destinationPtr);
@@ -65,7 +65,6 @@ namespace boitatah
             void readResourceDataAsync(Handle<ResourceType> handle, void* destinationPtr);
             
             void commitAll(uint32_t frameIndex);
-            void cleanCommitQueue();
 
             void beginCommitCommands();
 
@@ -77,7 +76,6 @@ namespace boitatah
             bool checkTransfers();
             void waitForTransfers();
 
-            std::shared_ptr<buffer::BufferManager> getBufferManager();
 
             Handle<GPUBuffer> create(const GPUBufferCreateDescription& description);
             Handle<Geometry> create(const GeometryCreateDescription& description);
@@ -96,6 +94,7 @@ namespace boitatah
         private:
             std::shared_ptr<vk::Vulkan> m_vulkan;
             std::shared_ptr<buffer::BufferManager> m_bufferManager;
+            std::shared_ptr<ImageManager> m_imageManager;
             
             std::unique_ptr<GPUResourcePool> m_resourcePool;
             std::shared_ptr<vk::VkCommandBufferWriter> m_commandBufferWriter;

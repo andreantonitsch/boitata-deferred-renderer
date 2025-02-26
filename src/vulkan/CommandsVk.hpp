@@ -152,4 +152,8 @@ namespace boitatah::vk
         
     };
 
+    struct CopyBufferToImageCommandVk{
+
+    };
+
 }

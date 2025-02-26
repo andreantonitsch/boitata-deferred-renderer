@@ -1013,6 +1013,41 @@ boitatah::vk::BufferVkData boitatah::vk::Vulkan::createBuffer(const BufferDescVk
     return {.buffer = buffer, .memory = memory, .alignment = memReqs.alignment, .actualSize =memReqs.size };
 }
 
+VkSampler boitatah::vk::Vulkan::createSampler(const SamplerData &data)
+{
+    VkSamplerCreateInfo info;
+    info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    info.pNext = nullptr;
+
+    info.addressModeU = castEnum<VkSamplerAddressMode>(data.u_tiling);
+    info.addressModeV = castEnum<VkSamplerAddressMode>(data.v_tiling);
+    info.addressModeW = castEnum<VkSamplerAddressMode>(SAMPLER_TILE_MODE::REPEAT);
+    info.anisotropyEnable = data.anisotropy;
+    info.maxAnisotropy = std::min(deviceProperties.limits.maxSamplerAnisotropy, 
+                                  data.maxAnisotropy);
+    info.unnormalizedCoordinates = data.normalized ? VK_FALSE : VK_TRUE;
+    info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+
+    info.compareEnable = VK_FALSE;
+    info.compareOp = VK_COMPARE_OP_ALWAYS;
+    
+    info.magFilter = castEnum<VkFilter>(data.magFilter);
+    info.minFilter = castEnum<VkFilter>(data.minFilter);
+
+    info.mipmapMode = castEnum<VkSamplerMipmapMode>(data.mipmap);
+    info.mipLodBias = data.lodBias;
+    info.minLod = 0.0f;
+    info.maxLod = 0.0f;
+
+    VkSampler sampler;
+    VkResult result = vkCreateSampler(device, &info, nullptr, &sampler);
+
+    if(result != VK_SUCCESS)
+        std::runtime_error("Failed to create sampler");
+
+    return sampler;
+}
+
 boitatah::vk::BufferVkData boitatah::vk::Vulkan::getBufferAlignmentMemoryType(const BufferDescVk &desc) const
 {
     const std::vector<uint32_t> indexes = {familyIndices.graphicsFamily.value(),
@@ -1305,6 +1340,11 @@ void boitatah::vk::Vulkan::destroyDescriptorSetLayout(VkDescriptorSetLayout &lay
     vkDestroyDescriptorSetLayout(device, layout, nullptr);
 }
 
+void boitatah::vk::Vulkan::destroySampler(VkSampler &sampler)
+{  
+    vkDestroySampler(device, sampler, nullptr);
+}
+
 #pragma endregion Object Destructions
 
 #pragma region QUEUE_SETUP
@@ -1382,7 +1422,8 @@ void boitatah::vk::Vulkan::CmdTransitionLayout(const TransitionLayoutCmdVk &comm
 
     vkCmdPipelineBarrier(
         command.buffer,
-        command.srcStage /*TODO*/, command.dstStage, /*TODO*/
+        command.srcStage, /*TODO*/
+        command.dstStage, /*TODO*/
         0,
         0, nullptr,
         0, nullptr,
@@ -1459,6 +1500,11 @@ void boitatah::vk::Vulkan::initPhysicalDevice()
     }
     if (physicalDevice == VK_NULL_HANDLE)
         std::runtime_error("No available GPUs with Vulkan Support");
+
+
+    //set the Vulkan member properties.
+    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+
 }
 
 boitatah::vk::QueueFamilyIndices boitatah::vk::Vulkan::findQueueFamilies(VkPhysicalDevice device)

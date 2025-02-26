@@ -8,10 +8,12 @@
 namespace boitatah{
     GPUResourceManager::GPUResourceManager( std::shared_ptr<vk::Vulkan>  vk_instance,
                                             std::shared_ptr<buffer::BufferManager> bufferManager,
+                                            std::shared_ptr<ImageManager> imageManager,
                                             std::shared_ptr<vk::VkCommandBufferWriter> commandBufferWriter)
                                             : m_commandBufferWriter(commandBufferWriter),
                                               m_vulkan(vk_instance),
                                               m_bufferManager(bufferManager),
+                                              m_imageManager(imageManager),
                                               m_resourcePool(std::make_unique<GPUResourcePool>())
     { }
 
@@ -46,6 +48,11 @@ namespace boitatah{
     std::shared_ptr<buffer::BufferManager> GPUResourceManager::getBufferManager()
     {
         return m_bufferManager;
+    }
+
+    ImageManager& GPUResourceManager::getImageManager()
+    {
+        return *m_imageManager;
     }
 
     Handle<GPUBuffer> GPUResourceManager::create(const GPUBufferCreateDescription &description)
@@ -110,11 +117,9 @@ namespace boitatah{
 
     Handle<RenderTexture> GPUResourceManager::create(const TextureCreateDescription &description)
     {
-
         RenderTexture tex(description, shared_from_this());
-            
-            
-        return Handle<RenderTexture>();
+        
+        return m_resourcePool->set(tex);
 
     }
 

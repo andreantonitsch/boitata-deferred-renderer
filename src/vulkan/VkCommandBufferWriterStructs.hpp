@@ -44,6 +44,26 @@ namespace boitatah::vk{
         uint32_t dstOffset;
         uint32_t size;
     };
+
+    struct VulkanWriterCopyBufferToImageCommand{
+        VkBuffer buffer;
+        VkImage image;
+
+        uint32_t buffOffset;
+        //uint32_t buffRow;   //in case of padding
+        //uint32_t buffHeight;//in case of padding
+
+        VkImageAspectFlagBits aspect;
+        //uint8_t mipLevel;
+        //uint8_t baseLayer;
+        //uint8_t layerCount;
+
+        glm::u32vec3 offset;
+        glm::u32vec3 extent;
+
+        VkImageLayout srcImgLayout;
+        VkImageLayout dstImgLayout;
+    };
 };
 
 // CommandBuffer Writer Type trait Definitions
@@ -61,6 +81,7 @@ namespace boitatah::command_buffers{
             using CopyImageCommand = boitatah::vk::VulkanWriterCopyImageCommand;
             using CopyBufferCommand = boitatah::vk::VulkanWriterCopyBufferCommand;
             using TransitionLayoutCommand = boitatah::vk::VulkanWriterTransitionLayoutCommand;
+            using CopyBufferToImageCommand = boitatah::vk::VulkanWriterCopyBufferToImageCommand;
             using CommandBufferType = VkCommandBuffer;
             using SemaphoreType = VkSemaphore;
             using FenceType = VkFence;

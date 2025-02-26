@@ -27,16 +27,27 @@ int main()
                                    .attachmentFormats = {IMAGE_FORMAT::BGRA_8_UNORM},
                                    .dimensions = {windowWidth, windowHeight}}});
 
-    // Pipeline Layout for the Shader.
-    Handle<ShaderLayout> layout = r.createShaderLayout({
-
+    auto& descManager = r.getDescriptorManager();
+    auto setLayout = descManager.getLayout({
+        .bindingDescriptors = {{
+            .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
+            .stages = STAGE_FLAG::ALL_GRAPHICS,
+            .descriptorCount = 1,
+        }}
     });
+
+    // Pipeline Layout for the Shader.
+    Handle<ShaderLayout> layout = r.getMaterialManager().getShaderManager().makeShaderLayout({
+        .setLayouts = {setLayout},
+        }
+    );
 
     Handle<Shader> shader = r.createShader({.name = "test",
                                             .vert = {
                                                 .byteCode = utils::readFile("./src/camera_vert.spv"),
                                                 .entryFunction = "main"},
                                             .frag = {.byteCode = utils::readFile("./src/camera_frag.spv"), .entryFunction = "main"},
+                                            .renderPass =     r.getBackBufferRenderPass(),
                                             .layout = layout,
                                             .vertexBindings = {
                                                 {.stride = 12, .attributes = {{.location = 0, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},
@@ -45,9 +56,11 @@ int main()
                                                 }});
 
 
-    Handle<Geometry> geometry = GeometryBuilder::Quad(r.getResourceManager());
 
-    Handle<RenderTexture> texture = utils::TextureLoader::loadRenderTexture("./src/test.png", r.getResourceManager());
+    Handle<RenderTexture> texture = utils::TextureLoader::loadRenderTexture(std::string("./resources/viking_room.png"),
+     IMAGE_FORMAT::BGRA_8_SRGB,
+     TextureMode::READ, SamplerData(),
+     r.getResourceManager());
 
     auto material = r.createMaterial({
         .shader = shader,
@@ -58,6 +71,7 @@ int main()
                                  },
         .name = "material test"
     });
+    Handle<Geometry> geometry = GeometryBuilder::Quad(r.getResourceManager());
 
     SceneNode triangle({
         .name = "triangle",
@@ -71,15 +85,14 @@ int main()
 
     Camera camera({
                    .position = glm::float3(0,0,-10),
-
                    .aspect = static_cast<float>(windowWidth) / windowHeight,
                    
                    });
 
-    if(false);
-
     camera.lookAt(glm::vec3(0));
     boitatah::utils::Timewatch timewatch(1000);
+
+    std::cout << "setup complete" << std::endl;
 
     while (!r.isWindowClosed())
     {

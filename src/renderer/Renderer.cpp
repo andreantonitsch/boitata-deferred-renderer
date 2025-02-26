@@ -55,7 +55,7 @@ namespace boitatah
         
 
         //Initialize the renderer Modules
-        m_resourceManager = std::make_shared<GPUResourceManager>(m_vk, m_bufferManager, m_ResourceManagerTransferWriter);
+        m_resourceManager = std::make_shared<GPUResourceManager>(m_vk, m_bufferManager, m_imageManager, m_ResourceManagerTransferWriter);
         m_descriptorManager= std::make_shared<DescriptorSetManager>(m_vk, 4096);
         m_materialMngr = std::make_shared<MaterialManager>(m_vk, m_renderTargetManager, m_descriptorManager); 
         auto& shader_mngr = m_materialMngr->getShaderManager();

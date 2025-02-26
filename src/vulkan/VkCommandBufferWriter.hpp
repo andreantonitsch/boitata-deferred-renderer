@@ -28,7 +28,7 @@ namespace boitatah::vk{
             using  CommandBufferWriter<VkCommandBufferWriter>::transitionImage;
             using  CommandBufferWriter<VkCommandBufferWriter>::copyBuffer;
             using  CommandBufferWriter<VkCommandBufferWriter>::copyImage;
-
+            using  CommandBufferWriter<VkCommandBufferWriter>::copyBufferToImage;
 
             VkCommandBufferWriter(std::shared_ptr<Vulkan> vk_instance) : vk_instance(vk_instance){};
 
@@ -144,6 +144,46 @@ namespace boitatah::vk{
                     .dstImgLayout = command.dstLayout,
                     .extent = command.extent
                 });
+
+            }
+
+            void __imp_copyBufferToImage(const VulkanWriterCopyBufferToImageCommand& command, VkCommandBuffer commandBuffer){
+                
+                __imp_transitionImage({
+                    .src = command.srcImgLayout,
+                    .dst = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .image = command.image,
+                }, commandBuffer);
+                
+                VkBufferImageCopy copy{};
+                copy.bufferOffset = command.buffOffset;
+                copy.bufferRowLength = 0;       //In case of padded images
+                copy.bufferImageHeight  = 0;    //in case of padded images
+                
+                copy.imageSubresource.aspectMask = command.aspect;
+                copy.imageSubresource.baseArrayLayer = 0;
+                copy.imageSubresource.layerCount = 0;
+                copy.imageSubresource.mipLevel = 0;
+
+                copy.imageOffset = {0, 0, 0};
+                copy.imageExtent = {command.extent.x, 
+                                    command.extent.y, 
+                                    command.extent.z};
+
+                vkCmdCopyBufferToImage(
+                    commandBuffer,
+                    command.buffer,
+                    command.image,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    1,
+                    &copy
+                );
+
+                __imp_transitionImage({
+                    .src = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    .dst = command.dstImgLayout,
+                    .image = command.image,
+                }, commandBuffer);
 
             }
     };

@@ -7,6 +7,28 @@
 
 namespace boitatah
 {
+
+    //structs
+    struct SamplerData{
+
+        FILTER magFilter = FILTER::LINEAR;
+        FILTER minFilter = FILTER::LINEAR;
+        SAMPLER_MIPMAP_MODE mipmap = SAMPLER_MIPMAP_MODE::LINEAR;
+        SAMPLER_TILE_MODE u_tiling = SAMPLER_TILE_MODE::REPEAT;
+        SAMPLER_TILE_MODE v_tiling = SAMPLER_TILE_MODE::REPEAT;
+        float lodBias = 0;
+        bool normalized = true;
+        bool anisotropy = false;
+        float maxAnisotropy = 0.0f;
+        uint32_t mipLevels = 1;
+    };
+
+
+    struct Sampler{
+        SamplerData data;
+        VkSampler sampler;
+    };
+
     struct ImageDesc
     {
         IMAGE_FORMAT format;

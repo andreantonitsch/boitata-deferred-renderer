@@ -63,6 +63,9 @@ namespace boitatah::vk
         VkFence createFence(bool signaled);
         VkSemaphore createSemaphore() const;
         BufferVkData createBuffer(const BufferDescVk & desc) const;
+        VkSampler createSampler(const SamplerData& data);
+
+
         BufferVkData getBufferAlignmentMemoryType(const BufferDescVk & desc) const;
         RenderTargetSync allocateBufferSync();
         void buildShader(const ShaderDescVk &desc, Shader &shader);
@@ -107,6 +110,7 @@ namespace boitatah::vk
         void bindDescriptorSet(const BindDescriptorSetCommandVk& command);
 
         // Transfer Commands
+        void CmdCopyBufferToImage(const CopyBufferToImageCommandVk &command);
         void CmdCopyImage(const CopyImageCommandVk &command);
         void CmdCopyBuffer(const CopyBufferCommandVk &command) const;
         void CmdTransitionLayout(const TransitionLayoutCmdVk &command);
@@ -121,7 +125,7 @@ namespace boitatah::vk
         void waitForFrame(RenderTargetSync &bufferData);
         void waitIdle();
         void waitForFence(const VkFence &fence) const;
-        bool checkFenceStatus(VkFence fence) ;
+        bool checkFenceStatus(VkFence fence);
 
         // Destroy Objects
         void destroyShader(Shader &shader);
@@ -134,9 +138,7 @@ namespace boitatah::vk
         void destroyFence(VkFence fence);
         void destroyDescriptorPool(VkDescriptorPool pool);
         void destroyDescriptorSetLayout(VkDescriptorSetLayout &layout);
-        // Copy assignment?
-        // Vulkan& operator= (const Vulkan &v);//copy assignment
-
+        void destroySampler(VkSampler& sampler);
 
     private:
 
@@ -146,11 +148,11 @@ namespace boitatah::vk
         // Instances and Devices
         VkInstance instance;
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+        VkPhysicalDeviceProperties deviceProperties;
         VkDebugUtilsMessengerEXT debugMessenger;
         // window::WindowManager *window;
 
         VkDevice device; // Logical Device
-
         // Queues and Pools
         CommandPools commandPools;
         CommandQueues queues;

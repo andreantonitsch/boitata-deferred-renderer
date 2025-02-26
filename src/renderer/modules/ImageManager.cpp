@@ -13,6 +13,19 @@ ImageManager::ImageManager(std::shared_ptr<vk::Vulkan> vulkan) : m_vk(vulkan) {
     });
 }
 
+Sampler ImageManager::createSampler(const SamplerData &samplerData)
+{   
+    Sampler sampler;
+    sampler.data = samplerData;
+    sampler.sampler = m_vk->createSampler(samplerData);
+    return sampler;
+}
+
+void ImageManager::destroySampler(Sampler sampler)
+{
+    m_vk->destroySampler(sampler.sampler);
+}
+
 Handle<Image> ImageManager::createImage(const ImageDesc &description)
 {
     Image image = m_vk->createImage(description);

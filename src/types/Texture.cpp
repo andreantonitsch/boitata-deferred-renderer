@@ -1,11 +1,29 @@
 #include <types/Texture.hpp>
 #include <renderer/resources/GPUBuffer.hpp>
 #include <renderer/modules/GPUResourceManager.hpp>
+#include "Texture.hpp"
 
 namespace boitatah{
+    Texture::Texture(const TextureCreateDescription &description, std::shared_ptr<GPUResourceManager> manager)
+    {
+        m_manager = manager;
+        m_desiredLayout = IMAGE_LAYOUT::UNDEFINED;
+        texProps.depth = description.depth;
+        texProps.channels = description.channels;
+        texProps.width = description.width;
+        texProps.height = description.height;
+        texProps.format = description.format;
+        texProps.byteSize = texProps.width * 
+                            texProps.height * 
+                            texProps.depth * 
+                            formatSize(description.format);
+        auto& imageMngr = m_manager->getImageManager();
+        texProps.sampler = imageMngr.createSampler(description.samplerInfo);
+    }
+
     void Texture::copyImageFromBuffer(void *data, uint32_t size)
     {
-
+        image_generation++;
         {
             if(!m_stagingBuffer)
                 m_stagingBuffer = m_manager->create(
@@ -21,19 +39,51 @@ namespace boitatah{
     }
     void Texture::transition(TextureMode mode) {
     
-        m_mode = mode;
-        switch(mode){
-
-            default:
-                break;
-        }
-    
+        m_mode = mode;    
     };
     // RenderTexture::RenderTexture(const TextureCreateDescription &description, std::shared_ptr<GPUResourceManager> manager)
-    // :           MutableGPUResource<RenderTexture>({ //Base Constructor
-    //                                                 .sharing = SHARING_MODE::EXCLUSIVE,
-    //                                                 .type = RESOURCE_TYPE::TEXTURE,
-    //                                                 .mutability = RESOURCE_MUTABILITY::MUTABLE,
-    //                                               }, manager) ,
-    //                                     Texture(description, manager){ };
+    TextureGPUData Texture::CreateGPUData()
+    {
+
+        auto& imageMngr = m_manager->getImageManager();
+        TextureGPUData data;
+        
+        data.format = texProps.format;
+        data.layout = IMAGE_LAYOUT::UNDEFINED;
+        data.sampler = texProps.sampler;
+        data.image = imageMngr.createImage({
+            .format = data.format,
+            .dimensions = glm::u32vec2(texProps.width, texProps.height),
+            .mipLevels = texProps.sampler.data.mipLevels,
+            .initialLayout = data.layout,
+            .usage = texProps.usage,
+        });
+        data.generation = 0;
+        return data;
+    }
+    bool Texture::ReadyForUse(TextureGPUData &content)
+    {
+        bool ready = content.format == texProps.format;
+        ready &= content.layout == m_desiredLayout;
+        ready &= content.sampler.sampler == texProps.sampler.sampler;
+        ready &= image_generation == content.generation;
+        return ready;
+    }
+    void Texture::ReleaseData(TextureGPUData &content)
+    {
+        auto& imageMngr = m_manager->getImageManager();
+        imageMngr.destroyImage(content.image);
+    }
+    void Texture::Release()
+    {
+        auto& imageMngr = m_manager->getImageManager();
+        imageMngr.destroySampler(texProps.sampler);
+    }
+    void Texture::WriteTransfer(TextureGPUData &data, CommandBufferWriter<vk::VkCommandBufferWriter> &writer)
+    {
+        
+
+
+
+    }
 };

@@ -143,7 +143,9 @@ namespace boitatah
     enum class SAMPLER_TILE_MODE{
         REPEAT,
         MIRRORED_REPEAT,
-        CLAMP_EDGE
+        CLAMP_EDGE,
+        MIRRORED_CLAMP_EDGE,
+        CLAMP_BORDER
     };
 
     enum class SAMPLER_MIPMAP_MODE{
@@ -151,7 +153,7 @@ namespace boitatah
         LINEAR
     };
 
-    enum class SAMPLER_FILTER{
+    enum class FILTER{
         NEAREST,
         LINEAR,
         CUBIC,
@@ -161,6 +163,53 @@ namespace boitatah
     static To castEnum(From from);
 
 #pragma region Enum Specializations
+
+    template<>
+    inline VkFilter boitatah::castEnum(FILTER filter){
+        switch(filter){
+            case FILTER::NEAREST: return VK_FILTER_NEAREST;
+            case FILTER::LINEAR: return VK_FILTER_LINEAR;
+            case FILTER::CUBIC: return VK_FILTER_CUBIC_IMG;
+        }
+    }
+    template VkFilter boitatah::castEnum<VkFilter, FILTER>(FILTER);
+    
+    template<>
+    inline VkSamplerMipmapMode boitatah::castEnum(SAMPLER_MIPMAP_MODE mode){
+        switch(mode){
+            case SAMPLER_MIPMAP_MODE::LINEAR:
+                return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            case SAMPLER_MIPMAP_MODE::NEAREST:
+                return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+            default:
+                return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        }
+    }
+    template VkSamplerMipmapMode boitatah::castEnum<VkSamplerMipmapMode, SAMPLER_MIPMAP_MODE>(SAMPLER_MIPMAP_MODE);
+
+    template<>
+    inline VkSamplerAddressMode boitatah::castEnum(SAMPLER_TILE_MODE mode){
+        switch(mode){
+                case SAMPLER_TILE_MODE::REPEAT:
+                     return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+                case SAMPLER_TILE_MODE::MIRRORED_REPEAT:
+                     return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+
+                case SAMPLER_TILE_MODE::CLAMP_EDGE:
+                     return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+                case SAMPLER_TILE_MODE::MIRRORED_CLAMP_EDGE:
+                     return VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
+                     
+                case SAMPLER_TILE_MODE::CLAMP_BORDER:
+                     return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+                default:
+                    return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        }
+    }
+    template VkSamplerAddressMode boitatah::castEnum<VkSamplerAddressMode, SAMPLER_TILE_MODE>(SAMPLER_TILE_MODE);
+
 
     template <>
     inline VkDescriptorType boitatah::castEnum(DESCRIPTOR_TYPE format)

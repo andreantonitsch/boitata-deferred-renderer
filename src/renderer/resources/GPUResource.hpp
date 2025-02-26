@@ -58,7 +58,16 @@ namespace boitatah{
 
         public:
 
-
+            ResourceTraits<Resource>::ContentType& get_content_commit_update(
+                            uint32_t                                        frameIndex, 
+                            ResourceTraits<Resource>::CommandBufferWriter   &writer)
+            {
+                if(!self().__impl_get_resource_content(frameIndex)){
+                    commit(frameIndex, writer);
+                }
+                return get_content(frameIndex);
+            };
+            
             ResourceTraits<Resource>::ContentType& get_content(uint32_t frameIndex)
             {
                 return self().__impl_get_resource_content(frameIndex);
