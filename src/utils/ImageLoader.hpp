@@ -25,10 +25,10 @@ namespace boitatah::utils{
                 if (!pixels) {
                     throw std::runtime_error("failed to load texture image!");
                 }
-
+                std::cout << "Loaded " <<texWidth << " by " << texHeight << " image" << std::endl;
                 TextureCreateDescription textureCreate;
                 textureCreate.width = texWidth;
-                textureCreate.width = texHeight;
+                textureCreate.height = texHeight;
                 textureCreate.depth = 1;
                 textureCreate.format = format;
                 textureCreate.samplerInfo = samplerData;
@@ -36,7 +36,9 @@ namespace boitatah::utils{
                 auto texture = manager.create(textureCreate);
 
                 auto& tex = manager.getResource(texture);
-                tex.copyImageFromBuffer(pixels, imageSize);
+                tex.copyImageFromBuffer(pixels);
+
+                manager.forceCommitResource(texture);
 
                 stbi_image_free(pixels);
 

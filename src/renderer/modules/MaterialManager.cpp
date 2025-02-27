@@ -79,8 +79,10 @@ namespace boitatah{
 
     MaterialManager::MaterialManager(std::shared_ptr<Vulkan> vulkan,
                                      std::shared_ptr<RenderTargetManager> targetManager,
-                                     std::shared_ptr<DescriptorSetManager> setManager)
-     : m_vk(vulkan), m_targetManager(targetManager), m_descriptorManager(setManager)
+                                     std::shared_ptr<DescriptorSetManager> setManager,
+                                     std::shared_ptr<GPUResourceManager> resourceManager) 
+     : m_vk(vulkan), m_targetManager(targetManager), m_descriptorManager(setManager),
+       m_resourceManager(resourceManager)
     {
         m_shaderManager = std::make_unique<ShaderManager>(m_vk, m_targetManager, m_descriptorManager);
         m_materialPool = std::make_unique<Pool<Material>>(PoolOptions{
@@ -147,27 +149,47 @@ namespace boitatah{
         return m_bindingsPool->get(handle);
     }
 
-    bool MaterialManager::BindMaterial(Handle<Material> &handle, CommandBuffer& buffer)
+    bool MaterialManager::BindMaterial(Handle<Material>     &handle, 
+                                       uint32_t             frame_index,
+                                       CommandBuffer        &buffer)
     {
         auto& material = m_materialPool->get(handle);
-        m_currentBindings.resize(material.bindings.size());
-        bool success = true;
-        if(m_currentPipeline != material.shader)
-            success &= BindPipeline(material.shader, buffer);
+        auto& shader = m_shaderManager->get(material.shader);
 
-        for(uint32_t i = 0; i <= material.bindings.size(); i++){
-            if(material.bindings[i] != m_currentBindings[i]){
-                success &= BindBinding(material.bindings[i], i, buffer);
-            }
+        m_currentBindings.resize(material.bindings.size());
+
+        bool success = true;
+        if(material.shader && m_currentPipeline != material.shader){
+            success &= BindPipeline(material.shader, buffer);
+        }else{
+            std::runtime_error("failed to bind pipeline");
+        }
+
+        //std::cout << "bound new pipeline" << std::endl;
+
+        for(uint32_t i = 0; i < material.bindings.size(); i++){
+                //std::cout << "binding set " << i <<std::endl;
+                success &= BindBinding( material.bindings[i],
+                                        shader.layout,
+                                        shader.layout.descriptorSets[i],
+                                        i,
+                                        frame_index,
+                                        buffer);
         }
         return success;
     }
 
     bool MaterialManager::BindPipeline(Handle<Shader> &handle, CommandBuffer& buffer)
     {
-        if(m_currentPipeline == handle ||
-           !m_shaderManager->isValid(handle))
+        if(!handle)
             return false;
+
+        if(!m_shaderManager->isValid(handle))
+            return false;
+
+        if(m_currentPipeline == handle)
+            return true;
+
         m_currentPipeline = handle;
 
         m_vk->bindPipelineCommand({
@@ -177,12 +199,63 @@ namespace boitatah{
         return true;
     }
 
-    bool MaterialManager::BindBinding(Handle<MaterialBinding> &handle, uint32_t set_index, CommandBuffer& buffer)
+    bool MaterialManager::BindBinding(
+                                    Handle<MaterialBinding>         &handle,
+                                    ShaderLayout                    &shaderLayout,
+                                    Handle<DescriptorSetLayout>     setLayout,
+                                    uint32_t                        set_index,
+                                    uint32_t                        frame_index,
+                                    CommandBuffer                   &buffer)
     {
-        if(m_currentBindings[set_index] == handle ||
-           !m_bindingsPool->contains(handle))
+        //invalid binding
+        if(!m_bindingsPool->contains(handle))
            return false;
+        
+        //already bound
+        if(m_currentBindings[set_index] == handle)
+            return true;
+
         m_currentBindings[set_index] = handle;
+        auto& binding = getBinding(handle);
+        std::cout << "getting set " << set_index << std::endl;
+
+
+        auto& layoutContent = m_descriptorManager->getLayoutContent(setLayout);
+        auto set = m_descriptorManager->getSet(layoutContent, frame_index);
+        
+        std::vector<BindBindingDesc> bindings;
+        std::cout << "binding bindings " << binding.bindings.size() << std::endl;
+        for(int i = 0; i < binding.bindings.size(); i++){
+            BindBindingDesc desc;
+            desc.binding = i;
+            desc.type = binding.bindings[i].type;
+            switch(desc.type){
+                case DESCRIPTOR_TYPE::UNIFORM_BUFFER:
+                    desc.access.bufferData = m_resourceManager->
+                                                    getResource(binding.bindings[i].binding_handle.buffer)
+                                                    .getAccessData(frame_index);
+                                                    break;
+                case DESCRIPTOR_TYPE::COMBINED_IMAGE_SAMPLER:
+                    desc.access.textureData = m_resourceManager->
+                                                    getResource(binding.bindings[i].binding_handle.renderTex)
+                                                    .getAccessData(frame_index);
+                                                    break;
+            }
+
+            bindings.push_back(desc);
+        }
+        std::cout << "wrote binding descriptions for set "  << set_index<< std::endl;
+        m_descriptorManager->writeSet(bindings,    
+                                      set, 
+                                      frame_index);
+
+        m_descriptorManager->bindSet(buffer,
+                                    shaderLayout,
+                                    set,
+                                    set_index,
+                                    frame_index);
+
+        std::cout << "bound set " << set_index << std::endl;
 
         return true;
     }
@@ -195,6 +268,19 @@ namespace boitatah{
     void MaterialManager::setBaseBindings(const std::vector<Handle<MaterialBinding>> &handles)
     {
         m_baseBindings = handles;
+    }
+
+    Handle<Material> MaterialManager::getUnlitMaterial(const MaterialCreate &description)
+    {
+
+
+        return Handle<Material>();
+    }
+
+    void MaterialManager::resetBindings()
+    {
+        m_currentBindings.clear();
+        m_currentPipeline = Handle<Shader>();
     }
 
     ShaderModule ShaderManager::compileShaderModule(const std::vector<char> &bytecode, std::string entryPoint)
@@ -224,6 +310,30 @@ namespace boitatah{
         });
     }
 
+    Handle<Shader> ShaderManager::getUnlitShader()
+    {
+
+        if(unlit_shader.first)
+            return unlit_shader.first;
+
+        Handle<DescriptorSetLayout> setLayout = m_descriptorManager->getLayout({
+            .bindingDescriptors = {{
+                                    .type = DESCRIPTOR_TYPE::COMBINED_IMAGE_SAMPLER,
+                                    .stages = STAGE_FLAG::FRAGMENT,
+                                    .descriptorCount = 1,
+                                    },
+            }});
+
+        Handle<ShaderLayout> layout = makeShaderLayout({.setLayouts = 
+                                                                { setLayout, }
+                                                       });
+
+
+
+
+        return unlit_shader.first;
+    }
+
     void ShaderManager::setBaseLayout(Handle<DescriptorSetLayout> handle)
     {
         m_baseLayout = handle;
@@ -238,7 +348,9 @@ ShaderLayout& ShaderManager::get(const Handle<ShaderLayout>& handle){
         return m_shaderPool->contains(handle);
     }
     Handle<ShaderLayout> ShaderManager::makeShaderLayout(const ShaderLayoutDesc &description)
-    {
+    {   
+        std::vector<Handle<DescriptorSetLayout>> layouts = {m_baseLayout};
+
         auto& baseLayout = m_descriptorManager->getLayoutContent(m_baseLayout);
         //VkDescriptorSetLayout materialLayout = m_vk->createDescriptorLayout(desc.materialLayout);
         std::vector<VkDescriptorSetLayout> vkLayouts;
@@ -246,16 +358,21 @@ ShaderLayout& ShaderManager::get(const Handle<ShaderLayout>& handle){
             auto& layout = m_descriptorManager->getLayoutContent(description.setLayouts[i]);
             vkLayouts.push_back(layout.layout);
         }
-        ShaderLayout layout{.pipeline = m_vk->createShaderLayout(
-                                {
-                                    .materialLayouts = vkLayouts,
-                                    .baseLayout = baseLayout.layout,
-                                    .pushConstants ={
-                                        PushConstantDesc{
-                                        .offset = 0, //<-- must be larger or equal than sizeof(glm::mat4)
-                                        .size = sizeof(glm::mat4), //<- M matrices
-                                        .stages = STAGE_FLAG::ALL_GRAPHICS}},
-                                })};
+        
+        utils::move_concatenate_vectors(layouts, description.setLayouts);
+        ShaderLayout layout{ 
+                                .pipeline = m_vk->createShaderLayout(
+                                    {
+                                        .materialLayouts = vkLayouts,
+                                        .baseLayout = baseLayout.layout,
+                                        .pushConstants ={
+                                            PushConstantDesc{
+                                            .offset = 0, //<-- must be larger or equal than sizeof(glm::mat4)
+                                            .size = sizeof(glm::mat4), //<- M matrices
+                                            .stages = STAGE_FLAG::ALL_GRAPHICS}},
+                                    }),
+                                .descriptorSets = layouts,
+                                };
 
         return m_layoutPool->set(layout);
 

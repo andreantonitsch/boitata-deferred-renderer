@@ -85,6 +85,7 @@ namespace boitatah::buffer
         else
         {
             Handle<Buffer *> buffer = createBuffer({
+                
                 .estimatedElementSize = compatibility.request,
                 .partitions = partitionsPerBuffer,
                 .usage = compatibility.usage,

@@ -94,13 +94,13 @@ int main()
 
     std::cout << "setup complete" << std::endl;
 
-    while (!r.isWindowClosed())
-    {
+    //while (!r.isWindowClosed())
+    //{
         r.render(scene, camera);
         ///camera.rotate(glm::vec3(0.0, 0.01, 0.0));
         camera.roll(0.01);
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
-    }
+    //}
     r.waitIdle();
 
     r.destroyLayout(layout);

@@ -21,20 +21,22 @@ namespace boitatah{
         texProps.sampler = imageMngr.createSampler(description.samplerInfo);
     }
 
-    void Texture::copyImageFromBuffer(void *data, uint32_t size)
+    void Texture::copyImageFromBuffer(void *data)
     {
         image_generation++;
         {
-            if(!m_stagingBuffer)
+                std::cout <<"copying " << data << " to image with  size " << texProps.byteSize << std::endl; 
+            if(!m_stagingBuffer){
                 m_stagingBuffer = m_manager->create(
                         GPUBufferCreateDescription{
-                            .size = size,
+                            .size = texProps.byteSize,
                             .usage = BUFFER_USAGE::TRANSFER_SRC,
                             .sharing_mode = SHARING_MODE::CONCURRENT,
                         });
+            }
 
             auto& buffer = m_manager->getResource(m_stagingBuffer);
-            buffer.copyData(data, size);
+            buffer.copyData(data, texProps.byteSize);
         }
     }
     void Texture::transition(TextureMode mode) {
@@ -57,10 +59,12 @@ namespace boitatah{
             .mipLevels = texProps.sampler.data.mipLevels,
             .initialLayout = data.layout,
             .usage = texProps.usage,
+
         });
         data.generation = 0;
         return data;
     }
+
     bool Texture::ReadyForUse(TextureGPUData &content)
     {
         bool ready = content.format == texProps.format;
@@ -85,5 +89,16 @@ namespace boitatah{
 
 
 
+    }
+    TextureAccessData RenderTexture::getAccessData(uint32_t frame_index)
+    {
+        auto manager = std::shared_ptr<GPUResourceManager>(MutableGPUResource<RenderTexture>::m_manager);
+        auto& res = resource().get_content(frame_index);
+        auto& image = manager->getImageManager().getImage(res.image);
+            //resource().get_content(frame_index).image
+        return {.image = image.view,
+                .layout = castEnum<VkImageLayout>(res.layout),
+                .sampler = res.sampler.sampler,
+                };
     }
 };

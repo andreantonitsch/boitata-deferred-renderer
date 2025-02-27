@@ -130,6 +130,7 @@ namespace boitatah
     enum class DESCRIPTOR_TYPE : uint32_t
     {
         UNIFORM_BUFFER = 0U,
+        COMBINED_IMAGE_SAMPLER = 3U,
     };
 
     enum class STAGE_FLAG
@@ -218,6 +219,8 @@ namespace boitatah
         {
         case DESCRIPTOR_TYPE::UNIFORM_BUFFER:
             return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        case DESCRIPTOR_TYPE::COMBINED_IMAGE_SAMPLER:
+            return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         default:
             return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         }

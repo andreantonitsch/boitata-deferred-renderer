@@ -57,7 +57,10 @@ namespace boitatah
         //Initialize the renderer Modules
         m_resourceManager = std::make_shared<GPUResourceManager>(m_vk, m_bufferManager, m_imageManager, m_ResourceManagerTransferWriter);
         m_descriptorManager= std::make_shared<DescriptorSetManager>(m_vk, 4096);
-        m_materialMngr = std::make_shared<MaterialManager>(m_vk, m_renderTargetManager, m_descriptorManager); 
+        m_materialMngr = std::make_shared<MaterialManager>(m_vk, 
+                                                           m_renderTargetManager, 
+                                                           m_descriptorManager,
+                                                           m_resourceManager); 
         auto& shader_mngr = m_materialMngr->getShaderManager();
 
         // Initialize base renderer data(base material, base layout etc.)
@@ -80,6 +83,8 @@ namespace boitatah
 
         m_frameUniforms = m_materialMngr->createBinding(base_setLayout);
         m_materialMngr->getBinding(m_frameUniforms).bindings[0].binding_handle.buffer = m_frameUniformsBuffer;
+
+        m_materialMngr->setBaseBindings({m_frameUniforms});
 
         //create base layout with push constants for model matrices
         Handle<ShaderLayout> m_baseShaderLayout = shader_mngr.makeShaderLayout({});
@@ -116,9 +121,6 @@ namespace boitatah
         
     }
 
-    void Renderer::bindDescriptorSet()
-    {
-    }
 
     void Renderer::handleWindowResize()
     {
@@ -259,15 +261,6 @@ namespace boitatah
             throw std::runtime_error("Failed to Render to Target");}
         RenderTargetSync& buffers = m_renderTargetManager->get(target.cmdBuffers);
 
-        Image image = m_imageManager->getImage(target.attachments[0]);
-
-        auto& shader_man = m_materialMngr->getShaderManager();
-        auto& material = m_materialMngr->getMaterialContent(scene.material);
-        if (!shader_man.isValid(material.shader))
-            throw std::runtime_error("Failed to retrieve material");
-
-        Shader& shader = shader_man.get(material.shader);
-
         // vertex and mesh data
         Geometry geom = m_resourceManager->getResource(scene.geometry);
 
@@ -275,7 +268,6 @@ namespace boitatah
         auto vertexBufferData = m_resourceManager->getResource(vertexBufferHandle).getAccessData(frameIndex);
 
         auto indexBufferData = m_resourceManager->getResource(geom.IndexBuffer()).getAccessData(frameIndex);
-        
 
         auto indexVkBuffer = indexBufferData.buffer->getBuffer();
         auto vertexVkBuffer = vertexBufferData.buffer->getBuffer();
@@ -382,20 +374,25 @@ namespace boitatah
         });
 
         //binds dummy pipeline
-        bindPipelineCommand({.commandBuffer = buffers.drawBuffer, .shader = m_dummyPipeline});
-        auto& dummyPipeline = shader_mngr.get(m_dummyPipeline);
-        //bind camera uniforms.
+        if(!m_materialMngr->BindMaterial(m_baseMaterial, frame_index, buffers.drawBuffer))
+            std::runtime_error("failed to bind material");
 
-        bindDescriptorSetCommand({
-                                   .drawBuffer = buffers.drawBuffer,
-                                   .set_index = 0,
-                                   .set_layout = m_descriptorManager->getLayoutContent(base_setLayout),
-                                   .shader_layout = dummyPipeline.layout,
-                                   .bindings = {{
-                                            .binding = 0,
-                                            .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
-                                            .bufferData = m_resourceManager->getResource(m_frameUniformsBuffer).getAccessData(frame_index)
-                                  }}});
+        std::cout << "bound base pipeline" << std::endl;
+
+        //bindPipelineCommand({.commandBuffer = buffers.drawBuffer, .shader = m_dummyPipeline});
+        // auto& dummyPipeline = shader_mngr.get(m_dummyPipeline);
+        // //bind camera uniforms.
+
+        //bindDescriptorSetCommand({
+        //                            .drawBuffer = buffers.drawBuffer,
+        //                            .set_index = 0,
+        //                            .set_layout = m_descriptorManager->getLayoutContent(base_setLayout),
+        //                            .shader_layout = dummyPipeline.layout,
+        //                            .bindings = {{
+        //                                     .binding = 0,
+        //                                     .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
+        //                                     .access = m_resourceManager->getResource(m_frameUniformsBuffer).getAccessData(frame_index)
+        //                           }}});
 
 
         //Bind Pipeline <-- relevant when shader is reused.
@@ -412,14 +409,16 @@ namespace boitatah
                 continue;
             }
             auto& material = m_materialMngr->getMaterialContent(node->material);
+            m_materialMngr->BindMaterial(node->material, frame_index, buffers.drawBuffer);
+            std::cout << "bound material for next node" << std::endl;
             Handle<Shader>& shader = material.shader;
-            if(boundPipeline != shader){
-                bindPipelineCommand({
-                    .commandBuffer = buffers.drawBuffer,
-                    .shader = shader
-                });
-                boundPipeline = shader;
-            }
+            // if(boundPipeline != shader){
+            //     bindPipelineCommand({
+            //         .commandBuffer = buffers.drawBuffer,
+            //         .shader = shader
+            //     });
+            //     boundPipeline = shader;
+            // }
 
             // TODO separate to avoid rebinding when drawing a lot of the same object
             bindVertexBuffers({
@@ -428,7 +427,6 @@ namespace boitatah
                 .geometry = node->geometry,
                 .bindIndex = true
             });
-
 
             glm::mat4 model_mat = scene.getGlobalMatrix();
 
@@ -451,20 +449,21 @@ namespace boitatah
         m_vk->submitDrawCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer,
                             .fence = buffers.inFlightFen});
 
+        m_materialMngr->resetBindings();
         //std::cout << "Submit Draw Command \n";
     }
 
     void Renderer::render(SceneNode &scene, Camera &camera)
     {
-        updateCameraUniforms(camera);
         auto backbuffer = m_backBufferManager->getNext();
-        updateFrameUniforms(m_backBufferManager->getCurrentIndex());
         renderSceneNode(scene, camera, backbuffer);
         presentRenderTarget(backbuffer);
     }
 
     void Renderer::renderSceneNode(SceneNode &scene, Camera &camera, Handle<RenderTarget> &rendertargetHandle)
     {
+        updateCameraUniforms(camera);
+        updateFrameUniforms(m_backBufferManager->getCurrentIndex());
         renderSceneNode(scene, rendertargetHandle);
     }
 
@@ -578,21 +577,6 @@ namespace boitatah
         // vk->waitIdle();
         m_vk->waitForFence(m_transferFence);
         m_vk->beginCmdBuffer({.commandBuffer = command.buffer.buffer});
-
-        // m_vk->CmdCopyBuffer({
-        //     .commandBuffer = command.buffer.buffer,
-        //     .srcBuffer = srcBuffer->getBuffer(),
-        //     .srcOffset = srcReservation.offset,
-        //     .dstBuffer = dstBuffer->getBuffer(),
-        //     .dstOffset = dstReservation.offset,
-        //     .size = srcReservation.size,
-        // });
-
-        // m_vk->submitCmdBuffer({
-        //     .commandBuffer = command.buffer.buffer,
-        //     .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
-        //     .fence = m_transferFence,
-        // });
     }
 
     void Renderer::beginBuffer(const BeginBufferCommand &command)
@@ -629,38 +613,38 @@ namespace boitatah
         });
     }
 
-    void Renderer::bindDummyPipeline(const BindPipelineCommand &command)
-    {
-        auto& shader_mngr = m_materialMngr->getShaderManager();
-        m_vk->bindPipelineCommand({
-            .drawBuffer =  command.commandBuffer.buffer,
-            .pipeline = shader_mngr.get(m_dummyPipeline).pipeline
-        });
-    }
+    // void Renderer::bindDummyPipeline(const BindPipelineCommand &command)
+    // {
+    //     auto& shader_mngr = m_materialMngr->getShaderManager();
+    //     m_vk->bindPipelineCommand({
+    //         .drawBuffer =  command.commandBuffer.buffer,
+    //         .pipeline = shader_mngr.get(m_dummyPipeline).pipeline
+    //     });
+    // }
 
-    void Renderer::bindPipelineCommand(const BindPipelineCommand &command)
-    {
-        auto& shader_mngr = m_materialMngr->getShaderManager();
-        m_vk->bindPipelineCommand({
-            .drawBuffer = command.commandBuffer.buffer,
-            .pipeline = shader_mngr.get(command.shader).pipeline,
-        });
-    }
+    // void Renderer::bindPipelineCommand(const BindPipelineCommand &command)
+    // {
+    //     auto& shader_mngr = m_materialMngr->getShaderManager();
+    //     m_vk->bindPipelineCommand({
+    //         .drawBuffer = command.commandBuffer.buffer,
+    //         .pipeline = shader_mngr.get(command.shader).pipeline,
+    //     });
+    // }
 
-    void Renderer::bindDescriptorSetCommand(const BindSetCommand &command)
-    {
-        //allocate
-        auto set = m_descriptorManager->getSet(command.set_layout, m_backBufferManager->getCurrentIndex());
+    // void Renderer::bindDescriptorSetCommand(const BindSetCommand &command)
+    // {
+    //     //allocate
+    //     auto set = m_descriptorManager->getSet(command.set_layout, m_backBufferManager->getCurrentIndex());
         
-        auto binds = std::span<const BindBindingDesc>(command.bindings);
-        // //write set
-        m_descriptorManager->writeSet(binds, set, m_backBufferManager->getCurrentIndex());
-        // //bind
-        m_descriptorManager->bindSet(command.drawBuffer,
-                                     command.shader_layout, 
-                                     set, command.set_index,  
-                                     m_backBufferManager->getCurrentIndex());
-    }
+    //     auto binds = std::span<const BindBindingDesc>(command.bindings);
+    //     // //write set
+    //     m_descriptorManager->writeSet(binds, set, m_backBufferManager->getCurrentIndex());
+    //     // //bind
+    //     m_descriptorManager->bindSet(command.drawBuffer,
+    //                                  command.shader_layout, 
+    //                                  set, command.set_index,  
+    //                                  m_backBufferManager->getCurrentIndex());
+    // }
 
     void Renderer::pushPushConstants(const PushConstantsCommand &command)
     {

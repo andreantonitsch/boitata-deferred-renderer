@@ -568,9 +568,6 @@ void boitatah::vk::Vulkan::bindPipelineCommand(const BindPipelineCommandVk &comm
                       command.pipeline);
 }
 
-void boitatah::vk::Vulkan::bindDescriptorSet(const BindDescriptorSetCommandVk &command)
-{
-}
 
 void boitatah::vk::Vulkan::submitCmdBuffer(const SubmitCommandVk &command)
 {
@@ -1015,10 +1012,11 @@ boitatah::vk::BufferVkData boitatah::vk::Vulkan::createBuffer(const BufferDescVk
 
 VkSampler boitatah::vk::Vulkan::createSampler(const SamplerData &data)
 {
-    VkSamplerCreateInfo info;
+    VkSamplerCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     info.pNext = nullptr;
-
+    info.flags = 0;
+    
     info.addressModeU = castEnum<VkSamplerAddressMode>(data.u_tiling);
     info.addressModeV = castEnum<VkSamplerAddressMode>(data.v_tiling);
     info.addressModeW = castEnum<VkSamplerAddressMode>(SAMPLER_TILE_MODE::REPEAT);

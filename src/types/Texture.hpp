@@ -5,7 +5,7 @@
 #include <renderer/resources/GPUResource.hpp>
 #include <types/BttEnums.hpp>
 #include <types/Image.hpp>
-
+#include <types/TextureStructs.hpp>
 #include <collections/Pool.hpp>
 #include <renderer/resources/GPUBuffer.hpp>
 #include <renderer/resources/ResourceStructs.hpp>
@@ -91,14 +91,12 @@ namespace boitatah{
             Texture() = default;
             ~Texture() = default;
             Texture(const TextureCreateDescription& description, std::shared_ptr<GPUResourceManager> manager);
-            void copyImageFromBuffer(void *data, uint32_t size);
+            void copyImageFromBuffer(void *data);
 
             void transition(TextureMode mode);
             
             TextureGPUData CreateGPUData();
-
             bool ReadyForUse(TextureGPUData& content);
-            void SetContent(TextureGPUData& content);
             void ReleaseData(TextureGPUData& content);
             void Release();                
             void WriteTransfer(TextureGPUData& data, CommandBufferWriter<vk::VkCommandBufferWriter> &writer);
@@ -117,8 +115,6 @@ namespace boitatah{
                     {return Texture::CreateGPUData();};
                 bool ReadyForUse(TextureGPUData& content)
                     {return Texture::ReadyForUse(content);};
-                void SetContent(TextureGPUData& content)
-                    {Texture::SetContent(content);};
                 void ReleaseData(TextureGPUData& content)
                     {Texture::ReleaseData(content);};
                 void Release()
@@ -136,6 +132,8 @@ namespace boitatah{
                 ~RenderTexture() = default;
                 RenderTexture(const RenderTexture& other) = default;
 
+
+
                 RenderTexture(const TextureCreateDescription &description, std::shared_ptr<GPUResourceManager> manager)
                 :   Texture(description, manager),
                     MutableGPUResource<RenderTexture>({ //Base Constructor
@@ -143,12 +141,11 @@ namespace boitatah{
                                                 .type = RESOURCE_TYPE::TEXTURE,
                                                 .mutability = RESOURCE_MUTABILITY::MUTABLE,
                                                 }, manager) { };
+                TextureAccessData getAccessData(uint32_t frame_index); 
                 TextureGPUData CreateGPUData() 
                     {return Texture::CreateGPUData();};
                 bool ReadyForUse(TextureGPUData& content)
                     {return Texture::ReadyForUse(content);};
-                void SetContent(TextureGPUData& content)
-                    {Texture::SetContent(content);};
                 void ReleaseData(TextureGPUData& content)
                     {Texture::ReleaseData(content);};
                 void Release()

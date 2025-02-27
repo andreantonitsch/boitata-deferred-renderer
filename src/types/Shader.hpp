@@ -44,7 +44,7 @@ namespace boitatah
     struct ShaderLayout
     {
         VkPipelineLayout pipeline;
-        std::vector<DescriptorSetLayout> descriptorSets;
+        std::vector<Handle<DescriptorSetLayout>> descriptorSets;
     };
 
     struct ShaderModule

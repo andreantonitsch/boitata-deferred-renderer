@@ -23,15 +23,12 @@ namespace boitatah{
     struct MaterialBinding{
         std::vector<MaterialBindingAtt> bindings;
     };
-
-
     
     ///each material can bind one set of variables.
     struct Material{
         /// @brief material parent is related to descriptor sets.
         Handle<Material> parent;
         Handle<Shader> shader;
-        DescriptorSetLayout layout;
         std::vector<Handle<MaterialBinding>> bindings;
         std::vector<VERTEX_BUFFER_TYPE> vertexBufferBindings;
         std::string name;

@@ -9,23 +9,31 @@ namespace boitatah::buffer
     BufferAllocator::BufferAllocator(const BufferAllocatorDesc &desc) 
     {
         alignment = desc.alignment;
-        
-        partitionSize = desc.partitionSize % alignment == 0 ?
-                        desc.partitionSize :
-                        ((desc.partitionSize / alignment) + 1u)* alignment;
+        partitionSize = desc.partitionSize;
+
+        if(partitionSize == 0 || desc.height == 0)
+            throw std::runtime_error("partition size and/or height are 0 when creating Buffer Allocator");
+
+        if(alignment != 0)
+            partitionSize = desc.partitionSize % alignment == 0 ?
+                            desc.partitionSize :
+                            ((desc.partitionSize / alignment) + 1u) * alignment;
 
         height = desc.height;
-
         size = partitionSize * (1u << height);
 
-
-        //while buffer is larger than 100mb
-        while(size > 100000000){
+        //while buffer is larger than 134mb
+        // or buffer overflowed (lol)
+        while( height!=1 && ((size > ((1u << 27u))) || size == 0u) ){
             height--;
             size = desc.partitionSize * (1u << height);
         }
 
+
         leafQuant = size / partitionSize;
+        std::cout<< "buffer size = "  << size  << 
+                    " @@ partition size = " << partitionSize << 
+                    " @@leaf quantity = " << leafQuant << std::endl;
 
         blockPool = std::make_unique<Pool<Block>>(PoolOptions{.size = leafQuant * 2 });
         blocks.resize(leafQuant * 2 );

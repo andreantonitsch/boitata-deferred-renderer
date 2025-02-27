@@ -53,12 +53,21 @@ namespace boitatah::vk {
             switch(binding.type){
                 case DESCRIPTOR_TYPE::UNIFORM_BUFFER:{
                     VkDescriptorBufferInfo info;
-                    auto bufferAccess =  binding.bufferData;
+                    auto bufferAccess =  binding.access.bufferData;
                     info.buffer = bufferAccess.buffer->getBuffer();
                     info.offset = bufferAccess.offset;
                     info.range = bufferAccess.size;
                     buffers.push_back(info);
                     write.pBufferInfo = &buffers.back();
+                    break;}
+                case DESCRIPTOR_TYPE::COMBINED_IMAGE_SAMPLER:{
+                    VkDescriptorImageInfo info;
+                    auto textureAccess =  binding.access.textureData;
+                    info.imageLayout = textureAccess.layout;
+                    info.sampler = textureAccess.sampler;
+                    info.imageView = textureAccess.image;
+                    images.push_back(info);
+                    write.pImageInfo = &images.back();
                     break;}
                 default:
                     std::cout << "Trying to bind invalid descriptor type" << std::endl;

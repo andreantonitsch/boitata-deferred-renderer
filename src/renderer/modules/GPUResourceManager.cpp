@@ -59,7 +59,7 @@ namespace boitatah{
     {
         auto buffer = GPUBuffer(description, shared_from_this());
         auto added = m_resourcePool->set(buffer);
-        if(!added) std::cout << "failed to add to resource pool after creation" << std::endl;
+        //if(!added) std::cout << "failed to add to resource pool after creation" << std::endl;
         return  added;
     };
 

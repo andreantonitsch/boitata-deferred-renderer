@@ -111,9 +111,9 @@ namespace boitatah
         void drawCommand(const DrawCommand &command);
 
 
-        void bindDummyPipeline(const BindPipelineCommand& command);
-        void bindPipelineCommand(const BindPipelineCommand& command);
-        void bindDescriptorSetCommand(const BindSetCommand& command);
+        // void bindDummyPipeline(const BindPipelineCommand& command);
+        // void bindPipelineCommand(const BindPipelineCommand& command);
+        // void bindDescriptorSetCommand(const BindSetCommand& command);
         void bindVertexBuffers(const BindVertexBuffersCommand& command);
         
         void pushPushConstants(const PushConstantsCommand& command);
@@ -147,7 +147,6 @@ namespace boitatah
         Handle<MaterialBinding> m_frameUniforms;
         void updateCameraUniforms(Camera& camera);
         void updateFrameUniforms(uint32_t frame_index);
-        void bindDescriptorSet();
 
 
         Handle<Material> m_baseMaterial;

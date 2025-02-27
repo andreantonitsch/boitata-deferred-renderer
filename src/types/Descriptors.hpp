@@ -4,7 +4,7 @@
 #include <vector>
 #include <span>
 #include <buffers/BufferStructs.hpp>
-
+#include <types/TextureStructs.hpp>
 namespace boitatah
 {
     using namespace boitatah::buffer;
@@ -47,7 +47,10 @@ namespace boitatah
         //uint32_t set;
         uint32_t binding;
         DESCRIPTOR_TYPE type;
-        BufferAccessData bufferData;
+        union{
+            BufferAccessData bufferData;
+            TextureAccessData textureData;
+        }access;
     };
 
 };
