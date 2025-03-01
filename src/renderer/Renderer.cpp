@@ -69,6 +69,7 @@ namespace boitatah
             .usage = BUFFER_USAGE::UNIFORM_BUFFER,
             .sharing_mode = SHARING_MODE::EXCLUSIVE,
             });
+        // camera layout
        base_setLayout = m_descriptorManager->getLayout({
                                                             .bindingDescriptors = {
                                                                 {//.binding = 0,
@@ -79,15 +80,12 @@ namespace boitatah
                                                             }
                                                         });
 
-        shader_mngr.setBaseLayout(base_setLayout);
-
         m_frameUniforms = m_materialMngr->createBinding(base_setLayout);
-        m_materialMngr->getBinding(m_frameUniforms).bindings[0].binding_handle.buffer = m_frameUniformsBuffer;
-
-        m_materialMngr->setBaseBindings({m_frameUniforms});
+        auto& binding_ref = m_materialMngr->getBinding(m_frameUniforms);
+        binding_ref.bindings[0].binding_handle.buffer = m_frameUniformsBuffer;
 
         //create base layout with push constants for model matrices
-        Handle<ShaderLayout> m_baseShaderLayout = shader_mngr.makeShaderLayout({});
+        Handle<ShaderLayout> m_baseShaderLayout = shader_mngr.makeShaderLayout({.setLayouts={base_setLayout}});
 
         m_dummyPipeline = createShader({
             .vert = {.byteCode = utils::readFile("./src/09_shader_base_vert.spv"),
@@ -101,9 +99,12 @@ namespace boitatah
 
         m_baseMaterial = m_materialMngr->createMaterial({
             .shader = m_dummyPipeline,
-             .bindings = {},
+             .bindings = {m_frameUniforms},
             .name = "base material",
         });
+
+        m_materialMngr->setBaseMaterial(m_baseMaterial);
+        m_materialMngr->setupBaseMaterials(m_backBufferManager->getRenderPass());
         std::cout << "Renderer Initialization Complete " << std::endl;
     }
 
@@ -120,7 +121,6 @@ namespace boitatah
         m_resourceManager->forceCommitResource(m_frameUniformsBuffer, frame_index);
         
     }
-
 
     void Renderer::handleWindowResize()
     {
@@ -368,7 +368,7 @@ namespace boitatah
             .pass = pass,
             .target = target,
 
-            .clearColor = glm::vec4(0, 1, 0, 1),
+            .clearColor = glm::vec4(0, 0, 0, 1),
             .scissorDims = image.dimensions,
             .scissorOffset = glm::vec2(0, 0),
         });
@@ -376,24 +376,6 @@ namespace boitatah
         //binds dummy pipeline
         if(!m_materialMngr->BindMaterial(m_baseMaterial, frame_index, buffers.drawBuffer))
             std::runtime_error("failed to bind material");
-
-        std::cout << "bound base pipeline" << std::endl;
-
-        //bindPipelineCommand({.commandBuffer = buffers.drawBuffer, .shader = m_dummyPipeline});
-        // auto& dummyPipeline = shader_mngr.get(m_dummyPipeline);
-        // //bind camera uniforms.
-
-        //bindDescriptorSetCommand({
-        //                            .drawBuffer = buffers.drawBuffer,
-        //                            .set_index = 0,
-        //                            .set_layout = m_descriptorManager->getLayoutContent(base_setLayout),
-        //                            .shader_layout = dummyPipeline.layout,
-        //                            .bindings = {{
-        //                                     .binding = 0,
-        //                                     .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
-        //                                     .access = m_resourceManager->getResource(m_frameUniformsBuffer).getAccessData(frame_index)
-        //                           }}});
-
 
         //Bind Pipeline <-- relevant when shader is reused.
         //std::cout << "began RenderPass" << std::endl;
@@ -410,16 +392,8 @@ namespace boitatah
             }
             auto& material = m_materialMngr->getMaterialContent(node->material);
             m_materialMngr->BindMaterial(node->material, frame_index, buffers.drawBuffer);
-            std::cout << "bound material for next node" << std::endl;
             Handle<Shader>& shader = material.shader;
-            // if(boundPipeline != shader){
-            //     bindPipelineCommand({
-            //         .commandBuffer = buffers.drawBuffer,
-            //         .shader = shader
-            //     });
-            //     boundPipeline = shader;
-            // }
-
+            
             // TODO separate to avoid rebinding when drawing a lot of the same object
             bindVertexBuffers({
                 .commandBuffer = buffers.drawBuffer,
@@ -486,8 +460,8 @@ namespace boitatah
         auto uvBufferHandle = geom.getBuffer(VERTEX_BUFFER_TYPE::UV);
         std::array<BufferAccessData, 3> bufferData;
         bufferData[0] = m_resourceManager->getResource(vertexBufferHandle).getAccessData(command.frame);
-        bufferData[1] = m_resourceManager->getResource(vertexBufferHandle).getAccessData(command.frame);
-        bufferData[2] = m_resourceManager->getResource(vertexBufferHandle).getAccessData(command.frame);
+        bufferData[1] = m_resourceManager->getResource(uvBufferHandle).getAccessData(command.frame);
+        bufferData[2] = m_resourceManager->getResource(colorBufferHandle).getAccessData(command.frame);
 
         std::vector<VkDeviceSize> offsets; 
         std::vector<VkBuffer> buffers;
@@ -612,39 +586,6 @@ namespace boitatah
             .fence = m_transferFence,
         });
     }
-
-    // void Renderer::bindDummyPipeline(const BindPipelineCommand &command)
-    // {
-    //     auto& shader_mngr = m_materialMngr->getShaderManager();
-    //     m_vk->bindPipelineCommand({
-    //         .drawBuffer =  command.commandBuffer.buffer,
-    //         .pipeline = shader_mngr.get(m_dummyPipeline).pipeline
-    //     });
-    // }
-
-    // void Renderer::bindPipelineCommand(const BindPipelineCommand &command)
-    // {
-    //     auto& shader_mngr = m_materialMngr->getShaderManager();
-    //     m_vk->bindPipelineCommand({
-    //         .drawBuffer = command.commandBuffer.buffer,
-    //         .pipeline = shader_mngr.get(command.shader).pipeline,
-    //     });
-    // }
-
-    // void Renderer::bindDescriptorSetCommand(const BindSetCommand &command)
-    // {
-    //     //allocate
-    //     auto set = m_descriptorManager->getSet(command.set_layout, m_backBufferManager->getCurrentIndex());
-        
-    //     auto binds = std::span<const BindBindingDesc>(command.bindings);
-    //     // //write set
-    //     m_descriptorManager->writeSet(binds, set, m_backBufferManager->getCurrentIndex());
-    //     // //bind
-    //     m_descriptorManager->bindSet(command.drawBuffer,
-    //                                  command.shader_layout, 
-    //                                  set, command.set_index,  
-    //                                  m_backBufferManager->getCurrentIndex());
-    // }
 
     void Renderer::pushPushConstants(const PushConstantsCommand &command)
     {

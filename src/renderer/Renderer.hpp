@@ -110,10 +110,6 @@ namespace boitatah
         void copyBuffer(const CopyBufferCommand &command);
         void drawCommand(const DrawCommand &command);
 
-
-        // void bindDummyPipeline(const BindPipelineCommand& command);
-        // void bindPipelineCommand(const BindPipelineCommand& command);
-        // void bindDescriptorSetCommand(const BindSetCommand& command);
         void bindVertexBuffers(const BindVertexBuffersCommand& command);
         
         void pushPushConstants(const PushConstantsCommand& command);

@@ -58,7 +58,7 @@ namespace boitatah::vk{
         //uint8_t baseLayer;
         //uint8_t layerCount;
 
-        glm::u32vec3 offset;
+        glm::int3 offset;
         glm::u32vec3 extent;
 
         VkImageLayout srcImgLayout;

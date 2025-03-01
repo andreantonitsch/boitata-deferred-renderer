@@ -31,13 +31,13 @@ namespace boitatah{
                     {0.5f, 0.5f, 0.0f},
                     {-0.5f, 0.5f, 0.0f},},
 
-                .color ={{1.0f, 1.0f, 0.0f}, 
-                        {1.0f, 0.0f, 1.0f},
-                        {0.0f, 1.0f, 1.0f}},
+                .color ={{1.0f, 1.0f, 1.0f}, 
+                        {1.0f, 1.0f, 1.0f},
+                        {1.0f, 1.0f, 1.0f}},
                 
-                .uv = {{0.5f, 0.0f},
-                    {0.0f, 1.0f},
-                    {1.0f, 1.0f}},
+                .uv = { {0.5f, 0.0f},
+                        {1.0f, 1.0f},
+                        {0.0f, 1.0f}},
 
                 .indices = {0U, 1U, 2U},
             };
@@ -52,13 +52,13 @@ namespace boitatah{
                     {-0.5f, 0.5f, 0.0f}, 
                     {0.5f, 0.5f, 0.0f},},
 
-                .color ={{1.0f, 1.0f, 0.0f}, 
-                        {1.0f, 0.0f, 1.0f},
-                        {1.0f, 0.0f, 1.0f},
-                        {0.0f, 1.0f, 1.0f}},
+                .color ={{1.0f, 1.0f, 1.0f}, 
+                        {1.0f, 1.0f, 1.0f},
+                        {1.0f, 1.0f, 1.0f},
+                        {1.0f, 1.0f, 1.0f}},
 
-                .uv = {{0.5f, 0.0f},
-                    {0.0f, 1.0f},
+                .uv = {{0.0f, 0.0f},
+                    {1.0f, 0.0f},
                     {0.0f, 1.0f},
                     {1.0f, 1.0f}},
 
@@ -87,8 +87,8 @@ namespace boitatah{
                     float jh = j * h;
 
                     vertices.push_back(
-                        {iw - (0.5 * width), jh - (0.5 * height), 0.0f});
-                    color.push_back({iw, jh, 0.0f});
+                    {iw - (0.5 * width), jh - (0.5 * height), 0.0f});
+                    color.push_back({1.0, 1.0, 0.0f});
                     uv.push_back({iw,jh});
                 }
                         

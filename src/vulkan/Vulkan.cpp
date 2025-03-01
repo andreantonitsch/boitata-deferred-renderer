@@ -326,7 +326,8 @@ Image boitatah::vk::Vulkan::createImage(const ImageDesc &desc)
 {
 
     Image image;
-
+    if(desc.usage == IMAGE_USAGE::TRANSFER_DST_SAMPLED)
+        std::cout << "creating sampled texture" << std::endl;
     VkImageCreateInfo createInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .flags = 0,
@@ -865,11 +866,8 @@ VkPipelineLayout boitatah::vk::Vulkan::createShaderLayout(const ShaderLayoutDesc
 {
     VkPipelineLayout layout;
     
-    std::vector<VkDescriptorSetLayout> descripLayouts;
-    // add camera layout
-    descripLayouts.push_back(desc.baseLayout);
-    // add shader custom layout
-    utils::move_concatenate_vectors(descripLayouts, desc.materialLayouts);
+    //start with base layout layout
+    std::vector<VkDescriptorSetLayout> descripLayouts(desc.materialLayouts);
     
     //add model push constants
     std::vector<VkPushConstantRange> ranges;

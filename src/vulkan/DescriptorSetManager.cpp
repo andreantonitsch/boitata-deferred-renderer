@@ -90,11 +90,6 @@ namespace boitatah::vk {
                                 layout.pipeline, set_index, 1, &set.descriptorSet, 0, nullptr);
     }
 
-    // void DescriptorPoolManager::bindSet(const const DescriptorSet &set, uint32_t set_index, uint32_t frame_index)
-    // {
-    //     vkCmdBindDescriptorSets()
-    // }
-
     void DescriptorSetManager::resetPools(uint32_t frame_index)
     {
         for(auto& pool : m_pools){
@@ -106,8 +101,6 @@ namespace boitatah::vk {
     {
         DescriptorSetPool pool(maxSets, request.ratios, m_vk);
         m_pools.push_back(pool);
-        std::cout<< request.ratios.size() << std::endl;
-        std::cout << "created set pool" << std::endl;
         return m_pools.size()-1;
     }
 

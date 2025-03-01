@@ -31,7 +31,7 @@ namespace boitatah::vk
                 // TODO move to vulkan class
                 std::vector<VkDescriptorPoolSize> sizes;
                 sizes.resize(ratios.size());
-                std::cout << " creating pool with " << sizes.size() << " sizes" << std::endl;
+                //std::cout << " creating pool with " << sizes.size() << " sizes" << std::endl;
                 for (size_t i = 0; i < sizes.size(); i++)
                 {
                     sizes[i].type = castEnum<VkDescriptorType>(ratios[i].type);
@@ -43,7 +43,7 @@ namespace boitatah::vk
                     used_descriptors[0][capacity_idx] = 0; 
                     used_descriptors[1][capacity_idx] = 0;
                 } 
-                std::cout << "created sizes vector" << std::endl;
+                //std::cout << "created sizes vector" << std::endl;
                 VkDescriptorPoolCreateInfo poolInfo{
                     .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
                     .pNext = nullptr,
@@ -52,7 +52,7 @@ namespace boitatah::vk
                     .pPoolSizes = sizes.data(),
                     };
                 
-                std::cout << "created pool with " << ratios.size() << " ratio types" << std::endl;
+                //std::cout << "created pool with " << ratios.size() << " ratio types" << std::endl;
 
                 for (size_t i = 0; i  < 2; i++)
                 {

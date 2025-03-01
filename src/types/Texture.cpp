@@ -17,6 +17,13 @@ namespace boitatah{
                             texProps.height * 
                             texProps.depth * 
                             formatSize(description.format);
+        m_mode = description.textureMode;
+        if(description.textureMode == TextureMode::READ){
+            std::cout << "creating sampled image" << std::endl;
+            texProps.usage = IMAGE_USAGE::TRANSFER_DST_SAMPLED;
+        }
+
+
         auto& imageMngr = m_manager->getImageManager();
         texProps.sampler = imageMngr.createSampler(description.samplerInfo);
     }
@@ -40,7 +47,6 @@ namespace boitatah{
         }
     }
     void Texture::transition(TextureMode mode) {
-    
         m_mode = mode;    
     };
     // RenderTexture::RenderTexture(const TextureCreateDescription &description, std::shared_ptr<GPUResourceManager> manager)
@@ -59,7 +65,6 @@ namespace boitatah{
             .mipLevels = texProps.sampler.data.mipLevels,
             .initialLayout = data.layout,
             .usage = texProps.usage,
-
         });
         data.generation = 0;
         return data;
@@ -85,11 +90,29 @@ namespace boitatah{
     }
     void Texture::WriteTransfer(TextureGPUData &data, CommandBufferWriter<vk::VkCommandBufferWriter> &writer)
     {
+
+        //copy image from buffer
+        auto buffer = m_manager->getResource(m_stagingBuffer).getAccessData(0);
+
+        IMAGE_LAYOUT srcLayout = data.layout;
+        if(m_mode == TextureMode::READ){
+            std::cout << "changing image to layout read" << std::endl;
+            data.layout = IMAGE_LAYOUT::READ;
+        }
         
-
-
+        writer.copyBufferToImage({
+            .buffer = buffer.buffer->getBuffer(),
+            .image = m_manager->getImageManager().getImage(data.image).image,
+            .buffOffset = buffer.offset,
+            .aspect = VK_IMAGE_ASPECT_COLOR_BIT,
+            .offset = {0, 0, 0},
+            .extent = {texProps.width, texProps.height, 1},
+            .srcImgLayout = castEnum<VkImageLayout>(srcLayout),
+            .dstImgLayout = castEnum<VkImageLayout>(data.layout),
+        });
 
     }
+
     TextureAccessData RenderTexture::getAccessData(uint32_t frame_index)
     {
         auto manager = std::shared_ptr<GPUResourceManager>(MutableGPUResource<RenderTexture>::m_manager);

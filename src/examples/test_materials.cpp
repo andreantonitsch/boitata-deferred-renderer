@@ -101,6 +101,16 @@ int main()
         .name = "triangle",
         .geometry = geometry,
         .material = material,
+        .position = glm::vec3(1, 0, 0)
+    });
+
+    auto binding2 = r.getMaterialManager().createUnlitMaterialBindings();
+    
+    SceneNode triangle2(SceneNodeDesc{
+        .name = "triangle2",
+        .geometry = geometry,
+        .material = r.getMaterialManager().createUnlitMaterial({binding2}),
+        .position = glm::vec3(-1, 0, 0)
     });
 
     // Scene Description.

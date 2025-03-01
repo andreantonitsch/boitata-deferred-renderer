@@ -132,8 +132,6 @@ namespace boitatah{
                 ~RenderTexture() = default;
                 RenderTexture(const RenderTexture& other) = default;
 
-
-
                 RenderTexture(const TextureCreateDescription &description, std::shared_ptr<GPUResourceManager> manager)
                 :   Texture(description, manager),
                     MutableGPUResource<RenderTexture>({ //Base Constructor

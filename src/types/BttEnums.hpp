@@ -317,6 +317,10 @@ namespace boitatah
             return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         case IMAGE_LAYOUT::PRESENT_SRC:
             return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        case IMAGE_LAYOUT::WRITE:
+            return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL; 
+        case IMAGE_LAYOUT::READ:
+            return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         case IMAGE_LAYOUT::UNDEFINED:
             return VK_IMAGE_LAYOUT_UNDEFINED;
         default:

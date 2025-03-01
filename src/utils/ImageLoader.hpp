@@ -32,14 +32,16 @@ namespace boitatah::utils{
                 textureCreate.depth = 1;
                 textureCreate.format = format;
                 textureCreate.samplerInfo = samplerData;
-                textureCreate.textureMode;
+                textureCreate.textureMode = mode;
                 auto texture = manager.create(textureCreate);
 
                 auto& tex = manager.getResource(texture);
                 tex.copyImageFromBuffer(pixels);
 
-                manager.forceCommitResource(texture);
-
+                manager.beginCommitCommands();
+                manager.commitResourceCommand(texture, 0);
+                manager.commitResourceCommand(texture, 1);
+                manager.submitCommitCommands();
                 stbi_image_free(pixels);
 
                 return texture;

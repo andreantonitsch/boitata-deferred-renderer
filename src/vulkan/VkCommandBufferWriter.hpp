@@ -162,10 +162,10 @@ namespace boitatah::vk{
                 
                 copy.imageSubresource.aspectMask = command.aspect;
                 copy.imageSubresource.baseArrayLayer = 0;
-                copy.imageSubresource.layerCount = 0;
+                copy.imageSubresource.layerCount = 1;
                 copy.imageSubresource.mipLevel = 0;
-
-                copy.imageOffset = {0, 0, 0};
+                
+                copy.imageOffset = {command.offset.x, command.offset.y, command.offset.z};
                 copy.imageExtent = {command.extent.x, 
                                     command.extent.y, 
                                     command.extent.z};

@@ -36,7 +36,6 @@ namespace boitatah
     struct ShaderLayoutDescVk
     {
         std::vector<VkDescriptorSetLayout> materialLayouts;
-        VkDescriptorSetLayout baseLayout;
         std::vector<PushConstantDesc> pushConstants;
 
     };

@@ -38,19 +38,15 @@ namespace boitatah{
         private:
             std::shared_ptr<Vulkan> m_vk;
 
-            std::pair<Handle<Shader>, Handle<ShaderLayout>> unlit_shader;
 
             std::vector<Handle<Shader>> m_currentShaders;
-
-            Handle<DescriptorSetLayout> m_baseLayout; 
 
             std::unique_ptr<Pool<ShaderLayout>> m_layoutPool;
             std::unique_ptr<Pool<Shader>> m_shaderPool;
             std::shared_ptr<RenderTargetManager> m_targetManager;
             std::shared_ptr<DescriptorSetManager> m_descriptorManager;
-            
+
             ShaderModule compileShaderModule(const std::vector<char>& bytecode, std::string entryPoint);
-            VkPipeline compileShader();
             void updateShadersForRenderPass(Handle<RenderPass> renderPass);
             void updateShadersForRenderTarget(Handle<RenderPass> renderPass);
             void updateShadersForRenderTarget(std::vector<Handle<Shader>>& shaders,
@@ -60,12 +56,8 @@ namespace boitatah{
         public:
             ShaderManager(std::shared_ptr<Vulkan> vulkan, 
                          std::shared_ptr<RenderTargetManager> targetManager,
-                         std::shared_ptr<DescriptorSetManager> descriptorManager) 
-;
-            
-            Handle<Shader> getUnlitShader();
+                         std::shared_ptr<DescriptorSetManager> descriptorManager);
 
-            void setBaseLayout(Handle<DescriptorSetLayout> handle);
             ShaderLayout& get(const Handle<ShaderLayout>& handle);
             Shader& get(const Handle<Shader>& handle);
             bool isValid(Handle<Shader>& handle);
@@ -83,30 +75,37 @@ namespace boitatah{
                             std::shared_ptr<DescriptorSetManager> setManager,
                             std::shared_ptr<GPUResourceManager> resourceManager);
             ShaderManager& getShaderManager();
-            Handle<Material> createMaterial(const MaterialCreate& description);
-            void destroyMaterial(const Handle<Material>& handle);
+
             const std::vector<Handle<Material>>& orderMaterials();
+            Handle<Material> createMaterial(const MaterialCreate& description);
             Material& getMaterialContent(const Handle<Material>& handle);
-            Handle<MaterialBinding> createBinding(Handle<DescriptorSetLayout>& description);
+            void destroyMaterial(const Handle<Material>& handle);
+
+            void setBaseMaterial(const Handle<Material>& handle);
+
+            Handle<MaterialBinding> createBinding(const Handle<DescriptorSetLayout> &description);
+            std::vector<Handle<MaterialBinding>> createBindings(const Handle<ShaderLayout> &description);
+            std::vector<Handle<MaterialBinding>> createUnlitMaterialBindings();
             MaterialBinding& getBinding(Handle<MaterialBinding>& handle);
             
-            bool BindMaterial(  Handle<Material>                &handle,
-                                uint32_t                        frame_index,
-                                CommandBuffer                   &buffer);
+            bool BindMaterial(Handle<Material>                &handle,
+                              uint32_t                        frame_index,
+                              CommandBuffer                   &buffer);
+            bool BindPipeline(Handle<Shader>& handle, 
+                              CommandBuffer& buffer);
+            bool BindBinding(Handle<MaterialBinding>         &handle,
+                             ShaderLayout                    &shaderLayout,
+                             Handle<DescriptorSetLayout>     setLayout,
+                             uint32_t                        set_index,
+                             uint32_t                        frame_index,
+                             CommandBuffer                   &buffer);
 
-            bool BindPipeline(Handle<Shader>& handle, CommandBuffer& buffer);
-            bool BindBinding(
-                            Handle<MaterialBinding>         &handle,
-                            ShaderLayout                    &shaderLayout,
-                            Handle<DescriptorSetLayout>     setLayout,
-                            uint32_t                        set_index,
-                            uint32_t                        frame_index,
-                            CommandBuffer                   &buffer);
-            void setBaseBindings(std::vector<Handle<MaterialBinding>>&& handles);
-            void setBaseBindings(const std::vector<Handle<MaterialBinding>>& handles);
-        
-            Handle<Material> getUnlitMaterial(const MaterialCreate& description);
+            Handle<Material> createUnlitMaterial(const std::vector<Handle<MaterialBinding>>& bindings);
             void resetBindings();
+
+            void setupBaseMaterials(Handle<RenderPass> renderpass);
+            void clearBaseMaterials();
+
         private:
             std::shared_ptr<Vulkan> m_vk;        
             std::shared_ptr<RenderTargetManager> m_targetManager;
@@ -120,8 +119,12 @@ namespace boitatah{
             std::vector<Handle<MaterialBinding>> m_currentBindings;
             Handle<Shader> m_currentPipeline;
 
-            std::vector<Handle<MaterialBinding>> m_baseBindings;
+            std::pair<Handle<Shader>, Handle<ShaderLayout>> unlit_shader;
 
+            Handle<Material> m_baseMaterial;
+
+
+            void setupUnlitMaterial(Handle<RenderPass> renderpass);
             void inheritMaterial();
 
     };
