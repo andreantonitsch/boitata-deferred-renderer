@@ -4,7 +4,7 @@
 
 namespace boitatah{
 
-    BufferAccessData GPUBuffer::getAccessData(uint32_t frame_index)
+    buffer::BufferAccessData GPUBuffer::GetRenderData(uint32_t frame_index)
     {
         auto& content = get_content(frame_index);
         std::shared_ptr<GPUResourceManager> manager(m_manager);
@@ -44,14 +44,12 @@ namespace boitatah{
     
     bool GPUBuffer::ReadyForUse(BufferGPUData &content)
     {
-        if(m_descriptor.sharing == SHARING_MODE::CONCURRENT)
+        if(!(content).dirty &
+            m_descriptor.sharing == SHARING_MODE::CONCURRENT)
             return true;
         return (content).dirty;
     }
-    void GPUBuffer::SetContent(BufferGPUData &content)
-    {
-    }
-    
+
     BufferGPUData GPUBuffer::CreateGPUData()
     {     
         auto manager = std::shared_ptr(m_manager);

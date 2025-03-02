@@ -89,7 +89,29 @@ namespace boitatah
             {
                 return m_resourcePool->get(handle);
             }
+            //can only be using when commiting commands
+            template <typename ResourceType>
+            inline ResourceType& getCommitResource(Handle<ResourceType>& handle)
+            {
+                auto& resource = m_resourcePool->get(handle);
+            }
 
+            //ACCESS DATA is the hot data for rendering
+            template <typename ResourceType>
+            inline ResourceTraits<ResourceType>::RenderData getResourceAccessData(Handle<ResourceType> handle, uint32_t frame_index)
+            {
+                return m_resourcePool->get(handle).GetRenderData(frame_index);
+            }
+            //ACCESS DATA is the hot data for rendering
+            //can only be used when writing transfers
+            template <typename ResourceType>
+            inline ResourceTraits<ResourceType>::RenderData getCommitResourceAccessData(Handle<ResourceType> handle, uint32_t frame_index)
+            {
+                return m_resourcePool->get(handle)
+                            .commit_update_get_render_data(  handle,
+                                                            frame_index,
+                                                            getCommandBufferWriter());
+            }
 
         private:
             std::shared_ptr<vk::Vulkan> m_vulkan;

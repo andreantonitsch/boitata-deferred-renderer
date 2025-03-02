@@ -21,14 +21,14 @@ int main()
 
     Renderer r({.windowDimensions = {windowWidth, windowHeight},
                 .appName = "Test Frame Buffer",
-                .debug = true,
-                .swapchainFormat = IMAGE_FORMAT::BGRA_8_UNORM,
+                .debug = false,
+                .swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB,
                 .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR},
-                                   .attachmentFormats = {IMAGE_FORMAT::BGRA_8_UNORM},
+                                   .attachmentFormats = {IMAGE_FORMAT::BGRA_8_SRGB},
                                    .dimensions = {windowWidth, windowHeight}}});
 
-    Handle<RenderTexture> texture = utils::TextureLoader::loadRenderTexture(std::string("./resources/viking_room.png"),
-     IMAGE_FORMAT::BGRA_8_SRGB,
+    Handle<RenderTexture> texture = utils::TextureLoader::loadRenderTexture(std::string("./resources/UV_checker2k.png"),
+     IMAGE_FORMAT::RGBA_8_SRGB,
      TextureMode::READ, SamplerData(),
      r.getResourceManager());
 
@@ -68,7 +68,7 @@ int main()
     {
         r.render(scene, camera);
         ///camera.rotate(glm::vec3(0.0, 0.01, 0.0));
-        camera.roll(0.001);
+        camera.roll(0.0001);
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
     }
     r.waitIdle();

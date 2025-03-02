@@ -28,11 +28,17 @@ namespace boitatah
         MISC2 = 7U
     };
 
+
+    struct GeometryRenderData{
+
+    };
+
     struct GeometryGPUData {};
     template<>
     struct ResourceTraits<Geometry>{
         using ContentType = GeometryGPUData;
         using CommandBufferWriter = vk::VkCommandBufferWriter;
+        using RenderData = GeometryRenderData;
     };
 
 
@@ -136,7 +142,7 @@ namespace boitatah
              Handle<GPUBuffer> IndexBuffer(){
                 return indexBuffer;
              };
-
+            GeometryRenderData GetRenderData() {return GeometryRenderData{};}
             GeometryGPUData CreateGPUData() {return GeometryGPUData{};}
             bool ReadyForUse(GeometryGPUData& content){ return true; };
             void SetContent(GeometryGPUData& content){};

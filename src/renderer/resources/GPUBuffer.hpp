@@ -31,6 +31,7 @@ namespace boitatah
     struct ResourceTraits<GPUBuffer>{
         using ContentType = BufferGPUData;
         using CommandBufferWriter = vk::VkCommandBufferWriter;
+        using RenderData = buffer::BufferAccessData;
     };
 
 
@@ -70,9 +71,9 @@ namespace boitatah
                                                     .mutability = RESOURCE_MUTABILITY::MUTABLE,
                                                   }, manager) 
                                                   { };
-            BufferAccessData getAccessData(uint32_t frame_index);
 
             void copyData(const void * data, uint32_t length);
+            buffer::BufferAccessData GetRenderData(uint32_t frame_index);
 
             //TODO: Implement
             bool readData(void* dstPtr);

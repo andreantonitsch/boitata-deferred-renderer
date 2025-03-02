@@ -48,6 +48,15 @@ namespace boitatah{
     }
     void Texture::transition(TextureMode mode) {
         m_mode = mode;    
+    }
+    TextureAccessData Texture::GetRenderData(TextureGPUData &gpu_data)
+    {
+        auto& image = m_manager->getImageManager().getImage(gpu_data.image);
+            //resource().get_content(frame_index).image
+        return {.image = image.view,
+                .layout = castEnum<VkImageLayout>(gpu_data.layout),
+                .sampler = gpu_data.sampler.sampler,
+                };
     };
     // RenderTexture::RenderTexture(const TextureCreateDescription &description, std::shared_ptr<GPUResourceManager> manager)
     TextureGPUData Texture::CreateGPUData()
@@ -90,9 +99,8 @@ namespace boitatah{
     }
     void Texture::WriteTransfer(TextureGPUData &data, CommandBufferWriter<vk::VkCommandBufferWriter> &writer)
     {
-
         //copy image from buffer
-        auto buffer = m_manager->getResource(m_stagingBuffer).getAccessData(0);
+        auto buffer = m_manager->getResourceAccessData(m_stagingBuffer, 0);
 
         IMAGE_LAYOUT srcLayout = data.layout;
         if(m_mode == TextureMode::READ){
@@ -113,15 +121,12 @@ namespace boitatah{
 
     }
 
-    TextureAccessData RenderTexture::getAccessData(uint32_t frame_index)
+    TextureAccessData RenderTexture::GetRenderData(uint32_t frame_index)
     {
         auto manager = std::shared_ptr<GPUResourceManager>(MutableGPUResource<RenderTexture>::m_manager);
         auto& res = resource().get_content(frame_index);
-        auto& image = manager->getImageManager().getImage(res.image);
-            //resource().get_content(frame_index).image
-        return {.image = image.view,
-                .layout = castEnum<VkImageLayout>(res.layout),
-                .sampler = res.sampler.sampler,
-                };
+
+        return Texture::GetRenderData(res);
+        
     }
 };

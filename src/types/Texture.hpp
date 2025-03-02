@@ -41,16 +41,19 @@ namespace boitatah{
     struct ResourceTraits<Texture>{
         using ContentType = TextureGPUData;
         using CommandBufferWriter = vk::VkCommandBufferWriter;
+        using RenderData = TextureAccessData;
     };
     template<>
     struct ResourceTraits<FixedTexture>{
         using ContentType = TextureGPUData;
         using CommandBufferWriter = vk::VkCommandBufferWriter;
+        using RenderData = TextureAccessData;
     };
     template<>
     struct ResourceTraits<RenderTexture>{
         using ContentType = TextureGPUData;
         using CommandBufferWriter = vk::VkCommandBufferWriter;
+        using RenderData = TextureAccessData;
     };
 
     struct TextureCreateDescription{
@@ -94,7 +97,7 @@ namespace boitatah{
             void copyImageFromBuffer(void *data);
 
             void transition(TextureMode mode);
-            
+            TextureAccessData GetRenderData(TextureGPUData& gpu_data);
             TextureGPUData CreateGPUData();
             bool ReadyForUse(TextureGPUData& content);
             void ReleaseData(TextureGPUData& content);
@@ -139,7 +142,7 @@ namespace boitatah{
                                                 .type = RESOURCE_TYPE::TEXTURE,
                                                 .mutability = RESOURCE_MUTABILITY::MUTABLE,
                                                 }, manager) { };
-                TextureAccessData getAccessData(uint32_t frame_index); 
+                TextureAccessData GetRenderData(uint32_t frame_index);
                 TextureGPUData CreateGPUData() 
                     {return Texture::CreateGPUData();};
                 bool ReadyForUse(TextureGPUData& content)
