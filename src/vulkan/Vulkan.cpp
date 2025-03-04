@@ -556,6 +556,17 @@ void boitatah::vk::Vulkan::submitDrawCmdBuffer(const SubmitDrawCommandVk &comman
         //.pSignalSemaphores = signals.data()
     };
     
+    if( command.wait_semaphore != nullptr){
+        ///std::cout << "waiting for semaphore " << command.wait_semaphore << std::endl;
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores = command.wait_semaphore;
+    }
+
+    if( command.signal_semaphore != nullptr){
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = command.signal_semaphore;
+    }
+
     if (vkQueueSubmit(queues.graphicsQueue, 1, &submitInfo, command.fence) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit graphics queue");

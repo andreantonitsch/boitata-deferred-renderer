@@ -89,18 +89,21 @@ namespace boitatah
             {
                 return m_resourcePool->get(handle);
             }
+
             //can only be using when commiting commands
             template <typename ResourceType>
-            inline ResourceType& getCommitResource(Handle<ResourceType>& handle)
+            inline ResourceType& getCommitResource(Handle<ResourceType>& handle, uint32_t frame_index)
             {
-                auto& resource = m_resourcePool->get(handle);
+                return m_resourcePool->get(handle)
+                            .get_content_commit_update(frame_index,
+                                                       getCommandBufferWriter());
             }
 
             //ACCESS DATA is the hot data for rendering
             template <typename ResourceType>
             inline ResourceTraits<ResourceType>::RenderData getResourceAccessData(Handle<ResourceType> handle, uint32_t frame_index)
             {
-                return m_resourcePool->get(handle).GetRenderData(frame_index);
+                return m_resourcePool->get(handle).get_render_data(frame_index);
             }
             //ACCESS DATA is the hot data for rendering
             //can only be used when writing transfers
@@ -108,9 +111,8 @@ namespace boitatah
             inline ResourceTraits<ResourceType>::RenderData getCommitResourceAccessData(Handle<ResourceType> handle, uint32_t frame_index)
             {
                 return m_resourcePool->get(handle)
-                            .commit_update_get_render_data(  handle,
-                                                            frame_index,
-                                                            getCommandBufferWriter());
+                            .get_render_data_commit_update( frame_index,
+                                                        getCommandBufferWriter());
             }
 
         private:
@@ -137,6 +139,7 @@ namespace boitatah
         inline void GPUResourceManager::forceCommitResource(Handle<ResourceType> resource)
         {
             forceCommitResource(resource, 0);
+            forceCommitResource(resource, 1);
         }
 
         template <typename ResourceType>

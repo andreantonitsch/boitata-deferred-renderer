@@ -19,6 +19,7 @@ namespace boitatah::vk{
         //VkSemaphore signal;
         //VkSemaphore wait;
         COMMAND_BUFFER_TYPE submitType;
+        bool signal = false;
     };
 
     struct VulkanWriterDrawCommand {};

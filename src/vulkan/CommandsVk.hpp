@@ -13,6 +13,7 @@ namespace boitatah::vk
         VkSemaphore signalSemaphore;
         VkFence fence;
 
+
         //RenderTargetCmdBuffers bufferData;
         //COMMAND_BUFFER_TYPE submitType;
     };
@@ -31,7 +32,8 @@ namespace boitatah::vk
     {
         VkCommandBuffer commandBuffer;
         VkFence fence;
-
+        VkSemaphore*  wait_semaphore  = nullptr;
+        VkSemaphore*  signal_semaphore = nullptr;
     };
 
     struct BeginCommandVk{

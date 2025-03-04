@@ -24,7 +24,6 @@ namespace boitatah
     {
         Handle<BufferAddress> buffer;
         uint32_t buffer_capacity;
-        bool dirty;
     };
 
     template<>

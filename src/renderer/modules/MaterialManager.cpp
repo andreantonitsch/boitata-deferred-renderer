@@ -257,13 +257,14 @@ namespace boitatah{
             switch(desc.type){
                 case DESCRIPTOR_TYPE::UNIFORM_BUFFER:
                     desc.access.bufferData = m_resourceManager->
-                                                    getResource(binding.bindings[i].binding_handle.buffer)
-                                                    .GetRenderData(frame_index);
+                                                    getCommitResourceAccessData(
+                                                        binding.bindings[i].binding_handle.buffer,
+                                                        frame_index);
                                                     break;
                 case DESCRIPTOR_TYPE::COMBINED_IMAGE_SAMPLER:
                     desc.access.textureData = m_resourceManager->
-                                                    getResource(binding.bindings[i].binding_handle.renderTex)
-                                                    .GetRenderData(frame_index);
+                                                    getCommitResourceAccessData(binding.bindings[i].binding_handle.renderTex,
+                                                    frame_index);
                                                     break;
             }
 

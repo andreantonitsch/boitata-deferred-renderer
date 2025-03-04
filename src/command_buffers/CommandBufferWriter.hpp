@@ -12,6 +12,7 @@ namespace boitatah::command_buffers{
         protected:
             CommandWriterTraits<T>::CommandBufferType   m_buffer;
             CommandWriterTraits<T>::SemaphoreType       m_signal;
+            CommandWriterTraits<T>::SemaphoreType       m_wait;
             CommandWriterTraits<T>::FenceType           m_fence;
 
         public:
@@ -39,8 +40,11 @@ namespace boitatah::command_buffers{
                 m_fence = fence;
             };
 
-            void setSignal(SemaphoreType signal){
-                m_signal = signal;
+            void setSignal(SemaphoreType semaphore){
+                m_signal = semaphore;
+            };
+            void setWait(SemaphoreType semaphore){
+                m_wait = semaphore;
             };
 
             void begin(const BeginCommand &command){
@@ -94,6 +98,8 @@ namespace boitatah::command_buffers{
             void copyBufferToImage(const CopyBufferToImageCommand& command){
                 self().__imp_copyBufferToImage(command, m_buffer);
             }
+
+            CommandWriterTraits<T>::SemaphoreType* getSignal(){return &(self().m_signal);}
 
     };
 

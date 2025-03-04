@@ -123,10 +123,6 @@ namespace boitatah{
 
     TextureAccessData RenderTexture::GetRenderData(uint32_t frame_index)
     {
-        auto manager = std::shared_ptr<GPUResourceManager>(MutableGPUResource<RenderTexture>::m_manager);
-        auto& res = resource().get_content(frame_index);
-
-        return Texture::GetRenderData(res);
-        
+        return Texture::GetRenderData(resource().get_content(frame_index));        
     }
 };

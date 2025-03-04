@@ -16,7 +16,7 @@ namespace boitatah{
     void GPUBuffer::copyData(const void *data, uint32_t length)
     {
         
-        dirty = true;
+        set_dirty();
         //Stages a transfer
         if(m_descriptor.sharing == SHARING_MODE::EXCLUSIVE){
             
@@ -44,10 +44,11 @@ namespace boitatah{
     
     bool GPUBuffer::ReadyForUse(BufferGPUData &content)
     {
-        if(!(content).dirty &
-            m_descriptor.sharing == SHARING_MODE::CONCURRENT)
-            return true;
-        return (content).dirty;
+        // if(!(content).dirty &
+        //     m_descriptor.sharing == SHARING_MODE::CONCURRENT)
+        //     return true;
+        // return (content).dirty;
+        return true;
     }
 
     BufferGPUData GPUBuffer::CreateGPUData()
@@ -66,9 +67,7 @@ namespace boitatah{
     void GPUBuffer::WriteTransfer(BufferGPUData &data, CommandBufferWriter<VkCommandBufferWriter> &writer) {
         if(m_descriptor.sharing == SHARING_MODE::EXCLUSIVE){
             auto manager = std::shared_ptr(m_manager)->getBufferManager();
-            data.dirty = false;
-            //std::cout << "copying to exclusive buffer" << std::endl;
-            manager->queueCopy<VkCommandBufferWriter>(writer, stagingBuffer, data.buffer);
+            manager->queueCopy(writer, stagingBuffer, data.buffer);
         }
     };
 

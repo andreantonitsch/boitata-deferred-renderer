@@ -29,8 +29,9 @@ namespace boitatah::vk{
             using  CommandBufferWriter<VkCommandBufferWriter>::copyBuffer;
             using  CommandBufferWriter<VkCommandBufferWriter>::copyImage;
             using  CommandBufferWriter<VkCommandBufferWriter>::copyBufferToImage;
+            using  CommandBufferWriter<VkCommandBufferWriter>::waitForTransfers;
 
-            VkCommandBufferWriter(std::shared_ptr<Vulkan> vk_instance) : vk_instance(vk_instance){};
+            VkCommandBufferWriter(std::shared_ptr<Vulkan> vk_instance) : vk_instance(vk_instance), CommandBufferWriter<VkCommandBufferWriter>(){};
 
         private:
             std::weak_ptr<Vulkan> vk_instance;
@@ -73,18 +74,11 @@ namespace boitatah::vk{
                 auto vk = std::shared_ptr<Vulkan>(vk_instance);
                 vkEndCommandBuffer(buffer);
                 vkResetFences(vk->getDevice(), 1, &m_fence);
-
                 VkSubmitInfo submit{
                     .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
                     .commandBufferCount = 1,
                     .pCommandBuffers = &buffer,
                 };
-
-                if (m_signal != VK_NULL_HANDLE)
-                {
-                    submit.signalSemaphoreCount = 1;
-                    submit.pSignalSemaphores = &m_signal;
-                }
 
                 std::vector<VkPipelineStageFlags> stages{};
 
@@ -95,11 +89,17 @@ namespace boitatah::vk{
                     queue = vk->getTransferQueue();
                 }
 
-                if (m_signal != VK_NULL_HANDLE)
-                {
+                if(m_wait != VK_NULL_HANDLE){
                     submit.waitSemaphoreCount = 1;
-                    submit.pWaitSemaphores = &m_signal;
+                    submit.pWaitSemaphores = &m_wait;
                     submit.pWaitDstStageMask = stages.data();
+                }
+
+                if (m_signal != VK_NULL_HANDLE && command.signal)
+                {
+                    //std::cout << "signaling " << &m_signal << std::endl;
+                    submit.signalSemaphoreCount = 1;
+                    submit.pSignalSemaphores = &(self().m_signal);
                 }
 
                 vkQueueSubmit(queue, 1, &submit, m_fence);

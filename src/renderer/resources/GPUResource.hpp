@@ -21,7 +21,7 @@ namespace boitatah{
             std::weak_ptr<GPUResourceManager> m_manager;
 
             uint8_t dirty = 255u;
-            bool commited = 255u;
+            uint8_t commited = 255u;
 
             DerivedResource<Resource>& self(){return *static_cast<DerivedResource<Resource> *>(this);};
 
@@ -40,7 +40,7 @@ namespace boitatah{
             { dirty = dirty & ~(static_cast<uint8_t>(1u) << (frameIndex%2)); };
 
             void clean_commit(int frameIndex = 0) 
-            { commited = 0u;};
+            { commited = 255u;};
 
             void release(){
                 self().__impl_release();
@@ -49,9 +49,8 @@ namespace boitatah{
             /// @brief commits to update this resource next time resources are updated
             void commit(uint32_t frame_index, ResourceTraits<Resource>::CommandBufferWriter& writer)
             {
-                commited = true;
-                self().__impl_commit(frame_index, writer);
                 set_commited(frame_index);
+                self().__impl_commit(frame_index, writer);
             };
 
             // can only be used when writting a transfer buffer.
@@ -59,47 +58,53 @@ namespace boitatah{
                             uint32_t                                        frameIndex, 
                             ResourceTraits<Resource>::CommandBufferWriter   &writer)
             {
-                if(!check_content_ready(frameIndex)){
-                    commit(frameIndex, writer);
-                }
+                if((!check_content_ready(frameIndex)
+                   ||check_dirt(frameIndex) )
+                   //&&!check_commited(frameIndex))
+                ){
+                        commit(frameIndex, writer);
+                        clean_dirt(frameIndex);
+                    }
                 return get_content(frameIndex);
             };
             
-            ResourceTraits<Resource>::RenderData& get_render_data(uint32_t frameIndex)
-            {
-                return self().__impl_get_render_data(frameIndex);
-            };
 
             // can only be used when writting a transfer buffer.
-            ResourceTraits<Resource>::RenderData& commit_update_get_render_data(
+            ResourceTraits<Resource>::RenderData get_render_data_commit_update(
                             uint32_t                                        frameIndex, 
                             ResourceTraits<Resource>::CommandBufferWriter   &writer)
             {
                 //data is not commited, and not ready // dirty
                 if((!check_content_ready(frameIndex)
-                   ||check_dirt(frameIndex) ) && 
-                    !check_commited(frameIndex))
-                    {
+                   ||check_dirt(frameIndex) )
+                   //&&!check_commited(frameIndex))
+                ){
                         commit(frameIndex, writer);
+                        clean_dirt(frameIndex);
                     }
                 return get_render_data(frameIndex);
             };
-            void check_content_ready(int frameIndex){
+            bool check_content_ready(int frameIndex){
                 return self().__impl_check_content_ready(frameIndex%2);
             };
 
             bool check_dirt(uint32_t frameIndex) 
-            { return static_cast<uint8_t>(0) < (dirty & (static_cast<uint8_t>(1) << (frameIndex%2))); };
+            { return 0u < (dirty & (1u << (frameIndex%2))); };
 
-            void set_dirty(){dirty = 255u;};
+            void set_dirty(){dirty = 255u; commited = 255u;};
 
             void set_commited(uint32_t frame_index)
-            {commited = commited & ~(static_cast<uint8_t>(1) << (frame_index%2)); };
+            {commited &= ~(static_cast<uint8_t>(1) << (frame_index%2)); };
 
             public:
 
                 bool ready_for_use(uint32_t frameIndex) { return self().__impl_ready_for_use(frameIndex);};
-                bool check_commited(uint32_t frameIndex) { return static_cast<uint8_t>(0u) == (dirty & (static_cast<uint32_t>(commited) << (frameIndex%2))); };
+                bool check_commited(uint32_t frameIndex) { return 0u == ((commited << (frameIndex%2))); };
+            
+                ResourceTraits<Resource>::RenderData get_render_data(uint32_t frameIndex)
+                {
+                    return self().__impl_get_render_data(frameIndex);
+                };
                 
                 ResourceTraits<Resource>::ContentType& get_content(uint32_t frameIndex)
                 {
@@ -138,6 +143,7 @@ namespace boitatah{
             using GPUResource<MutableGPUResource, Resource>::get_content;
             using GPUResource<MutableGPUResource, Resource>::self;
             using GPUResource<MutableGPUResource, Resource>::commit;
+            using GPUResource<MutableGPUResource, Resource>::get_render_data;
 
             Resource& resource(){return *static_cast<Resource *>(this); };
 
@@ -149,7 +155,7 @@ namespace boitatah{
                 return replicated_content[frame_index % 2];
             };
 
-            ResourceTraits<Resource>::RenderData& __impl_get_render_data(uint32_t frameIndex)
+            ResourceTraits<Resource>::RenderData __impl_get_render_data(uint32_t frameIndex)
             {
                 return resource().GetRenderData(frameIndex);
             };
@@ -205,7 +211,7 @@ namespace boitatah{
                 return 0;
             };
 
-            ResourceTraits<Resource>::RenderData& __impl_get_render_data(uint32_t frameIndex)
+            ResourceTraits<Resource>::RenderData __impl_get_render_data(uint32_t frameIndex)
             {
                 return resource().GetRenderData(frameIndex);
             };

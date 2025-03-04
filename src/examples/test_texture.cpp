@@ -21,13 +21,13 @@ int main()
 
     Renderer r({.windowDimensions = {windowWidth, windowHeight},
                 .appName = "Test Frame Buffer",
-                .debug = false,
+                .debug = true,
                 .swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB,
                 .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR},
                                    .attachmentFormats = {IMAGE_FORMAT::BGRA_8_SRGB},
                                    .dimensions = {windowWidth, windowHeight}}});
 
-    Handle<RenderTexture> texture = utils::TextureLoader::loadRenderTexture(std::string("./resources/UV_checker2k.png"),
+    Handle<RenderTexture> texture = utils::TextureLoader::loadRenderTexture(std::string("./resources/UV_checker1k.png"),
      IMAGE_FORMAT::RGBA_8_SRGB,
      TextureMode::READ, SamplerData(),
      r.getResourceManager());

@@ -24,14 +24,17 @@ namespace boitatah{
 
     void GPUResourceManager::beginCommitCommands()
     {
+        //m_commandBufferWriter->waitForTransfers();
         m_commandBufferWriter->reset({});
         m_commandBufferWriter->begin({});
     }
 
     void GPUResourceManager::submitCommitCommands()
     {
+        
         m_commandBufferWriter->submit({
             .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
+            .signal = true
         });
     }
 
@@ -110,7 +113,7 @@ namespace boitatah{
             }
         }
         geo.vertexInfo = description.vertexInfo;
-        commitGeometryData(geo);
+        //commitGeometryData(geo);
         std::cout << "commited" << std::endl;
         return m_resourcePool->set(geo);
     }
@@ -126,15 +129,15 @@ namespace boitatah{
     void GPUResourceManager::commitGeometryData(Geometry &geo)
     {
         waitForTransfers();
-        beginCommitCommands();
-        for(auto& buffer : geo.m_buffers)
-        {
-            commitResourceCommand(buffer, 0);
-            commitResourceCommand(buffer, 1);    
-        }
+        // beginCommitCommands();
+        // for(auto& buffer : geo.m_buffers)
+        // {
+        //     commitResourceCommand(buffer, 0);
+        //     commitResourceCommand(buffer, 1);    
+        // }
 
-        commitResourceCommand(geo.indexBuffer, 0);
-        commitResourceCommand(geo.indexBuffer, 1);
-        submitCommitCommands();
+        //commitResourceCommand(geo.indexBuffer, 0);
+        //commitResourceCommand(geo.indexBuffer, 1);
+        //submitCommitCommands();
     }
 }

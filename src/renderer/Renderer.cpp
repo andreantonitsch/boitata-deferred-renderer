@@ -49,9 +49,11 @@ namespace boitatah
 
         //Initializethe command buffer writer
         m_ResourceManagerTransferWriter = std::make_shared<VkCommandBufferWriter>(m_vk);
-        m_ResourceManagerTransferWriter->setCommandBuffer(m_transferCommandBuffer.buffer);
-        m_ResourceManagerTransferWriter->setFence(m_transferFence);
-        m_ResourceManagerTransferWriter->setSignal(nullptr);
+        m_ResourceManagerTransferWriter->setCommandBuffer(allocateCommandBuffer({.count = 1,
+                                                         .level = COMMAND_BUFFER_LEVEL::PRIMARY,
+                                                         .type = COMMAND_BUFFER_TYPE::TRANSFER}).buffer);
+        m_ResourceManagerTransferWriter->setFence(m_vk->createFence(true));
+        m_ResourceManagerTransferWriter->setSignal(m_vk->createSemaphore());
         
 
         //Initialize the renderer Modules
@@ -118,8 +120,7 @@ namespace boitatah
     {
         GPUBuffer& buffer = m_resourceManager->getResource(m_frameUniformsBuffer);
         buffer.copyData(&frame_uniforms, sizeof(FrameUniforms2));
-        m_resourceManager->forceCommitResource(m_frameUniformsBuffer, frame_index);
-        
+        //m_resourceManager->commitResourceCommand(m_frameUniformsBuffer, frame_index);
     }
 
     void Renderer::handleWindowResize()
@@ -263,14 +264,10 @@ namespace boitatah
 
         // vertex and mesh data
         Geometry geom = m_resourceManager->getResource(scene.geometry);
-
-        auto vertexBufferHandle = geom.getBuffer(VERTEX_BUFFER_TYPE::POSITION);
-        auto vertexBufferData = m_resourceManager->getResource(vertexBufferHandle).GetRenderData(frameIndex);
-
-        auto indexBufferData = m_resourceManager->getResource(geom.IndexBuffer()).GetRenderData(frameIndex);
+        
+        auto indexBufferData = m_resourceManager->getCommitResourceAccessData(geom.IndexBuffer(), frameIndex);
 
         auto indexVkBuffer = indexBufferData.buffer->getBuffer();
-        auto vertexVkBuffer = vertexBufferData.buffer->getBuffer();
 
         drawCommand({
             .drawBuffer = buffers.drawBuffer,
@@ -358,7 +355,8 @@ namespace boitatah
         m_descriptorManager->resetPools(frame_index);
 
         auto& shader_mngr = m_materialMngr->getShaderManager();
-
+        
+        m_resourceManager->waitForTransfers();
         m_resourceManager->beginCommitCommands();
 
         beginBuffer({.buffer = buffers.drawBuffer});
@@ -391,8 +389,10 @@ namespace boitatah
                 std::cout << "skip drawing node" << std::endl;
                 continue;
             }
+            
             auto& material = m_materialMngr->getMaterialContent(node->material);
             m_materialMngr->BindMaterial(node->material, frame_index, buffers.drawBuffer);
+            
             Handle<Shader>& shader = material.shader;
             
             // TODO separate to avoid rebinding when drawing a lot of the same object
@@ -417,14 +417,16 @@ namespace boitatah
                 }}}
             );
 
-            m_resourceManager->submitCommitCommands();
             renderToRenderTarget(*node, rendertarget, m_backBufferManager->getCurrentIndex());
         }
  
         m_vk->endRenderpassCommand({.commandBuffer = buffers.drawBuffer.buffer});
 
+        m_resourceManager->submitCommitCommands();
         m_vk->submitDrawCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer,
-                            .fence = buffers.inFlightFen});
+                            .fence = buffers.inFlightFen,
+                            .wait_semaphore = m_resourceManager->getCommandBufferWriter().getSignal()
+                            });
 
         m_materialMngr->resetBindings();
         //std::cout << "Submit Draw Command \n";
@@ -462,9 +464,9 @@ namespace boitatah
         auto colorBufferHandle = geom.getBuffer(VERTEX_BUFFER_TYPE::COLOR);
         auto uvBufferHandle = geom.getBuffer(VERTEX_BUFFER_TYPE::UV);
         std::array<BufferAccessData, 3> bufferData;
-        bufferData[0] = m_resourceManager->getResource(vertexBufferHandle).GetRenderData(command.frame);
-        bufferData[1] = m_resourceManager->getResource(uvBufferHandle).GetRenderData(command.frame);
-        bufferData[2] = m_resourceManager->getResource(colorBufferHandle).GetRenderData(command.frame);
+        bufferData[0] = m_resourceManager->getCommitResourceAccessData(vertexBufferHandle, command.frame);
+        bufferData[1] = m_resourceManager->getCommitResourceAccessData(uvBufferHandle, command.frame);
+        bufferData[2] = m_resourceManager->getCommitResourceAccessData(colorBufferHandle, command.frame);
 
         std::vector<VkDeviceSize> offsets; 
         std::vector<VkBuffer> buffers;
@@ -485,7 +487,7 @@ namespace boitatah
         if(command.bindIndex)
         {
             auto indexHandle = geom.IndexBuffer();
-            auto indexData = m_resourceManager->getResource(indexHandle).GetRenderData(command.frame);
+            auto indexData = m_resourceManager->getCommitResourceAccessData(indexHandle, command.frame);
             m_vk->CmdBindIndexBuffer({.drawBuffer = command.commandBuffer.buffer,
                                     .buffers = {indexData.buffer->getBuffer()},
                                     .offsets = {indexData.offset}});
