@@ -55,7 +55,7 @@ namespace boitatah
     {
         dirty_view();
 
-        m_rotation = glm::rotate(m_rotation, glm::length(eulerAngles), glm::normalize(eulerAngles));
+        m_direction = glm::rotate(m_rotation, glm::length(eulerAngles), glm::normalize(eulerAngles)) * m_direction;
     }
 
     void Camera::roll(float rollAngle)
@@ -64,6 +64,11 @@ namespace boitatah
         glm::vec3 direction = glm::normalize(getDirection());
         glm::quat roll_quat = glm::angleAxis(rollAngle, direction);
         m_up = roll_quat * m_up;
+    }
+
+    void Camera::orbit(glm::vec3 point, glm::vec3 axis)
+    {
+        //TODO not implemented yet
     }
 
     glm::mat4 Camera::getProjection()
@@ -135,7 +140,7 @@ namespace boitatah
         m_dirty_view = false;
     }
     void Camera::updateProj() {
-        m_projection = glm::perspectiveLH(m_fov, m_aspect, m_nearPlane, m_farPlane);
+        m_projection = glm::perspectiveLH(m_fov, m_aspect, m_farPlane, m_nearPlane); //m_nearPlane, m_farPlane);
         m_dirty_proj = false;
     };
 

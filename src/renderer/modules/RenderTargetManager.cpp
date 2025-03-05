@@ -80,7 +80,7 @@ namespace boitatah{
     {
         RenderPass pass{
             .renderPass = m_vk->createRenderPass(description),
-            .attachments = description.attachments
+            .attachments = description.color_attachments
         };
 
         return m_passPool->set(pass);

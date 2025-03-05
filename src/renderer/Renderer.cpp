@@ -335,11 +335,12 @@ namespace boitatah
         std::vector<SceneNode *> nodes;
         scene.sceneAsList(nodes);
 
+        //std::cout << "drawing scene with " << nodes.size() << " nodes "<<std::endl;
         // TODO cullings and whatever
         // TRANSFORM UPDATES
         // ETC
         
-        auto ordered_nodes = orderSceneNodes(nodes);
+        auto ordered_nodes = nodes; //orderSceneNodes(nodes);
         
         RenderTarget& target = m_renderTargetManager->get(rendertarget);
         RenderTargetSync& buffers = m_renderTargetManager->get(target.cmdBuffers);
@@ -403,7 +404,7 @@ namespace boitatah
                 .bindIndex = true
             });
 
-            glm::mat4 model_mat = scene.getGlobalMatrix();
+            glm::mat4 model_mat = node->getGlobalMatrix();
 
             pushPushConstants({
                 .drawBuffer = buffers.drawBuffer,

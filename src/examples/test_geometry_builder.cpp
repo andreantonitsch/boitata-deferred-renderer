@@ -7,12 +7,13 @@
 #include <collections/Pool.hpp>
 
 #include <renderer/resources/builders/GeometryBuilder.hpp>
-
+#include <utils/ImageLoader.hpp>
 #include <memory>
 using namespace boitatah;
 
 int main()
 {
+
 
     const uint32_t windowWidth = 1024;
     const uint32_t windowHeight = 768;
@@ -20,98 +21,92 @@ int main()
     Renderer r({.windowDimensions = {windowWidth, windowHeight},
                 .appName = "Test Frame Buffer",
                 .debug = true,
-                .swapchainFormat = IMAGE_FORMAT::BGRA_8_UNORM,
+                .swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB,
                 .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR},
-                                   .attachmentFormats = {IMAGE_FORMAT::BGRA_8_UNORM},
+                                   .attachmentFormats = {IMAGE_FORMAT::BGRA_8_SRGB},
                                    .dimensions = {windowWidth, windowHeight}}});
 
-    // Pipeline Layout for the Shader.
-    Handle<ShaderLayout> layout = r.createShaderLayout({});
-    Handle<Shader> shader = r.createShader({.name = "test",
-                                            .vert = {
-                                                .byteCode = utils::readFile("./src/camera_vert.spv"),
-                                                .entryFunction = "main"},
-                                            .frag = {.byteCode = utils::readFile("./src/camera_frag.spv"), .entryFunction = "main"},
-                                            .layout = layout,
-                                            .vertexBindings = {
-                                                {.stride = 12, .attributes = {{.location = 0, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},
-                                                {.stride = 12, .attributes = {{.location = 1, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},
-                                                {.stride = 8, .attributes = {{.location = 2, .format = IMAGE_FORMAT::RG_32_SFLOAT, .offset = 0}}},
-                                                }});
-    struct GeometryData
-    {
-        std::vector<glm::vec3> vertices;
-        std::vector<glm::vec3> color;
-        std::vector<glm::vec2> uv;
-        
-        std::vector<uint32_t> indices;
-    };
+    Handle<RenderTexture> texture = utils::TextureLoader::loadRenderTexture(std::string("./resources/UV_checker1k.png"),
+     IMAGE_FORMAT::RGBA_8_SRGB,
+     TextureMode::READ, SamplerData(),
+     r.getResourceManager());
 
-    auto triangles = []()
-    {
-        return GeometryData{
-            .vertices = {
-                {0.0f, -0.5f, 0.0f},
-                {0.5f, 0.5f, 0.0f},
-                {-0.5f, 0.5f, 0.0f},},
+    std::cout << "creating bindings" << std::endl;
+    auto textureBinding = r.getMaterialManager().createUnlitMaterialBindings();
+    r.getMaterialManager().getBinding(textureBinding[1]).bindings[0].binding_handle.renderTex = texture;
+    
+    std::cout << "creating material" << std::endl;
+    auto material = r.getMaterialManager().createUnlitMaterial(textureBinding);
 
-            .color ={{1.0f, 1.0f, 0.0f}, 
-                    {1.0f, 0.0f, 1.0f},
-                    {0.0f, 1.0f, 1.0f}},
-            
-            .uv = {{0.5f, 0.0f},
-                   {0.0f, 1.0f},
-                   {1.0f, 1.0f}},
 
-            .indices = {0U, 1U, 2U},
-        };
-    };
 
-    GeometryData geometryData = triangles();
-    //GeometryData geometryData = planeVertices(1.0, 1.0, 100, 200);
 
-    Handle<Geometry> geometry = GeometryBuilder::createGeometry(r.getResourceManager())
-                                .SetVertexInfo(geometryData.vertices.size(), 0)
-                                .SetIndexes(geometryData.indices)
-                                .AddBuffer(VERTEX_BUFFER_TYPE::POSITION, geometryData.vertices)
-                                .Finish();
+    Handle<Geometry> quad = GeometryBuilder::Quad(r.getResourceManager());
+    Handle<Geometry> triangle = GeometryBuilder::Triangle(r.getResourceManager());
+    Handle<Geometry> circle = GeometryBuilder::Circle(r.getResourceManager(), 0.5f, 32);
+    Handle<Geometry> pipe = GeometryBuilder::Pipe(r.getResourceManager(), 0.5, 2.0, 10, 32);
 
-    // std::cout << "Created Geometry" << std::endl;
-            
-    auto material = r.createMaterial({
-        .shader = shader,
-        .bindings = {},
-        .vertexBufferBindings = {VERTEX_BUFFER_TYPE::POSITION, 
-                                 VERTEX_BUFFER_TYPE::COLOR,
-                                 VERTEX_BUFFER_TYPE::UV,
-                                 },
-        .name = "material test"
+    std::cout << "creating scene node" << std::endl;
+    SceneNode triangleNode({
+        .name = "triangle",
+        .geometry = triangle,
+        .material = material,
+        .position = glm::vec3(-3.0f, 0, 0),
+    });
+    SceneNode quadNode({
+        .name = "quad",
+        .geometry = quad,
+        .material = material,
+        .position = glm::vec3(-1.5f, 0, 0),
     });
 
-
-    SceneNode triangle({
-        .name = "triangle",
-        .geometry = geometry,
+    SceneNode circleNode({
+        .name = "circle",
+        .geometry = circle,
         .material = material,
+        .position = glm::vec3(0.0f, 0, 0),
+    });
+
+    SceneNode pipeNode({
+        .name = "pipe",
+        .geometry = pipe,
+        .material = material,
+        .position = glm::vec3(1.5f, 0, 0),
     });
 
     // Scene Description.
     SceneNode scene({.name = "root scene"});
-    scene.add(&triangle);
+    scene.add(&pipeNode);
+    scene.add(&triangleNode);
+    scene.add(&quadNode);
+    scene.add(&circleNode);
+
+    Camera camera({
+                   .position = glm::float3(0,-2,-5),
+                   .aspect = static_cast<float>(windowWidth) / windowHeight,
+                   });
+    
+    camera.lookAt(glm::vec3(0));
     boitatah::utils::Timewatch timewatch(1000);
-
+    
+    uint32_t count = 0;
+    float frame_TimeScale = 0.001;
+    float dist = 5;
+    std::cout << "setup complete" << std::endl;
     r.waitIdle();
-
     while (!r.isWindowClosed())
     {
-        r.render(scene);
-
+        //camera.orbit(glm::vec3(0), glm::vec3(0, 0.1f, 0));
+        float t = count * frame_TimeScale;
+        count++;
+        camera.setPosition(glm::vec3(glm::cos(t) * dist, -2, -glm::sin(t) * dist));
+        camera.lookAt(glm::vec3(0));
+        r.render(scene, camera);
+        ///camera.rotate(glm::vec3(0.0, 0.01, 0.0));
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
     }
     r.waitIdle();
 
-    r.destroyLayout(layout);
-    r.destroyShader(shader);
 
     return EXIT_SUCCESS;
 }

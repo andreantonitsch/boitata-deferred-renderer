@@ -1,7 +1,7 @@
 #pragma once
 
 #define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+//#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 //#include <glm/ext/vector_float2.hpp>    // vec2
 #include <glm/ext/vector_float3.hpp>    // vec3
 #include <glm/ext/matrix_float4x4.hpp>  // mat4x4

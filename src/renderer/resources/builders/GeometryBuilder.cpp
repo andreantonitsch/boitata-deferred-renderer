@@ -1,6 +1,6 @@
 #include "GeometryBuilder.hpp"
 
-
+#include <utils/utils.hpp>
 namespace boitatah{
 
 
@@ -11,6 +11,7 @@ namespace boitatah{
                             .SetIndexes(data.indices)
                             .AddBuffer(VERTEX_BUFFER_TYPE::POSITION, data.vertices)
                             .AddBuffer(VERTEX_BUFFER_TYPE::UV, data.uv)
+                            .AddBuffer(VERTEX_BUFFER_TYPE::NORMAL, data.normal)
                             .AddBuffer(VERTEX_BUFFER_TYPE::COLOR, data.color)
                             .Finish();
         return  geo;
@@ -23,6 +24,18 @@ namespace boitatah{
     }
 
     GeometryBuilder GeometryBuilder::createGeometry(Renderer& renderer)
+    {
+        GeometryBuilder builder(renderer.getResourceManager());
+        return builder;
+    }
+
+    GeometryBuilder GeometryBuilder::createProceduralGeometry(GPUResourceManager &manager)
+    {
+        GeometryBuilder builder(manager);
+        return builder;
+    }
+
+    GeometryBuilder GeometryBuilder::createProceduralGeometry(Renderer &renderer)
     {
         GeometryBuilder builder(renderer.getResourceManager());
         return builder;
@@ -78,22 +91,134 @@ namespace boitatah{
         return m_manager.create(m_description);
     }
 
-    Handle<Geometry> GeometryBuilder::Triangle(GPUResourceManager &manager)
+    GeometryBuilder &GeometryBuilder::addTriangle()
+    {
+        procedural_geometry = procedural_geometry + triangleVertices().transform(transform);
+        return *this;
+    }
+
+    GeometryBuilder &GeometryBuilder::ApplySetProceduralTransform(  glm::vec3   position, 
+                                                                    glm::vec3   scale, 
+                                                                    glm::vec3   rotation)
+    {
+        procedural_geometry.transform(utils::getTransformMatrix(position, scale, rotation));
+        return *this;
+    }
+
+    GeometryBuilder &GeometryBuilder::addQuad()
+    {
+        procedural_geometry = procedural_geometry + quadVertices().transform(transform);
+        return *this;
+    }
+
+    GeometryBuilder &GeometryBuilder::addPlane( float       width,
+                                                float       height, 
+                                                uint32_t    widthDiv, 
+                                                uint32_t    heightDiv)
+    {
+        procedural_geometry = procedural_geometry + planeVertices(
+                                                            width,
+                                                            height,
+                                                            widthDiv,
+                                                            heightDiv)
+                                                    .transform(transform);
+        return *this;
+    }
+
+    GeometryBuilder &GeometryBuilder::addCircle(float radius, uint32_t sides)
+    {
+        procedural_geometry = procedural_geometry + circle( radius,
+                                                            sides)
+                                                    .transform(transform);
+        return *this;
+    }
+
+
+
+    Handle<Geometry> GeometryBuilder::Triangle(
+                                            GPUResourceManager &manager)
     {
         auto builder = createGeometry(manager);
         Handle<Geometry> geo = builder.geometryFromGeometryData(triangleVertices());
         return geo;
     }
-    Handle<Geometry> GeometryBuilder::Triangle(Renderer &renderer)
+
+    Handle<Geometry> GeometryBuilder::Triangle(
+                                            Renderer &renderer)
     {
         return GeometryBuilder::Triangle(renderer.getResourceManager());
     }
-    Handle<Geometry> GeometryBuilder::Quad(GPUResourceManager &manager)
+
+    Handle<Geometry> GeometryBuilder::Quad(
+                                        GPUResourceManager &manager)
     {
         auto builder = createGeometry(manager);
         Handle<Geometry> geo = builder.geometryFromGeometryData(quadVertices());
         return geo;
     }
+
+    Handle<Geometry> GeometryBuilder::Plane(
+                                        GPUResourceManager  &manager, 
+                                        float               width, 
+                                        float               height, 
+                                        uint32_t            widthDiv, 
+                                        uint32_t            heightDiv)
+    {
+        auto builder = createGeometry(manager);
+        Handle<Geometry> geo = builder.geometryFromGeometryData(
+                                                planeVertices(  width, 
+                                                                height, 
+                                                                widthDiv, 
+                                                                heightDiv));
+        return geo;
+    }
+
+    Handle<Geometry> GeometryBuilder::Plane(Renderer    &renderer, 
+                                            float       width, 
+                                            float       height, 
+                                            uint32_t    widthDiv, 
+                                            uint32_t    heightDiv)
+    {
+        return GeometryBuilder::Plane(  renderer.getResourceManager(), 
+                                        width, 
+                                        height, 
+                                        widthDiv, 
+                                        heightDiv);
+    }
+
+    Handle<Geometry> GeometryBuilder::Circle(GPUResourceManager &manager, float radius, uint32_t sides)
+    {
+        auto builder = createGeometry(manager);
+        Handle<Geometry> geo = builder.geometryFromGeometryData(circle(radius, sides));
+        return geo;
+    }
+    Handle<Geometry> GeometryBuilder::Circle(Renderer &renderer, float radius, uint32_t sides)
+    {
+         return GeometryBuilder::Circle(renderer.getResourceManager(), radius, sides);
+    }
+
+    Handle<Geometry> GeometryBuilder::Cylinder(GPUResourceManager &manager, float radius, float height, float heightSegments, uint32_t sides)
+    {
+        return Handle<Geometry>();
+    }
+
+    Handle<Geometry> GeometryBuilder::Cylinder(Renderer &renderer, float radius, float height, float heightSegments, uint32_t sides)
+    {
+         return GeometryBuilder::Cylinder(renderer.getResourceManager(), radius, height, heightSegments, sides);
+    }
+
+    Handle<Geometry> GeometryBuilder::Pipe(GPUResourceManager &manager, float radius, float height, float heightSegments, uint32_t sides)
+    {
+        auto builder = createGeometry(manager);
+        Handle<Geometry> geo = builder.geometryFromGeometryData(pipe(radius, height, heightSegments, sides));
+        return geo;
+    }
+
+    Handle<Geometry> GeometryBuilder::Pipe(Renderer &renderer, float radius, float height, float heightSegments, uint32_t sides)
+    {
+        return GeometryBuilder::Pipe(renderer.getResourceManager(), radius, height, heightSegments, sides);
+    }
+    
     Handle<Geometry> GeometryBuilder::Quad(Renderer &renderer)
     {
         return GeometryBuilder::Quad(renderer.getResourceManager());

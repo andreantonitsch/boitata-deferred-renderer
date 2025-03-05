@@ -6,9 +6,27 @@
 #include <iostream>
 // #include <format>
 #include <chrono>
+#include <glm/mat4x4.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
+
 
 namespace boitatah::utils
 {
+
+    static constexpr glm::mat4x4 getTransformMatrix(
+                        glm::vec3               translation,
+                        glm::vec3               scale,
+                        glm::vec3               rotation){
+
+        auto mat = glm::mat4(1.0f);
+        mat = glm::scale(mat, scale);
+        mat = glm::translate(mat, translation);
+        mat = mat * glm::eulerAngleXYX(rotation.x, rotation.y, rotation.z);
+        return mat;
+
+
+    }
 
     template<typename T>
     inline static void move_concatenate_vectors(std::vector<T>& dst, std::vector<T>& src){

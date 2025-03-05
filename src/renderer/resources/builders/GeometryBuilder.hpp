@@ -18,12 +18,50 @@ namespace boitatah{
             std::vector<glm::vec3> vertices;
             std::vector<glm::vec3> color;
             std::vector<glm::vec2> uv;
-            
+            std::vector<glm::vec3> normal;
             std::vector<uint32_t> indices;
+
+            void clear(){
+
+                vertices.clear();
+                color.clear();
+                uv.clear();
+                normal.clear();
+                indices.clear();
+            }
+
+            const GeometryBuildData& transform(glm::mat4x4 transform_matrix){
+                
+                for(uint32_t i = 0; i < vertices.size(); i++){
+                    vertices[i] = transform_matrix * glm::vec4(vertices[i], 1.0f);
+                    normal[i] = transform_matrix * glm::vec4(normal[i], 0.0f);
+                }
+                return *this;
+            };
+
+            const GeometryBuildData& operator+(const GeometryBuildData& rhs){
+                
+                uint32_t lhs_vertex_count = vertices.size();
+                uint32_t lhs_index_count = indices.size();
+
+                for(uint32_t i = 0; i < lhs_vertex_count; i++){
+                    vertices.push_back(rhs.vertices[i]);
+                    color.push_back(rhs.color[i]);
+                    uv.push_back(rhs.uv[i]);
+                    normal.push_back(rhs.normal[i]);
+                }
+
+                for(uint32_t i = 0; i < lhs_index_count; i++){
+                    indices.push_back(rhs.indices[i] + lhs_index_count);
+                }
+
+                return *this;
+            }
+
         };
 
 
-        static GeometryBuildData triangleVertices()
+        static  constexpr  GeometryBuildData triangleVertices()
         {
             return {
                 .vertices = {
@@ -39,11 +77,17 @@ namespace boitatah{
                         {1.0f, 1.0f},
                         {0.0f, 1.0f}},
 
+                .normal = {
+                    {0.0f, 0.0f, 1.0f},
+                    {0.0f, 0.0f, 1.0f},
+                    {0.0f, 0.0f, 1.0f}},
+
                 .indices = {0U, 1U, 2U},
+                
             };
         }
 
-        static GeometryBuildData quadVertices()
+        static constexpr  GeometryBuildData quadVertices()
         {
             return {
                 .vertices = {
@@ -62,14 +106,21 @@ namespace boitatah{
                     {0.0f, 1.0f},
                     {1.0f, 1.0f}},
 
+                .normal = {
+                    {0.0f, 0.0f, 1.0f},
+                    {0.0f, 0.0f, 1.0f},
+                    {0.0f, 0.0f, 1.0f},
+                    {0.0f, 0.0f, 1.0f},},
+
                 .indices = {0U, 1U, 2U,
                             1U, 3U, 2U,
-                }
+                },
+                
             };
         }
 
 
-        static  GeometryBuildData planeVertices(const float width,
+        static  constexpr GeometryBuildData planeVertices(const float width,
                                         const float height,
                                         const uint32_t widthSegments,
                                         const uint32_t heightSegments)
@@ -77,6 +128,7 @@ namespace boitatah{
             std::vector<glm::vec3> vertices;
             std::vector<glm::vec3> color;
             std::vector<glm::vec2> uv;
+            std::vector<glm::vec3> normal;
             std::vector<uint32_t> indices;
 
             float w = width / widthSegments;
@@ -90,6 +142,7 @@ namespace boitatah{
                     {iw - (0.5 * width), jh - (0.5 * height), 0.0f});
                     color.push_back({1.0, 1.0, 0.0f});
                     uv.push_back({iw,jh});
+                    normal.push_back({0.0f, 0.0f, 1.0f});
                 }
                         
             }
@@ -113,9 +166,105 @@ namespace boitatah{
             .vertices = vertices, 
             .color = color,
             .uv = uv,
+            .normal = normal,
             .indices = indices};
         }
 
+        //pre condition: sides <= 3
+        static constexpr GeometryBuildData circle(const float radius, const uint32_t sides){
+            
+            std::vector<glm::vec3> vertices;
+            std::vector<glm::vec3> color;
+            std::vector<glm::vec2> uv;
+            std::vector<glm::vec3> normal;
+            std::vector<uint32_t> indices;
+            
+            //place center
+            vertices.push_back({0.0, 0.0, 0.0});
+            color.push_back({1.0, 1.0, 1.0});
+            uv.push_back({0.5, 0.5});
+            normal.push_back({0.0, 0.0, 1.0});
+
+            float ratio =  (2 * glm::pi<float>()) / static_cast<float>(sides);
+            
+
+            uint32_t vertex_count = 1;
+            for(uint32_t j = 1; j <= (sides+1); j++){
+                    float angle = static_cast<float>(j) * ratio;
+                    float x = glm::cos(angle);
+                    float y = glm::sin(angle);
+                    vertices.push_back({x * radius, y * radius, 0.0 });
+                    color.push_back({1.0, 1.0, 0.0f});
+                    uv.push_back({x / 2.0 + 0.5,y / 2.0 + 0.5});
+                    normal.push_back({0.0, 0.0f, 1.0});
+
+                    if((j <= sides)){
+                        indices.push_back(vertex_count);
+                        indices.push_back(vertex_count + 1);
+                        indices.push_back(0);
+                    }
+                    vertex_count++;
+                }
+            
+            return {
+            .vertices = vertices, 
+            .color = color,
+            .uv = uv,
+            .normal = normal,
+            .indices = indices};
+        };
+
+
+        //pre condition: sides <= 3
+        static constexpr GeometryBuildData pipe(const float         radius, 
+                                                const float         height,
+                                                const uint32_t      heightSegments, 
+                                                const uint32_t      sides){
+            
+            std::vector<glm::vec3> vertices;
+            std::vector<glm::vec3> color;
+            std::vector<glm::vec2> uv;
+            std::vector<glm::vec3> normal;
+            std::vector<uint32_t> indices;
+            
+
+            float angle_ratio =         (2 * glm::pi<float>()) / static_cast<float>(sides);
+            float height_ratio =        height / static_cast<float>(heightSegments);
+            uint32_t total_vertices =   (sides + 1) * (heightSegments + 1);
+
+            uint32_t vertex_count = 0;
+            for(uint32_t j = 0; j <= (sides+1); j++){
+                    float angle = static_cast<float>(j) * angle_ratio;
+                    float x = glm::cos(angle);
+                    float z = glm::sin(angle);
+                for(uint32_t i = 0; i <= heightSegments; i++){
+                    float segmentHeight = height_ratio * i - (height * 0.5);
+                    vertices.push_back({x * radius, segmentHeight, z * radius });
+                    color.push_back({1.0, 1.0, 0.0f});
+                    uv.push_back({angle,segmentHeight / height});
+                    normal.push_back({x, 0.0f, z});
+
+                    if(i != heightSegments && (j <= sides)){
+                        indices.push_back(vertex_count);
+                        indices.push_back((vertex_count + heightSegments + 1));
+                        indices.push_back(vertex_count + 1);
+
+                        indices.push_back((vertex_count + heightSegments + 1));
+                        indices.push_back((vertex_count + heightSegments + 2));
+                        indices.push_back(vertex_count + 1);
+                    }
+                    vertex_count++;
+                }
+            }
+            
+            return {
+            .vertices = vertices, 
+            .color = color,
+            .uv = uv,
+            .normal = normal,
+            .indices = indices};
+        };
+ 
     class GeometryBuilder{
         private:
 
@@ -126,13 +275,22 @@ namespace boitatah{
             template<typename T>
             GeometryBuilder& AddBuffer(VERTEX_BUFFER_TYPE type, std::initializer_list<T> buffer);
             
+            glm::mat4 transform = glm::mat4(1.0f);
+            GeometryBuildData procedural_geometry;
+
             Handle<Geometry> geometryFromGeometryData(const GeometryBuildData& data);
-            
         public:
             static GeometryBuilder createGeometry(GPUResourceManager& manager);
             static GeometryBuilder createGeometry(Renderer& renderer);
+            static std::vector<glm::vec3> computeSmoothNormals(const std::vector<glm::vec3>& vertices);
+            static std::vector<glm::vec3> computeFlatNormals(const std::vector<glm::vec3>& vertices);
+
+            static GeometryBuilder createProceduralGeometry(GPUResourceManager& manager);
+            static GeometryBuilder createProceduralGeometry(Renderer& renderer);
 
             GeometryBuilder(GPUResourceManager& manager) : m_manager(manager){};
+            
+
 
             GeometryBuilder& SetIndexes(const std::initializer_list<uint32_t>&& indices);
             GeometryBuilder& SetIndexes(const std::vector<uint32_t>& indices);
@@ -158,6 +316,37 @@ namespace boitatah{
 
             Handle<Geometry> Finish();
 
+            GeometryBuilder& SetProceduralTransform(
+                                                            glm::vec3        position,
+                                                            glm::vec3        scale,
+                                                            glm::vec3        rotation);
+            GeometryBuilder& addTriangle();
+
+            GeometryBuilder &ApplySetProceduralTransform(glm::vec3 position, glm::vec3 scale, glm::vec3 rotation);
+
+            GeometryBuilder& addQuad();
+
+            GeometryBuilder& addPlane(
+                                     float      width,
+                                     float      height, 
+                                     uint32_t   widthDiv, 
+                                     uint32_t   heightDiv);
+
+            GeometryBuilder& addSphere(
+                                    float       radius, 
+                                    uint32_t    detail);
+
+            GeometryBuilder& addCircle(
+                                    float       radius, 
+                                    uint32_t    sides);
+
+            GeometryBuilder& addCylinder(
+                                    float       radius, 
+                                    float       height, 
+                                    float       heightSegments, 
+                                    uint32_t    sides);
+
+
             static Handle<Geometry> Triangle(GPUResourceManager& manager);
             static Handle<Geometry> Triangle(Renderer& renderer);
 
@@ -173,8 +362,14 @@ namespace boitatah{
             static Handle<Geometry> Circle(GPUResourceManager& manager, float radius, uint32_t sides);
             static Handle<Geometry> Circle(Renderer& renderer, float radius, uint32_t sides);
 
-            static Handle<Geometry> Cylinder(GPUResourceManager& manager, float radius, float height, uint32_t sides);
-            static Handle<Geometry> Cylinder(Renderer& renderer);
+            static Handle<Geometry> Cylinder(GPUResourceManager& manager, float radius, float height, float heightSegments, uint32_t sides);
+            static Handle<Geometry> Cylinder(Renderer& renderer, float radius, float height, float heightSegments, uint32_t sides);
+            
+            static Handle<Geometry> Pipe(GPUResourceManager& manager, float radius, float height, float heightSegments, uint32_t sides);
+            static Handle<Geometry> Pipe(Renderer& renderer, float radius, float height, float heightSegments, uint32_t sides);
+            
+            static Handle<Geometry> Capsule(GPUResourceManager& manager, float radius, float height, float heightSegments, uint32_t sides);
+
     };
 
     template <typename T>
@@ -234,6 +429,8 @@ namespace boitatah{
         });
         return *this;
     }
+
+    
     // template <typename... Ts>
     // inline GeometryBuilder &GeometryBuilder::AddBuffer(VERTEX_BUFFER_TYPE type, Ts... buffer)
     // {

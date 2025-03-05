@@ -281,7 +281,7 @@ VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
     std::vector<VkAttachmentDescription> colorAttachments;
     std::vector<VkAttachmentReference> colorAttachmentRefs;
 
-    for (const auto &attDesc : desc.attachments)
+    for (const auto &attDesc : desc.color_attachments)
     {
         colorAttachments.push_back(createAttachmentDescription(attDesc));
 

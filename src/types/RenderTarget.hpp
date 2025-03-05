@@ -24,7 +24,8 @@ namespace boitatah{
     //same attachment list as the framebufferdescription.
     struct RenderPassDesc{
         //FORMAT format;
-        std::vector<AttachmentDesc> attachments;
+        std::vector<AttachmentDesc> color_attachments;
+        
     };
 
     struct RenderPass{

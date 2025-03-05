@@ -47,7 +47,7 @@ namespace boitatah
         }
 
         RenderPass pass;
-        renderpass = m_renderTargetManager->createRenderPass({.attachments = attachmentDescriptions });
+        renderpass = m_renderTargetManager->createRenderPass({.color_attachments = attachmentDescriptions });
 
 
         RenderTargetDesc targetDesc{

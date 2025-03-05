@@ -1,7 +1,7 @@
 #pragma once
 
 #define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+//#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/ext/quaternion_float.hpp>
@@ -41,6 +41,7 @@ namespace boitatah{
             void rotate(glm::quat rotation);
             void rotate(glm::vec3 eulerAngles);
             void roll(float roll);
+            void orbit(glm::vec3 point, glm::vec3 axis);
             glm::mat4 getProjection() ;
             glm::mat4 getView() ;
             glm::vec3 getDirection() ;
