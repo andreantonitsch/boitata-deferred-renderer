@@ -25,12 +25,13 @@ namespace boitatah{
     struct RenderPassDesc{
         //FORMAT format;
         std::vector<AttachmentDesc> color_attachments;
-        
+        bool use_depthStencil = false;
+        AttachmentDesc depth_attachment;
     };
 
     struct RenderPass{
         VkRenderPass renderPass;
-        std::vector<AttachmentDesc> attachments;
+        RenderPassDesc description;
     };
 
     struct FramebufferDescVk{

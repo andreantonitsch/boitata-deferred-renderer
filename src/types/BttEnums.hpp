@@ -39,6 +39,10 @@ namespace boitatah
         RG_64_SFLOAT = 18,
         RGB_64_SFLOAT = 19,
         RGBA_64_SFLOAT = 20,
+        DEPTH_32_SFLOAT = 21,
+        DEPTH_32_SFLOAT_UINT_STENCIL = 22,
+        DEPTH_24_UNORM_UINT_STENCIL = 23,
+
     };
 
     enum class FRAME_BUFFERING
@@ -65,6 +69,7 @@ namespace boitatah
         WRITE = 3,
         READ = 4,
         TRANSFER_DST = 5,
+        DEPTH_STENCIL_ATT = 6,
     };
 
     enum class IMAGE_USAGE
@@ -171,6 +176,7 @@ namespace boitatah
             case FILTER::NEAREST: return VK_FILTER_NEAREST;
             case FILTER::LINEAR: return VK_FILTER_LINEAR;
             case FILTER::CUBIC: return VK_FILTER_CUBIC_IMG;
+            default: return VK_FILTER_NEAREST;
         }
     }
     template VkFilter boitatah::castEnum<VkFilter, FILTER>(FILTER);
@@ -234,44 +240,73 @@ namespace boitatah
         {
         case IMAGE_FORMAT::RGBA_8_SRGB:
             return VK_FORMAT_R8G8B8A8_SRGB;
+
         case IMAGE_FORMAT::BGRA_8_SRGB:
             return VK_FORMAT_B8G8R8A8_SRGB;
+
         case IMAGE_FORMAT::RGBA_8_UNORM:
             return VK_FORMAT_R8G8B8A8_UNORM;
+
         case IMAGE_FORMAT::BGRA_8_UNORM:
             return VK_FORMAT_B8G8R8A8_UNORM;
+
         case IMAGE_FORMAT::R_32_SFLOAT:
             return VK_FORMAT_R32_SFLOAT;
+            
         case IMAGE_FORMAT::RG_32_SFLOAT:
             return VK_FORMAT_R32G32_SFLOAT;
+
         case IMAGE_FORMAT::RGB_32_SFLOAT:
             return VK_FORMAT_R32G32B32_SFLOAT;
+
         case IMAGE_FORMAT::RGBA_32_SFLOAT:
             return VK_FORMAT_R32G32B32A32_SFLOAT;
+
         case IMAGE_FORMAT::R_32_SINT:
             return VK_FORMAT_R32_SINT;
+
         case IMAGE_FORMAT::RG_32_SINT:
             return VK_FORMAT_R32G32_SINT;
+
         case IMAGE_FORMAT::RGB_32_SINT:
             return VK_FORMAT_R32G32B32_SINT;
+
         case IMAGE_FORMAT::RGBA_32_SINT:
             return VK_FORMAT_R32G32B32A32_SINT;
+
         case IMAGE_FORMAT::R_32_UINT:
             return VK_FORMAT_R32_UINT;
+
         case IMAGE_FORMAT::RG_32_UINT:
             return VK_FORMAT_R32G32_UINT;
+
         case IMAGE_FORMAT::RGB_32_UINT:
             return VK_FORMAT_R32G32B32_UINT;
+
         case IMAGE_FORMAT::RGBA_32_UINT:
             return VK_FORMAT_R32G32B32A32_UINT;
+
         case IMAGE_FORMAT::R_64_SFLOAT:
             return VK_FORMAT_R64_SFLOAT;
+
         case IMAGE_FORMAT::RG_64_SFLOAT:
             return VK_FORMAT_R64G64_SFLOAT;
+
         case IMAGE_FORMAT::RGB_64_SFLOAT:
             return VK_FORMAT_R64G64B64_SFLOAT;
+
         case IMAGE_FORMAT::RGBA_64_SFLOAT:
             return VK_FORMAT_R64G64B64A64_SFLOAT;
+        
+        case IMAGE_FORMAT::DEPTH_32_SFLOAT:
+            return VK_FORMAT_D32_SFLOAT;
+
+        case IMAGE_FORMAT::DEPTH_32_SFLOAT_UINT_STENCIL:
+            return VK_FORMAT_D32_SFLOAT_S8_UINT;
+
+        case IMAGE_FORMAT::DEPTH_24_UNORM_UINT_STENCIL:
+            return VK_FORMAT_D24_UNORM_S8_UINT;
+        
         default:
             return VK_FORMAT_UNDEFINED;
         }
@@ -323,6 +358,8 @@ namespace boitatah
             return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         case IMAGE_LAYOUT::UNDEFINED:
             return VK_IMAGE_LAYOUT_UNDEFINED;
+        case IMAGE_LAYOUT::DEPTH_STENCIL_ATT:
+            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         default:
             return VK_IMAGE_LAYOUT_UNDEFINED;
         }
@@ -357,18 +394,28 @@ namespace boitatah
         {
         case IMAGE_USAGE::TRANSFER_SRC:
             return VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        
         case IMAGE_USAGE::TRANSFER_DST:
             return VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        
         case IMAGE_USAGE::COLOR_ATT:
             return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        
         case IMAGE_USAGE::TRANSFER_DST_SAMPLED:
             return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+        
         case IMAGE_USAGE::SAMPLED:
             return VK_IMAGE_USAGE_SAMPLED_BIT;
+        
         case IMAGE_USAGE::COLOR_ATT_TRANSFER_DST:
             return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+        
         case IMAGE_USAGE::COLOR_ATT_TRANSFER_SRC:
             return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+        
+        case IMAGE_USAGE::DEPTH_STENCIL:
+            return (VkImageUsageFlagBits) VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        
         default:
             return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         }
@@ -523,6 +570,12 @@ namespace boitatah
             return 24;
         case IMAGE_FORMAT::RGBA_64_SFLOAT:
             return 32;
+        case IMAGE_FORMAT::DEPTH_32_SFLOAT:
+            return 4;
+        case IMAGE_FORMAT::DEPTH_32_SFLOAT_UINT_STENCIL:
+            return 8;
+        case IMAGE_FORMAT::DEPTH_24_UNORM_UINT_STENCIL:
+            return 4;
         default:
             return 0;
         }

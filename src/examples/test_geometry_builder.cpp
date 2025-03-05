@@ -22,8 +22,11 @@ int main()
                 .appName = "Test Frame Buffer",
                 .debug = true,
                 .swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB,
-                .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR},
-                                   .attachmentFormats = {IMAGE_FORMAT::BGRA_8_SRGB},
+                .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR,
+                                                    ATTACHMENT_TYPE::DEPTH_STENCIL},
+                                   .attachmentFormats = {IMAGE_FORMAT::BGRA_8_SRGB,
+                                                        IMAGE_FORMAT::DEPTH_32_SFLOAT
+                                   },
                                    .dimensions = {windowWidth, windowHeight}}});
 
     Handle<RenderTexture> texture = utils::TextureLoader::loadRenderTexture(std::string("./resources/UV_checker1k.png"),
@@ -49,20 +52,20 @@ int main()
     std::cout << "creating scene node" << std::endl;
     SceneNode triangleNode({
         .name = "triangle",
-        .geometry = triangle,
+        .geometry = pipe,
         .material = material,
         .position = glm::vec3(-3.0f, 0, 0),
     });
     SceneNode quadNode({
         .name = "quad",
-        .geometry = quad,
+        .geometry = pipe,
         .material = material,
         .position = glm::vec3(-1.5f, 0, 0),
     });
 
     SceneNode circleNode({
         .name = "circle",
-        .geometry = circle,
+        .geometry = pipe,
         .material = material,
         .position = glm::vec3(0.0f, 0, 0),
     });

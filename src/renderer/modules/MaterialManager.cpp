@@ -454,8 +454,10 @@ namespace boitatah{
             .name = data.name,
             .renderpass = pass.renderPass,
             .layout = shader.layout.pipeline,
+            .use_depth = pass.description.use_depthStencil,
             .bindings = vkbindings,
-            .attributes = vkattributes
+            .attributes = vkattributes,
+            
         }, shader);
         return m_shaderPool->move_set(shader);
     }

@@ -80,7 +80,7 @@ namespace boitatah{
     {
         RenderPass pass{
             .renderPass = m_vk->createRenderPass(description),
-            .attachments = description.color_attachments
+            .description = description
         };
 
         return m_passPool->set(pass);
@@ -98,7 +98,7 @@ namespace boitatah{
             return;
 
         RenderPass& pass = m_passPool->get(handle);
-        pass.attachments.clear();
+        pass.description = {};
         m_vk->destroyRenderpass(pass);
         m_passPool->clear(handle);
     }
@@ -116,7 +116,7 @@ namespace boitatah{
                 m_imageManager->destroyImage(imagehandle);
         }
 
-        //destroyRenderPass(target.renderpass);
+        //destroyRenderPass(target.renderpass); 
         RenderTargetSync data;
             if (m_buffersPool->clear(target.cmdBuffers, data))
                 m_vk->destroyRenderTargetCmdData(data);

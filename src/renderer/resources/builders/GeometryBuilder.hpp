@@ -233,7 +233,7 @@ namespace boitatah{
             uint32_t total_vertices =   (sides + 1) * (heightSegments + 1);
 
             uint32_t vertex_count = 0;
-            for(uint32_t j = 0; j <= (sides+1); j++){
+            for(uint32_t j = 0; j <= (sides); j++){
                     float angle = static_cast<float>(j) * angle_ratio;
                     float x = glm::cos(angle);
                     float z = glm::sin(angle);
@@ -244,7 +244,7 @@ namespace boitatah{
                     uv.push_back({angle,segmentHeight / height});
                     normal.push_back({x, 0.0f, z});
 
-                    if(i != heightSegments && (j <= sides)){
+                    if(i != heightSegments && (j < sides)){
                         indices.push_back(vertex_count);
                         indices.push_back((vertex_count + heightSegments + 1));
                         indices.push_back(vertex_count + 1);

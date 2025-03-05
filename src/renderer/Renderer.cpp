@@ -574,6 +574,7 @@ namespace boitatah
 
             .scissorDims = command.scissorDims,
             .scissorOffset = command.scissorOffset,
+            .depth = command.pass.description.use_depthStencil
             //.viewportDims = command.viewportDims,
             //.viewportOffset = command.viewportOffset,
         });

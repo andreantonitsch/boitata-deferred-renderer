@@ -99,6 +99,7 @@ namespace boitatah
         std::string name;
         VkRenderPass renderpass;
         VkPipelineLayout layout;
+        bool use_depth = false;
         std::vector<VkVertexInputBindingDescription> bindings;
         std::vector<VkVertexInputAttributeDescription> attributes;
     };

@@ -278,15 +278,17 @@ bool boitatah::vk::Vulkan::checkFenceStatus(VkFence fence)
 
 VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
 {
-    std::vector<VkAttachmentDescription> colorAttachments;
-    std::vector<VkAttachmentReference> colorAttachmentRefs;
-
+    std::vector<VkAttachmentDescription> attachments;
+    std::vector<VkAttachmentReference> colorAttachmentRefs;    
+    
+    VkAttachmentReference depthStencilAttachmentRef;
+    
     for (const auto &attDesc : desc.color_attachments)
     {
-        colorAttachments.push_back(createAttachmentDescription(attDesc));
+        attachments.push_back(createAttachmentDescription(attDesc));
 
         colorAttachmentRefs.push_back({
-            .attachment = attDesc.index,
+            .attachment = static_cast<uint32_t>(attDesc.index),
             .layout = castEnum<VkImageLayout>(attDesc.layout),
         });
     }
@@ -294,10 +296,10 @@ VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
     VkSubpassDependency dependency{
         .srcSubpass = VK_SUBPASS_EXTERNAL,
         .dstSubpass = 0,
-        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .srcAccessMask = 0,
-        .dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT};
+        .srcStageMask =  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+        .srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT};
 
     VkSubpassDescription subpass{
         .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -305,14 +307,23 @@ VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
         .pColorAttachments = colorAttachmentRefs.data(),
     };
 
+    if(desc.use_depthStencil){
+            attachments.push_back(createAttachmentDescription(desc.depth_attachment));
+            depthStencilAttachmentRef = {.attachment = static_cast<uint32_t>(desc.depth_attachment.index),
+                                         .layout = castEnum<VkImageLayout>(desc.depth_attachment.layout)};
+            subpass.pDepthStencilAttachment = &depthStencilAttachmentRef;
+
+    }
+
     VkRenderPassCreateInfo renderPassCreate{
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-        .attachmentCount = static_cast<uint32_t>(colorAttachments.size()),
-        .pAttachments = colorAttachments.data(),
+        .attachmentCount = static_cast<uint32_t>(attachments.size()),
+        .pAttachments = attachments.data(),
         .subpassCount = 1,
         .pSubpasses = &subpass,
         .dependencyCount = 1,
         .pDependencies = &dependency};
+
     VkRenderPass pass;
     if (vkCreateRenderPass(device, &renderPassCreate, nullptr, &pass) != VK_SUCCESS)
     {
@@ -467,10 +478,20 @@ void boitatah::vk::Vulkan::beginCmdBuffer(const BeginCommandVk &command)
 
 void boitatah::vk::Vulkan::beginRenderpassCommand(const BeginRenderpassCommandVk &command)
 {
-    VkClearValue clearColor = {{{command.clearColor.x,
+    VkClearValue clearColor;
+    
+    clearColor.color = {{command.clearColor.x,
                                  command.clearColor.y,
                                  command.clearColor.z,
-                                 command.clearColor.w}}};
+                                 command.clearColor.w}};
+    std::vector<VkClearValue> clear_colors;
+    clear_colors.push_back(clearColor);
+
+    if(command.depth){
+        VkClearValue depth_clear;
+        depth_clear.depthStencil = {0.0f, 0};
+        clear_colors.push_back(depth_clear);
+    }
 
     VkRect2D scissor = {
         .offset = {command.scissorOffset.x, command.scissorOffset.y},
@@ -493,8 +514,8 @@ void boitatah::vk::Vulkan::beginRenderpassCommand(const BeginRenderpassCommandVk
         .renderPass = command.pass,
         .framebuffer = command.frameBuffer,
         .renderArea = scissor,
-        .clearValueCount = 1,
-        .pClearValues = &clearColor,
+        .clearValueCount = static_cast<uint32_t>(clear_colors.size()),
+        .pClearValues = clear_colors.data(),
     };
     vkCmdBeginRenderPass(command.commandBuffer, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1122,6 +1143,15 @@ void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
     uint32_t bindingCount = static_cast<uint32_t>(desc.bindings.size());
     uint32_t attributeCount = static_cast<uint32_t>(desc.attributes.size());
 
+    VkPipelineDepthStencilStateCreateInfo depthStencil{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .depthTestEnable = VK_TRUE,
+        .depthWriteEnable = VK_TRUE,
+        .depthCompareOp = VK_COMPARE_OP_GREATER,
+        .depthBoundsTestEnable = VK_FALSE,
+        .stencilTestEnable = VK_FALSE,
+    };
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -1218,7 +1248,8 @@ void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
         .basePipelineHandle = VK_NULL_HANDLE,
         .basePipelineIndex = -1,
     };
-
+    if(desc.use_depth)
+        pipelineInfo.pDepthStencilState = &depthStencil;
     if (vkCreateGraphicsPipelines(device,
                                   VK_NULL_HANDLE,
                                   1,

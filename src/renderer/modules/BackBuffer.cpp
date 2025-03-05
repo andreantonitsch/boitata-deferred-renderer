@@ -1,4 +1,6 @@
 #include "BackBuffer.hpp"
+
+#include <utils/utils.hpp>
 namespace boitatah
 {
     BackBufferManager::BackBufferManager(std::shared_ptr<RenderTargetManager> targetManager)
@@ -14,7 +16,10 @@ namespace boitatah
         clearBackBuffer();
 
         std::vector<ImageDesc> imageDescriptions;
-        std::vector<AttachmentDesc> attachmentDescriptions;
+        std::vector<AttachmentDesc> colorAttDescs;
+        AttachmentDesc depthAttDesc;
+        ImageDesc depthAttImageDesc;
+        bool useDepth = false;
         for (int i = 0; i < desc.attachments.size(); i++)
         {
 
@@ -24,35 +29,63 @@ namespace boitatah
             imageDesc.format = desc.attachmentFormats[i];
             attachDesc.format = desc.attachmentFormats[i];
 
-            if (desc.attachments[i] == ATTACHMENT_TYPE::COLOR)
+            switch(desc.attachments[i])
             {
-                imageDesc.usage = IMAGE_USAGE::COLOR_ATT_TRANSFER_SRC;
-                imageDesc.initialLayout = IMAGE_LAYOUT::UNDEFINED;
-                imageDesc.samples = desc.samples;
-                imageDesc.mipLevels = 1;
+                case ATTACHMENT_TYPE::COLOR:{
+                    imageDesc.usage = IMAGE_USAGE::COLOR_ATT_TRANSFER_SRC;
+                    imageDesc.initialLayout = IMAGE_LAYOUT::UNDEFINED;
+                    imageDesc.samples = desc.samples;
+                    imageDesc.mipLevels = 1;
+                    imageDesc.dimensions = desc.dimensions;
+                    imageDescriptions.push_back(imageDesc);
 
-                attachDesc.finalLayout = IMAGE_LAYOUT::COLOR_ATT;
-                attachDesc.initialLayout = IMAGE_LAYOUT::UNDEFINED;
-                attachDesc.layout = IMAGE_LAYOUT::COLOR_ATT;
-                attachDesc.index = i;
-                attachDesc.samples = desc.samples;
+                    attachDesc.finalLayout = IMAGE_LAYOUT::COLOR_ATT;
+                    attachDesc.initialLayout = IMAGE_LAYOUT::UNDEFINED;
+                    attachDesc.layout = IMAGE_LAYOUT::COLOR_ATT;
+                    attachDesc.samples = desc.samples;
+                    colorAttDescs.push_back(attachDesc);
+                    break;
+                };
+                case ATTACHMENT_TYPE::DEPTH_STENCIL:{
+                    imageDesc.usage = IMAGE_USAGE::DEPTH_STENCIL;
+                    imageDesc.initialLayout = IMAGE_LAYOUT::UNDEFINED;
+                    imageDesc.samples = desc.samples;
+                    imageDesc.mipLevels = 1;
+                    imageDesc.dimensions = desc.dimensions;
 
+                    attachDesc.finalLayout = IMAGE_LAYOUT::DEPTH_STENCIL_ATT;
+                    attachDesc.initialLayout = IMAGE_LAYOUT::UNDEFINED;
+                    attachDesc.layout = IMAGE_LAYOUT::DEPTH_STENCIL_ATT;
+                    attachDesc.samples = desc.samples;
+                    depthAttDesc = attachDesc;
+                    depthAttImageDesc = imageDesc;
+                    useDepth = true;
+                    break;
+                }
+                default:
+                    std::runtime_error("invalid attachment type");
             }
-
-            //TODO implement depth and normal.
-
-            imageDesc.dimensions = desc.dimensions;
-            imageDescriptions.push_back(imageDesc);
-            attachmentDescriptions.push_back(attachDesc);
         }
 
-        RenderPass pass;
-        renderpass = m_renderTargetManager->createRenderPass({.color_attachments = attachmentDescriptions });
+        for(int i = 0; i < colorAttDescs.size(); i++)
+            colorAttDescs[i].index= i;
 
 
+        RenderPassDesc renderPassDesc{.color_attachments = colorAttDescs};
+        if(useDepth){
+            depthAttDesc.index = colorAttDescs.size();
+            renderPassDesc.use_depthStencil = true;
+            renderPassDesc.depth_attachment = depthAttDesc; 
+        }
+        renderpass = m_renderTargetManager->createRenderPass(renderPassDesc);
+
+
+        colorAttDescs.push_back(depthAttDesc);
+        imageDescriptions.push_back(depthAttImageDesc);
+        
         RenderTargetDesc targetDesc{
             .renderpass = renderpass,
-            .attachments = attachmentDescriptions,
+            .attachments = colorAttDescs,
             .imageDesc = imageDescriptions,
             .dimensions = desc.dimensions,
         };

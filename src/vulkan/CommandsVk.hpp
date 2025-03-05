@@ -50,6 +50,8 @@ namespace boitatah::vk
         glm::ivec2 scissorDims;
         glm::ivec2 scissorOffset;
 
+        bool depth = false;
+
         // glm::ivec2 viewportDims;
         // glm::ivec2 viewportOffset;
     };
