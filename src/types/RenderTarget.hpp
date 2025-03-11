@@ -12,6 +12,12 @@
 
 namespace boitatah{
 
+    enum class AttachmentDescType{
+        NEW_IMAGE,
+        TEXTURE_TO_ATTACH,
+        ATTACH_TO_ATTACH
+    };
+
     struct AttachmentDesc{
         uint32_t index;
         IMAGE_FORMAT format;
@@ -19,6 +25,8 @@ namespace boitatah{
         SAMPLES samples = SAMPLES::SAMPLES_1;
         IMAGE_LAYOUT initialLayout;
         IMAGE_LAYOUT finalLayout;
+        bool clear;
+        //AttachmentDescType type = AttachmentDescType::NEW_IMAGE;
     };
 
     //same attachment list as the framebufferdescription.
@@ -27,7 +35,10 @@ namespace boitatah{
         std::vector<AttachmentDesc> color_attachments;
         bool use_depthStencil = false;
         AttachmentDesc depth_attachment;
+        std::vector<std::pair<IMAGE_LAYOUT, IMAGE_LAYOUT>> attTransitions;
     };
+
+
 
     struct RenderPass{
         VkRenderPass renderPass;
@@ -46,7 +57,7 @@ namespace boitatah{
         Handle<RenderPass> renderpass;
 
         std::vector<AttachmentDesc> attachments;
-        //If attachmentImages are nullptr imageDesc is mandatory.
+        //If attachmentImages.size = 0 imageDesc is mandatory.
         std::vector<Handle<Image>> attachmentImages;
         std::vector<ImageDesc> imageDesc;
         glm::u32vec2 dimensions;
@@ -59,5 +70,9 @@ namespace boitatah{
         Handle<RenderPass> renderpass;
         Handle<RenderTargetSync> cmdBuffers;
     };
+
+
+
+
 }
 

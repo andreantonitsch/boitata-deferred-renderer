@@ -293,18 +293,22 @@ VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
         });
     }
 
+    //subdependency for layout transistions.
     VkSubpassDependency dependency{
         .srcSubpass = VK_SUBPASS_EXTERNAL,
         .dstSubpass = 0,
         .srcStageMask =  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
         .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
         .srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT};
+        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        };
 
     VkSubpassDescription subpass{
         .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
         .colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRefs.size()),
         .pColorAttachments = colorAttachmentRefs.data(),
+        
+
     };
 
     if(desc.use_depthStencil){
@@ -568,19 +572,15 @@ void boitatah::vk::Vulkan::submitDrawCmdBuffer(const SubmitDrawCommandVk &comman
     // std::vector<VkSemaphore> signals{SemRenderFinished};
     VkSubmitInfo submitInfo{
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        //        .waitSemaphoreCount = 1,
-        //        .pWaitSemaphores = semaphores.data(),
-        .pWaitDstStageMask = stageFlags.data(),
         .commandBufferCount = 1,
         .pCommandBuffers = &command.commandBuffer,
-        //.signalSemaphoreCount = 1,
-        //.pSignalSemaphores = signals.data()
     };
     
-    if( command.wait_semaphore != nullptr){
+    if( command.wait_semaphores.size() != 0){
         ///std::cout << "waiting for semaphore " << command.wait_semaphore << std::endl;
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = command.wait_semaphore;
+        submitInfo.waitSemaphoreCount = command.wait_semaphores.size();
+        submitInfo.pWaitSemaphores = command.wait_semaphores.data();
+        submitInfo.pWaitDstStageMask = stageFlags.data();
     }
 
     if( command.signal_semaphore != nullptr){
@@ -625,13 +625,13 @@ void boitatah::vk::Vulkan::submitCmdBuffer(const SubmitCommandVk &command)
     {
         stages.push_back(VK_PIPELINE_STAGE_TRANSFER_BIT);
         queue = queues.transferQueue;
+        submit.pWaitDstStageMask = stages.data();
     }
 
     if (command.wait != VK_NULL_HANDLE)
     {
         submit.waitSemaphoreCount = 1;
         submit.pWaitSemaphores = &command.wait;
-        submit.pWaitDstStageMask = stages.data();
     }
 
     vkQueueSubmit(queue, 1, &submit, command.fence);
@@ -656,13 +656,10 @@ bool boitatah::vk::Vulkan::presentFrame(Image &image,
         .extent = image.dimensions,
     });
 
-    endCommands(transferBuffer,
+    endTransferCommands(transferBuffer,
                 queues.transferQueue,
-                // command.bufferData.schainAcqSem,
-                command.waitSemaphore,
-                // command.bufferData.transferSem,
+                command.waitSemaphores,
                 command.signalSemaphore,
-                // command.bufferData.inFlightFen);
                 command.fence);
 
     //  Present
@@ -795,9 +792,9 @@ void boitatah::vk::Vulkan::beginCommands(const VkCommandBuffer &buffer)
     vkBeginCommandBuffer(buffer, &beginInfo);
 }
 
-void boitatah::vk::Vulkan::endCommands(const VkCommandBuffer &buffer,
+void boitatah::vk::Vulkan::endTransferCommands(const VkCommandBuffer &buffer,
                                        const VkQueue &queue,
-                                       const VkSemaphore &wait,
+                                       const std::vector<VkSemaphore> &wait,
                                        const VkSemaphore &signal,
                                        const VkFence &fence)
 {
@@ -815,14 +812,16 @@ void boitatah::vk::Vulkan::endCommands(const VkCommandBuffer &buffer,
         submit.pSignalSemaphores = &signal;
     }
 
-    std::vector<VkPipelineStageFlags> stages{VK_PIPELINE_STAGE_TRANSFER_BIT};
-    if (wait != VK_NULL_HANDLE)
+    std::vector<VkPipelineStageFlags> stages{};
+    if (wait.size() != 0)
     {
-        submit.waitSemaphoreCount = 1;
-        submit.pWaitSemaphores = &wait;
+        submit.waitSemaphoreCount = static_cast<uint32_t>(wait.size());
+        submit.pWaitSemaphores = wait.data();
+        for(int i = 0; i<wait.size(); i++)
+            stages.push_back(VK_PIPELINE_STAGE_TRANSFER_BIT);
         submit.pWaitDstStageMask = stages.data();
     }
-
+    waitForFence(fence);
     vkQueueSubmit(queue, 1, &submit, fence);
 }
 
@@ -1120,6 +1119,7 @@ boitatah::RenderTargetSync boitatah::vk::Vulkan::allocateBufferSync()
             .transferBuffer = allocateCommandBuffer({.count = 1,
                                                      .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                                                      .type = COMMAND_BUFFER_TYPE::TRANSFER}),
+            .writeSem = createSemaphore(),
             .schainAcqSem = createSemaphore(),
             .transferSem = createSemaphore(),
             .inFlightFen = createFence(true),
@@ -1300,12 +1300,17 @@ VkFramebuffer boitatah::vk::Vulkan::createFramebuffer(const FramebufferDescVk &d
 }
 
 VkAttachmentDescription boitatah::vk::Vulkan::createAttachmentDescription(const AttachmentDesc &attDesc)
-{
+{   
+    VkAttachmentLoadOp load_op;
+    if(attDesc.clear)
+        load_op = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    else
+        load_op = VK_ATTACHMENT_LOAD_OP_LOAD;
     return VkAttachmentDescription{.format = castEnum<VkFormat>(attDesc.format),
                                    .samples = castEnum<VkSampleCountFlagBits>(attDesc.samples),
-                                   .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                   .loadOp = load_op,
                                    .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-                                   .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                   .stencilLoadOp = load_op,
                                    .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
                                    .initialLayout = castEnum<VkImageLayout>(attDesc.initialLayout),
                                    .finalLayout = castEnum<VkImageLayout>(attDesc.finalLayout)};
@@ -1354,6 +1359,7 @@ void boitatah::vk::Vulkan::destroyRenderTargetCmdData(const RenderTargetSync &sy
 
     vkDestroyFence(device, sync.inFlightFen, nullptr);
     vkDestroySemaphore(device, sync.schainAcqSem, nullptr);
+    vkDestroySemaphore(device, sync.writeSem, nullptr);
     vkDestroySemaphore(device, sync.transferSem, nullptr);
 }
 

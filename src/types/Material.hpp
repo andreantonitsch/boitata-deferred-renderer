@@ -18,6 +18,7 @@ namespace boitatah{
             Handle<GPUBuffer> buffer;
             Handle<FixedTexture> fixedTex;
             Handle<RenderTexture> renderTex;
+            Handle<Image> image;
         }binding_handle;
     };
     struct MaterialBinding{

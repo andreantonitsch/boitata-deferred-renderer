@@ -54,6 +54,7 @@ namespace boitatah
         bool debug = false;
         IMAGE_FORMAT swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB;
         BackBufferDesc backBufferDesc;
+        BackBufferDesc2 backBufferDesc2;
     };
 
     class Renderer
@@ -79,7 +80,12 @@ namespace boitatah
         void renderToRenderTarget(SceneNode &scene, const Handle<RenderTarget> &rendertarget, uint32_t frameIndex);
         void render(SceneNode &scene);
         void render(SceneNode &scene, Camera &camera);
-        void presentRenderTarget(Handle<RenderTarget> &rendertarget);
+        void render_graph(SceneNode &scene, Camera &camera);
+        void render_graph_stage(SceneNode &scene, Camera &camera, Handle<RenderStage> stage);
+        void present_graph(SceneNode &scene, Camera &camera);
+
+        void presentRenderTargetNow(Handle<RenderTarget> &rendertarget, uint32_t attachment_index);
+        void schedulePresentRenderTarget(Handle<RenderTarget> &rendertarget, uint32_t attachment_index = 0);
         void renderSceneNode(SceneNode &scene, Handle<RenderTarget> &rendertarget);
         void renderSceneNode(SceneNode &scene, Camera &camera, Handle<RenderTarget> &rendertarget);
 

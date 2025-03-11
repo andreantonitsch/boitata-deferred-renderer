@@ -14,101 +14,104 @@ namespace boitatah
     enum class COLOR_SPACE
     {
         SRGB_NON_LINEAR = 1,
-        LINEAR = 2,
+        LINEAR          = 2,
     };
 
     enum class IMAGE_FORMAT
     {
-        RGBA_8_SRGB = 1,
-        BGRA_8_SRGB = 2,
-        RGBA_8_UNORM = 3,
-        BGRA_8_UNORM = 4,
-        R_32_SFLOAT = 5,
-        RG_32_SFLOAT = 6,
-        RGB_32_SFLOAT = 7,
-        RGBA_32_SFLOAT = 8,
-        R_32_SINT = 9,
-        RG_32_SINT = 10,
-        RGB_32_SINT = 11,
-        RGBA_32_SINT = 12,
-        R_32_UINT = 13,
-        RG_32_UINT = 14,
-        RGB_32_UINT = 15,
-        RGBA_32_UINT = 16,
-        R_64_SFLOAT = 17,
-        RG_64_SFLOAT = 18,
-        RGB_64_SFLOAT = 19,
-        RGBA_64_SFLOAT = 20,
-        DEPTH_32_SFLOAT = 21,
-        DEPTH_32_SFLOAT_UINT_STENCIL = 22,
-        DEPTH_24_UNORM_UINT_STENCIL = 23,
+        RGBA_8_SRGB         = 1,
+        BGRA_8_SRGB         = 2,
+        RGBA_8_UNORM        = 3,
+        BGRA_8_UNORM        = 4,
+        R_32_SFLOAT         = 5,
+        RG_32_SFLOAT        = 6,
+        RGB_32_SFLOAT       = 7,
+        RGBA_32_SFLOAT      = 8,
+        R_32_SINT           = 9,
+        RG_32_SINT          = 10,
+        RGB_32_SINT         = 11,
+        RGBA_32_SINT        = 12,
+        R_32_UINT           = 13,
+        RG_32_UINT          = 14,
+        RGB_32_UINT         = 15,
+        RGBA_32_UINT        = 16,
+        R_64_SFLOAT         = 17,
+        RG_64_SFLOAT        = 18,
+        RGB_64_SFLOAT       = 19,
+        RGBA_64_SFLOAT      = 20,
+        DEPTH_32_SFLOAT     = 21,
+        DEPTH_32_SFLOAT_UINT_STENCIL    = 22,
+        DEPTH_24_UNORM_UINT_STENCIL     = 23,
 
     };
 
     enum class FRAME_BUFFERING
     {
-        NO_BUFFER = 1,
-        VSYNC = 2,
-        TRIPLE_BUFFER = 3,
+        NO_BUFFER       = 1,
+        VSYNC           = 2,
+        TRIPLE_BUFFER   = 3,
     };
 
     enum class SAMPLES
     {
-        SAMPLES_1 = 1,
-        SAMPLES_2 = 2,
-        SAMPLES_4 = 3,
-        SAMPLES_8 = 4,
-        SAMPLES_16 = 5
+        SAMPLES_1       = 1,
+        SAMPLES_2       = 2,
+        SAMPLES_4       = 3,
+        SAMPLES_8       = 4,
+        SAMPLES_16      = 5
     };
 
     enum class IMAGE_LAYOUT
     {
-        UNDEFINED = 0,
-        COLOR_ATT = 1,
-        PRESENT_SRC = 2,
-        WRITE = 3,
-        READ = 4,
-        TRANSFER_DST = 5,
-        DEPTH_STENCIL_ATT = 6,
+        UNDEFINED           = 0,
+        COLOR_ATT           = 1,
+        PRESENT_SRC         = 2,
+        WRITE               = 3,
+        READ                = 4,
+        TRANSFER_DST        = 5,
+        DEPTH_STENCIL_ATT   = 6,
     };
 
     enum class IMAGE_USAGE
     {
-        TRANSFER_SRC = 1,
-        TRANSFER_DST = 2,
-        COLOR_ATT = 3,
-        DEPTH_STENCIL = 4,
-        SAMPLED = 5,
-        TRANSFER_DST_SAMPLED = 6,
-        COLOR_ATT_TRANSFER_DST = 7,
-        COLOR_ATT_TRANSFER_SRC = 8
+        TRANSFER_SRC            = 1,
+        TRANSFER_DST            = 2,
+        COLOR_ATT               = 3,
+        DEPTH_STENCIL           = 4,
+        SAMPLED                 = 5,
+        TRANSFER_DST_SAMPLED    = 6,
+        COLOR_ATT_TRANSFER_DST  = 7,
+        COLOR_ATT_TRANSFER_SRC  = 8,
+        RENDER_GRAPH_COLOR      = 9,
+        RENDER_GRAPH_DEPTH      = 10,
+
     };
 
     enum class BUFFER_USAGE
     {
-        VERTEX = 1,
-        INDEX = 2,
-        TRANSFER_SRC = 3,
-        TRANSFER_DST = 4,
-        UNIFORM_BUFFER = 5,
+        VERTEX                  = 1,
+        INDEX                   = 2,
+        TRANSFER_SRC            = 3,
+        TRANSFER_DST            = 4,
+        UNIFORM_BUFFER          = 5,
 
     };
 
     enum class MEMORY_PROPERTY
     {
-        DEVICE_LOCAL = 1,
-        HOST_VISIBLE = 2,
-        HOST_COHERENT = 3,
-        HOST_CACHED = 4,
-        LAZY_ALLOCATE = 5,
-        HOST_VISIBLE_COHERENT = 6,
+        DEVICE_LOCAL            = 1,
+        HOST_VISIBLE            = 2,
+        HOST_COHERENT           = 3,
+        HOST_CACHED             = 4,
+        LAZY_ALLOCATE           = 5,
+        HOST_VISIBLE_COHERENT   = 6,
 
     };
 
     enum class COMMAND_BUFFER_LEVEL
     {
-        PRIMARY = 1,
-        SECONDARY = 2
+        PRIMARY     = 1,
+        SECONDARY   = 2
     };
 
     enum class COMMAND_BUFFER_TYPE
@@ -121,29 +124,32 @@ namespace boitatah
     enum class ATTACHMENT_TYPE
     {
         COLOR,
-        DEPTH_STENCIL,
+        POSITION,
         NORMAL,
+        DEPTH_STENCIL,
     };
 
     enum class SHARING_MODE 
     {
-        EXCLUSIVE = 1,
-        CONCURRENT = 2,
+        EXCLUSIVE   = 1,
+        CONCURRENT  = 2,
     };
 
     //TODO standardize
     enum class DESCRIPTOR_TYPE : uint32_t
     {
-        UNIFORM_BUFFER = 0U,
-        COMBINED_IMAGE_SAMPLER = 3U,
+        UNIFORM_BUFFER          = 0U,
+        IMAGE                   = 1U,
+        SAMPLER                 = 2U,
+        COMBINED_IMAGE_SAMPLER  = 3U,
     };
 
     enum class STAGE_FLAG
     {
-        VERTEX = 1,
-        FRAGMENT = 2,
+        VERTEX          = 1,
+        FRAGMENT        = 2,
         VERTEX_FRAGMENT = 3,
-        ALL_GRAPHICS = 4
+        ALL_GRAPHICS    = 4
     };
 
     enum class SAMPLER_TILE_MODE{
@@ -225,6 +231,10 @@ namespace boitatah
         {
         case DESCRIPTOR_TYPE::UNIFORM_BUFFER:
             return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        case DESCRIPTOR_TYPE::IMAGE:
+            return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        case DESCRIPTOR_TYPE::SAMPLER:
+            return VK_DESCRIPTOR_TYPE_SAMPLER;
         case DESCRIPTOR_TYPE::COMBINED_IMAGE_SAMPLER:
             return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         default:
@@ -416,6 +426,16 @@ namespace boitatah
         case IMAGE_USAGE::DEPTH_STENCIL:
             return (VkImageUsageFlagBits) VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
         
+        case IMAGE_USAGE::RENDER_GRAPH_COLOR:
+            return(VkImageUsageFlagBits)(   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                            VK_IMAGE_USAGE_SAMPLED_BIT |
+                                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+        case IMAGE_USAGE::RENDER_GRAPH_DEPTH:
+            return(VkImageUsageFlagBits)(VK_IMAGE_USAGE_SAMPLED_BIT |
+                                         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+                                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
         default:
             return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         }

@@ -26,6 +26,7 @@ namespace boitatah{
         CommandBuffer drawBuffer;
         CommandBuffer transferBuffer;
 
+        VkSemaphore writeSem;
         VkSemaphore schainAcqSem;
         VkSemaphore transferSem;
         VkFence inFlightFen;

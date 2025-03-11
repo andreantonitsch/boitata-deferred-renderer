@@ -9,7 +9,7 @@ namespace boitatah::vk
     struct PresentCommandVk
     {
         VkCommandBuffer commandBuffer;
-        VkSemaphore waitSemaphore;
+        std::vector<VkSemaphore> waitSemaphores;
         VkSemaphore signalSemaphore;
         VkFence fence;
 
@@ -32,7 +32,7 @@ namespace boitatah::vk
     {
         VkCommandBuffer commandBuffer;
         VkFence fence;
-        VkSemaphore*  wait_semaphore  = nullptr;
+        std::vector<VkSemaphore>  wait_semaphores;
         VkSemaphore*  signal_semaphore = nullptr;
     };
 

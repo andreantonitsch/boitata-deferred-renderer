@@ -87,12 +87,12 @@ namespace boitatah::vk{
                 {
                     stages.push_back(VK_PIPELINE_STAGE_TRANSFER_BIT);
                     queue = vk->getTransferQueue();
+                    submit.pWaitDstStageMask = stages.data();
                 }
 
                 if(m_wait != VK_NULL_HANDLE){
                     submit.waitSemaphoreCount = 1;
                     submit.pWaitSemaphores = &m_wait;
-                    submit.pWaitDstStageMask = stages.data();
                 }
 
                 if (m_signal != VK_NULL_HANDLE && command.signal)

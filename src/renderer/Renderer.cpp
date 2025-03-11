@@ -265,9 +265,8 @@ namespace boitatah
         // vertex and mesh data
         Geometry geom = m_resourceManager->getResource(scene.geometry);
         
-        auto indexBufferData = m_resourceManager->getCommitResourceAccessData(geom.IndexBuffer(), frameIndex);
-
-        auto indexVkBuffer = indexBufferData.buffer->getBuffer();
+        //auto indexBufferData = m_resourceManager->getCommitResourceAccessData(geom.IndexBuffer(), frameIndex);
+        //auto indexVkBuffer = indexBufferData.buffer->getBuffer();
 
         drawCommand({
             .drawBuffer = buffers.drawBuffer,
@@ -277,15 +276,9 @@ namespace boitatah
             .indexed = true,
         });
     }
-    void Renderer::render(SceneNode &scene)
-    {
-        auto backbuffer = m_backBufferManager->getNext();
-        updateFrameUniforms(m_backBufferManager->getCurrentIndex());
-        renderSceneNode(scene, backbuffer);
-        presentRenderTarget(backbuffer);
-    }
 
-    void Renderer::presentRenderTarget(Handle<RenderTarget> &rendertarget)
+
+    void Renderer::presentRenderTargetNow(Handle<RenderTarget> &rendertarget, uint32_t attachment_index = 0)
     {
         m_window->windowEvents();
 
@@ -296,11 +289,11 @@ namespace boitatah
         if (!m_renderTargetManager->isActive(target.cmdBuffers)){
             throw std::runtime_error("Failed to Render to Target");}
         RenderTargetSync& buffers = m_renderTargetManager->get(target.cmdBuffers);
-        if(!m_imageManager->contains(target.attachments[0]))
+        if(!m_imageManager->contains(target.attachments[attachment_index]))
         throw std::runtime_error("failed to get framebuffer for Presentation");
-        Image& image = m_imageManager->getImage(target.attachments[0]);
+        Image& image = m_imageManager->getImage(target.attachments[attachment_index]);
 
-        m_vk->waitForFrame(buffers);
+        //m_vk->waitForFrame(buffers);
         // SubmitDrawCommand command{.bufferData = buffers, .submitType = COMMAND_BUFFER_TYPE::PRESENT};
         auto swapchainImage = m_swapchain->getNext(buffers.schainAcqSem);
 
@@ -310,14 +303,16 @@ namespace boitatah
             handleWindowResize();
             return;
         }
-
+        std::vector<VkSemaphore> waits;
+        waits.push_back(buffers.schainAcqSem);
+        waits.push_back(buffers.writeSem);
         bool successfullyPresent = m_vk->presentFrame(image,
                                                       swapchainImage.image,
                                                       swapchainImage.sc,
                                                       swapchainImage.index,
                                                       {
                                                           .commandBuffer = buffers.transferBuffer.buffer,
-                                                          .waitSemaphore = buffers.schainAcqSem,
+                                                          .waitSemaphores = waits,
                                                           .signalSemaphore = buffers.transferSem,
                                                           .fence = buffers.inFlightFen,
                                                       });
@@ -378,7 +373,6 @@ namespace boitatah
             std::runtime_error("failed to bind material");
 
         //Bind Pipeline <-- relevant when shader is reused.
-        //std::cout << "began RenderPass" << std::endl;
         Handle<Shader> boundPipeline;
         Handle<Geometry> boundVertices;
         std::vector<VERTEX_BUFFER_TYPE> boundVertexTypes;
@@ -423,21 +417,45 @@ namespace boitatah
  
         m_vk->endRenderpassCommand({.commandBuffer = buffers.drawBuffer.buffer});
 
+        std::vector<VkSemaphore> wait_semaphores;
+        wait_semaphores.push_back(*(m_resourceManager->getCommandBufferWriter().getSignal()));
+ 
         m_resourceManager->submitCommitCommands();
         m_vk->submitDrawCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer,
                             .fence = buffers.inFlightFen,
-                            .wait_semaphore = m_resourceManager->getCommandBufferWriter().getSignal()
+                            .wait_semaphores = wait_semaphores,
+                            .signal_semaphore = &buffers.writeSem
                             });
 
         m_materialMngr->resetBindings();
         //std::cout << "Submit Draw Command \n";
     }
-
+    void Renderer::render(SceneNode &scene)
+    {
+        auto backbuffer = m_backBufferManager->getNext();
+        updateFrameUniforms(m_backBufferManager->getCurrentIndex());
+        renderSceneNode(scene, backbuffer);
+        presentRenderTargetNow(backbuffer);
+    }
+    
     void Renderer::render(SceneNode &scene, Camera &camera)
     {
         auto backbuffer = m_backBufferManager->getNext();
         renderSceneNode(scene, camera, backbuffer);
-        presentRenderTarget(backbuffer);
+        presentRenderTargetNow(backbuffer);
+    }
+
+    void Renderer::render_graph(SceneNode &scene, Camera &camera)
+    {
+        // auto backbuffer = m_backBufferManager->getNext_Graph();
+
+        // for(const auto& stage : backbuffer){
+        //     render_graph_stage(scene, camera, stage);
+
+        // }
+        // auto present_target = m_backBufferManager->getPresentTarget();
+        // auto present_target_index = m_backBufferManager->getPresentTargetIndex();
+        // presentRenderTargetNow(present_target, present_target_index);
     }
 
     void Renderer::renderSceneNode(SceneNode &scene, Camera &camera, Handle<RenderTarget> &rendertargetHandle)

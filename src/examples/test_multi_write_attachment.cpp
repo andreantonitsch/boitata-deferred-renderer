@@ -22,48 +22,58 @@ int main()
                 .appName = "Test Frame Buffer",
                 .debug = true,
                 .swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB,
-                .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR,
-                                                    ATTACHMENT_TYPE::DEPTH_STENCIL},
-                                   .attachmentFormats = {IMAGE_FORMAT::BGRA_8_SRGB,
-                                                        IMAGE_FORMAT::DEPTH_32_SFLOAT
-                                   },
-                                   .dimensions = {windowWidth, windowHeight}}});
+                .backBufferDesc2 = BackBufferDesc2{
+                                        .dimensions = {windowWidth, windowHeight},
+                                        .render_stages = {
+                                            RenderStageDesc{
+                                                .type = StageType::OBJECT_LIST,
+                                                .attachments = {ATTACHMENT_TYPE::COLOR,
+                                                                ATTACHMENT_TYPE::POSITION,
+                                                                ATTACHMENT_TYPE::NORMAL,
+                                                                ATTACHMENT_TYPE::DEPTH_STENCIL},
+                                                .attachmentFormats = {  IMAGE_FORMAT::BGRA_8_SRGB,
+                                                                        IMAGE_FORMAT::RGBA_32_SFLOAT,
+                                                                        IMAGE_FORMAT::RGBA_32_SFLOAT,
+                                                                        IMAGE_FORMAT::DEPTH_32_SFLOAT},
+                                                .links = {},
+                                            }
+                                        },
+                                        .present_link = {0, 0},
+                                        }
+
+                });
 
     Handle<RenderTexture> texture = utils::TextureLoader::loadRenderTexture(std::string("./resources/UV_checker1k.png"),
      IMAGE_FORMAT::RGBA_8_SRGB,
      TextureMode::READ, SamplerData(),
      r.getResourceManager());
 
-    std::cout << "creating bindings" << std::endl;
     auto textureBinding = r.getMaterialManager().createUnlitMaterialBindings();
     r.getMaterialManager().getBinding(textureBinding[1]).bindings[0].binding_handle.renderTex = texture;
-    
-    std::cout << "creating material" << std::endl;
     auto material = r.getMaterialManager().createUnlitMaterial(textureBinding);
 
-
-    Handle<Geometry> quad = GeometryBuilder::Quad(r.getResourceManager());
     Handle<Geometry> triangle = GeometryBuilder::Triangle(r.getResourceManager());
+    Handle<Geometry> quad = GeometryBuilder::Quad(r.getResourceManager());
     Handle<Geometry> circle = GeometryBuilder::Circle(r.getResourceManager(), 0.5f, 32);
     Handle<Geometry> pipe = GeometryBuilder::Pipe(r.getResourceManager(), 0.5, 2.0, 10, 32);
 
     std::cout << "creating scene node" << std::endl;
     SceneNode triangleNode({
         .name = "triangle",
-        .geometry = pipe,
+        .geometry = triangle,
         .material = material,
         .position = glm::vec3(-3.0f, 0, 0),
     });
     SceneNode quadNode({
         .name = "quad",
-        .geometry = pipe,
+        .geometry = quad,
         .material = material,
         .position = glm::vec3(-1.5f, 0, 0),
     });
 
     SceneNode circleNode({
         .name = "circle",
-        .geometry = pipe,
+        .geometry = circle,
         .material = material,
         .position = glm::vec3(0.0f, 0, 0),
     });
@@ -102,7 +112,7 @@ int main()
         count++;
         camera.setPosition(glm::vec3(glm::cos(t) * dist, -2, -glm::sin(t) * dist));
         camera.lookAt(glm::vec3(0));
-        r.render(scene, camera);
+        r.render_graph(scene, camera);
         ///camera.rotate(glm::vec3(0.0, 0.01, 0.0));
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
     }

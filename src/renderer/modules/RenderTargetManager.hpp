@@ -7,9 +7,6 @@
 
 namespace boitatah{
 
-    struct AttachmentSlot{
-
-    };
 
     class RenderTargetManager{
 

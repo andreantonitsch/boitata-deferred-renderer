@@ -22,12 +22,37 @@ int main()
                 .appName = "Test Frame Buffer",
                 .debug = true,
                 .swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB,
-                .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR,
-                                                    ATTACHMENT_TYPE::DEPTH_STENCIL},
-                                   .attachmentFormats = {IMAGE_FORMAT::BGRA_8_SRGB,
-                                                        IMAGE_FORMAT::DEPTH_32_SFLOAT
-                                   },
-                                   .dimensions = {windowWidth, windowHeight}}});
+                .backBufferDesc2 = BackBufferDesc2{
+                                        .dimensions = {windowWidth, windowHeight},
+                                        .render_stages = {
+                                            RenderStageDesc{
+                                                .type = StageType::OBJECT_LIST,
+                                                .attachments = {ATTACHMENT_TYPE::COLOR,
+                                                                ATTACHMENT_TYPE::POSITION,
+                                                                ATTACHMENT_TYPE::NORMAL,
+                                                                ATTACHMENT_TYPE::DEPTH_STENCIL},
+                                                .attachmentFormats = {  IMAGE_FORMAT::BGRA_8_SRGB,
+                                                                        IMAGE_FORMAT::RGBA_32_SFLOAT,
+                                                                        IMAGE_FORMAT::RGBA_32_SFLOAT,
+                                                                        IMAGE_FORMAT::DEPTH_32_SFLOAT},
+                                                .links = {},
+                                            },
+                                            RenderStageDesc{
+                                                .type = StageType::SCREEN_QUAD,
+                                                .attachments = {ATTACHMENT_TYPE::COLOR,},
+                                                .attachmentFormats = {  IMAGE_FORMAT::BGRA_8_SRGB},
+                                                .links = {
+                                                    .attachToTexture = { 
+                                                            AttachToTextureLink{0, 0, 0},
+                                                            AttachToTextureLink{0, 1, 1},
+                                                            AttachToTextureLink{0, 2, 2},},
+                                                },
+                                            },
+                                        },
+                                        .present_link = {1, 0},
+                                        }
+
+                });
 
     Handle<RenderTexture> texture = utils::TextureLoader::loadRenderTexture(std::string("./resources/UV_checker1k.png"),
      IMAGE_FORMAT::RGBA_8_SRGB,
@@ -40,6 +65,8 @@ int main()
     
     std::cout << "creating material" << std::endl;
     auto material = r.getMaterialManager().createUnlitMaterial(textureBinding);
+
+
 
 
     Handle<Geometry> quad = GeometryBuilder::Quad(r.getResourceManager());
