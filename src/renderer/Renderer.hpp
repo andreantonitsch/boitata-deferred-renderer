@@ -29,8 +29,9 @@
 #include "modules/Swapchain.hpp"
 #include "modules/Camera.hpp"
 #include <renderer/modules/MaterialManager.hpp>
+#include <renderer/modules/StageBaseMaterialManager.hpp>
 #include <vulkan/DescriptorSetManager.hpp>
-
+#include <renderer/modules/BufferCamera.hpp>
 #include "../collections/Pool.hpp"
 
 #include "../scene/Scene.hpp"
@@ -70,6 +71,10 @@ namespace boitatah
         GPUResourceManager& getResourceManager();
         MaterialManager& getMaterialManager();
         DescriptorSetManager& getDescriptorManager();
+        Materials& getMaterials();
+        
+        BufferedCamera createCamera(const CameraDesc& desc);
+
         // Window methods
         bool isWindowClosed();
 
@@ -80,8 +85,8 @@ namespace boitatah
         void renderToRenderTarget(SceneNode &scene, const Handle<RenderTarget> &rendertarget, uint32_t frameIndex);
         void render(SceneNode &scene);
         void render(SceneNode &scene, Camera &camera);
-        void render_graph(SceneNode &scene, Camera &camera);
-        void render_graph_stage(SceneNode &scene, Camera &camera, Handle<RenderStage> stage);
+        void render_graph(SceneNode &scene, BufferedCamera &camera);
+        void render_graph_stage(SceneNode &scene, BufferedCamera &camera, Handle<RenderStage> stage);
         void present_graph(SceneNode &scene, Camera &camera);
 
         void presentRenderTargetNow(Handle<RenderTarget> &rendertarget, uint32_t attachment_index);
@@ -142,19 +147,23 @@ namespace boitatah
         std::shared_ptr<MaterialManager> m_materialMngr;
         std::shared_ptr<ImageManager> m_imageManager;
         std::shared_ptr<RenderTargetManager> m_renderTargetManager;
+        std::shared_ptr<Materials> m_baseMaterials;
 
         // Frame Uniforms
-        FrameUniforms2 frame_uniforms;
-        Handle<GPUBuffer> m_frameUniformsBuffer;
-        Handle<MaterialBinding> m_frameUniforms;
-        void updateCameraUniforms(Camera& camera);
-        void updateFrameUniforms(uint32_t frame_index);
+        CameraFrameUniforms         camera_frame_uniforms;
+        ScreenQuadFrameUniforms     screen_quad_frame_uniforms;
+        
+        //Handle<GPUBuffer> m_frameUniformsBuffer;
+        //Handle<MaterialBinding> m_frameUniforms;
+        
+        //void writeCameraToFrameUniforms(Camera& camera);
+        //void updateCameraFrameUniforms(uint32_t frame_index);
 
 
-        Handle<Material> m_baseMaterial;
-        Handle<DescriptorSetLayout> base_setLayout;
-        Handle<ShaderLayout> m_baseLayout;
-        Handle<Shader> m_dummyPipeline;
+        //Handle<Material> m_baseMaterial;
+        //Handle<DescriptorSetLayout> base_setLayout;
+        //Handle<ShaderLayout> m_baseLayout;
+        //Handle<Shader> m_dummyPipeline;
 
         CommandBuffer m_transferCommandBuffer;
         VkFence m_transferFence;

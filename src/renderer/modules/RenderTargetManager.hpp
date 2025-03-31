@@ -24,6 +24,7 @@ namespace boitatah{
             Handle<RenderTarget> createImageRenderTarget(Handle<RenderPass>& renderpassHandle,
                                                       const std::vector<Image>& images );
             Handle<RenderPass> createMatchingRenderPass(Handle<RenderTarget>& handle);
+            Handle<RenderPass> createMatchingRenderPass(RenderTargetDesc& desc);
             
             // Handle<RenderTarget> createImageRenderTarget(Handle<RenderPass>& renderpassHandle,
             //                                           const std::vector<RenderTexture>& textures );

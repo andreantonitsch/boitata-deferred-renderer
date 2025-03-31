@@ -77,11 +77,9 @@ namespace boitatah
         RenderPass pass;
         RenderTarget target;
 
-        glm::vec4 clearColor;
-
         glm::ivec2 scissorDims;
         glm::ivec2 scissorOffset;
-
+        uint32_t attachment_count = 1;
         // glm::ivec2 viewportDims;
         // glm::ivec2 viewportOffset;
     };
@@ -111,6 +109,7 @@ namespace boitatah
         uint32_t frame;
         Handle<Geometry> geometry;
         bool bindIndex = true;
+        std::vector<VERTEX_BUFFER_TYPE> vertex_buffers;
     };
 
 }

@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <utils/utils.hpp>
 
+
 namespace boitatah
 {
 #pragma region Initialization
@@ -35,8 +36,13 @@ namespace boitatah
         createSwapchain();
 
         //Create a backbuffer
-        m_backBufferManager = std::make_shared<BackBufferManager>(m_renderTargetManager);
-        m_backBufferManager->setup(m_options.backBufferDesc);
+        m_backBufferManager = std::make_shared<BackBufferManager>(m_renderTargetManager,
+                                                                  m_imageManager);
+        
+        if (m_options.backBufferDesc.dimensions != glm::u32vec2(0, 0))
+            m_backBufferManager->setup(m_options.backBufferDesc);
+        else
+            m_backBufferManager->setup2(m_options.backBufferDesc2);
 
         m_transferCommandBuffer = allocateCommandBuffer({.count = 1,
                                                          .level = COMMAND_BUFFER_LEVEL::PRIMARY,
@@ -50,77 +56,35 @@ namespace boitatah
         //Initializethe command buffer writer
         m_ResourceManagerTransferWriter = std::make_shared<VkCommandBufferWriter>(m_vk);
         m_ResourceManagerTransferWriter->setCommandBuffer(allocateCommandBuffer({.count = 1,
-                                                         .level = COMMAND_BUFFER_LEVEL::PRIMARY,
-                                                         .type = COMMAND_BUFFER_TYPE::TRANSFER}).buffer);
+                                                    .level = COMMAND_BUFFER_LEVEL::PRIMARY,
+                                                    .type = COMMAND_BUFFER_TYPE::TRANSFER}).buffer);
         m_ResourceManagerTransferWriter->setFence(m_vk->createFence(true));
         m_ResourceManagerTransferWriter->setSignal(m_vk->createSemaphore());
         
 
         //Initialize the renderer Modules
-        m_resourceManager = std::make_shared<GPUResourceManager>(m_vk, m_bufferManager, m_imageManager, m_ResourceManagerTransferWriter);
+        m_resourceManager = std::make_shared<GPUResourceManager>(   m_vk, m_bufferManager, 
+                                                                    m_imageManager, 
+                                                                    m_ResourceManagerTransferWriter);
+        
         m_descriptorManager= std::make_shared<DescriptorSetManager>(m_vk, 4096);
         m_materialMngr = std::make_shared<MaterialManager>(m_vk, 
                                                            m_renderTargetManager, 
                                                            m_descriptorManager,
                                                            m_resourceManager); 
-        auto& shader_mngr = m_materialMngr->getShaderManager();
+        
+        std::cout << "starting base material creation" << std::endl;
+        // Initialize Base Materials
+        m_baseMaterials = std::make_shared<Materials>(
+                                                        m_materialMngr,
+                                                        m_descriptorManager,
+                                                        m_renderTargetManager,
+                                                        m_backBufferManager);
 
-        // Initialize base renderer data(base material, base layout etc.)
-        m_frameUniformsBuffer = m_resourceManager->create(GPUBufferCreateDescription{
-            .size = sizeof(FrameUniforms2),
-            .usage = BUFFER_USAGE::UNIFORM_BUFFER,
-            .sharing_mode = SHARING_MODE::EXCLUSIVE,
-            });
-        // camera layout
-       base_setLayout = m_descriptorManager->getLayout({
-                                                            .bindingDescriptors = {
-                                                                {//.binding = 0,
-                                                                .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
-                                                                .stages = STAGE_FLAG::ALL_GRAPHICS,
-                                                                .descriptorCount= 1,
-                                                                }
-                                                            }
-                                                        });
 
-        m_frameUniforms = m_materialMngr->createBinding(base_setLayout);
-        auto& binding_ref = m_materialMngr->getBinding(m_frameUniforms);
-        binding_ref.bindings[0].binding_handle.buffer = m_frameUniformsBuffer;
 
-        //create base layout with push constants for model matrices
-        Handle<ShaderLayout> m_baseShaderLayout = shader_mngr.makeShaderLayout({.setLayouts={base_setLayout}});
 
-        m_dummyPipeline = createShader({
-            .vert = {.byteCode = utils::readFile("./src/09_shader_base_vert.spv"),
-                     .entryFunction = "main"},
-            .frag = {.byteCode = utils::readFile("./src/09_shader_base_frag.spv"),
-                     .entryFunction = "main"},
-            .renderPass = m_backBufferManager->getRenderPass(),
-            .layout = m_baseShaderLayout,
-            .vertexBindings = {}
-            });
-
-        m_baseMaterial = m_materialMngr->createMaterial({
-            .shader = m_dummyPipeline,
-             .bindings = {m_frameUniforms},
-            .name = "base material",
-        });
-
-        m_materialMngr->setBaseMaterial(m_baseMaterial);
-        m_materialMngr->setupBaseMaterials(m_backBufferManager->getRenderPass());
         std::cout << "Renderer Initialization Complete " << std::endl;
-    }
-
-    void Renderer::updateCameraUniforms(Camera &camera)
-    {
-        frame_uniforms.camera = camera.getCameraUniforms();
-
-    }
-
-    void Renderer::updateFrameUniforms(uint32_t frame_index)
-    {
-        GPUBuffer& buffer = m_resourceManager->getResource(m_frameUniformsBuffer);
-        buffer.copyData(&frame_uniforms, sizeof(FrameUniforms2));
-        //m_resourceManager->commitResourceCommand(m_frameUniformsBuffer, frame_index);
     }
 
     void Renderer::handleWindowResize()
@@ -190,9 +154,6 @@ namespace boitatah
     void Renderer::cleanup()
     {
         m_vk->waitIdle();
-        auto& layout = m_descriptorManager->getLayoutContent(base_setLayout);
-        m_vk->destroyDescriptorSetLayout(layout.layout);
-        
         if(m_vk->checkFenceStatus(m_transferFence))
             m_vk->waitForFence(m_transferFence);
 
@@ -236,6 +197,16 @@ namespace boitatah
         return *m_descriptorManager;
     }
 
+    Materials &Renderer::getMaterials()
+    {
+        return *m_baseMaterials;
+    }
+
+    BufferedCamera Renderer::createCamera(const CameraDesc &desc)
+    {
+        return BufferedCamera(desc, m_resourceManager);
+    }
+
     bool Renderer::isWindowClosed()
     {
         return m_window->isWindowClosed();
@@ -248,7 +219,9 @@ namespace boitatah
         m_vk->waitIdle();
     }
 
-    void Renderer::renderToRenderTarget(SceneNode &scene, const Handle<RenderTarget> &rendertarget, uint32_t frameIndex = 0)
+    void Renderer::renderToRenderTarget(SceneNode &scene,
+                                        const Handle<RenderTarget> &rendertarget,
+                                        uint32_t frameIndex = 0)
     {
         if (!m_renderTargetManager->isActive(rendertarget))
             throw std::runtime_error("Failed to write command buffer \n\tRender Target");
@@ -264,10 +237,6 @@ namespace boitatah
 
         // vertex and mesh data
         Geometry geom = m_resourceManager->getResource(scene.geometry);
-        
-        //auto indexBufferData = m_resourceManager->getCommitResourceAccessData(geom.IndexBuffer(), frameIndex);
-        //auto indexVkBuffer = indexBufferData.buffer->getBuffer();
-
         drawCommand({
             .drawBuffer = buffers.drawBuffer,
             .indexCount = geom.IndexCount(),
@@ -278,7 +247,8 @@ namespace boitatah
     }
 
 
-    void Renderer::presentRenderTargetNow(Handle<RenderTarget> &rendertarget, uint32_t attachment_index = 0)
+    void Renderer::presentRenderTargetNow(Handle<RenderTarget> &rendertarget, 
+                                          uint32_t attachment_index = 0)
     {
         m_window->windowEvents();
 
@@ -289,8 +259,10 @@ namespace boitatah
         if (!m_renderTargetManager->isActive(target.cmdBuffers)){
             throw std::runtime_error("Failed to Render to Target");}
         RenderTargetSync& buffers = m_renderTargetManager->get(target.cmdBuffers);
+
         if(!m_imageManager->contains(target.attachments[attachment_index]))
-        throw std::runtime_error("failed to get framebuffer for Presentation");
+            throw std::runtime_error("failed to get framebuffer for Presentation");
+            
         Image& image = m_imageManager->getImage(target.attachments[attachment_index]);
 
         //m_vk->waitForFrame(buffers);
@@ -362,15 +334,13 @@ namespace boitatah
             .commandBuffer = buffers.drawBuffer,
             .pass = pass,
             .target = target,
-
-            .clearColor = glm::vec4(0, 0, 0, 1),
             .scissorDims = image.dimensions,
             .scissorOffset = glm::vec2(0, 0),
         });
 
-        //binds dummy pipeline
-        if(!m_materialMngr->BindMaterial(m_baseMaterial, frame_index, buffers.drawBuffer))
-            std::runtime_error("failed to bind material");
+        //binds dummy pipeline and camera
+        // if(!m_materialMngr->BindMaterial(m_baseMaterial, frame_index, buffers.drawBuffer))
+        //     std::runtime_error("failed to bind material");
 
         //Bind Pipeline <-- relevant when shader is reused.
         Handle<Shader> boundPipeline;
@@ -433,7 +403,7 @@ namespace boitatah
     void Renderer::render(SceneNode &scene)
     {
         auto backbuffer = m_backBufferManager->getNext();
-        updateFrameUniforms(m_backBufferManager->getCurrentIndex());
+        //updateCameraFrameUniforms(m_backBufferManager->getCurrentIndex());
         renderSceneNode(scene, backbuffer);
         presentRenderTargetNow(backbuffer);
     }
@@ -445,23 +415,153 @@ namespace boitatah
         presentRenderTargetNow(backbuffer);
     }
 
-    void Renderer::render_graph(SceneNode &scene, Camera &camera)
+    void Renderer::render_graph(SceneNode &scene, BufferedCamera &camera)
     {
-        // auto backbuffer = m_backBufferManager->getNext_Graph();
+        auto backbuffer = m_backBufferManager->getNext_Graph();
 
-        // for(const auto& stage : backbuffer){
-        //     render_graph_stage(scene, camera, stage);
+        for(const auto& stage : backbuffer){
+            render_graph_stage(scene, camera, stage);
+        }
 
-        // }
-        // auto present_target = m_backBufferManager->getPresentTarget();
-        // auto present_target_index = m_backBufferManager->getPresentTargetIndex();
-        // presentRenderTargetNow(present_target, present_target_index);
+        auto present_target = m_backBufferManager->getPresentTarget();
+        auto present_target_index = m_backBufferManager->getPresentTargetIndex();
+        presentRenderTargetNow(present_target, present_target_index);
+    }
+
+    void Renderer::render_graph_stage(SceneNode &scene, BufferedCamera &camera, Handle<RenderStage> stage_handle)
+    {
+
+        std::vector<SceneNode *> nodes;
+        scene.sceneAsList(nodes);
+
+        //std::cout << "drawing scene with " << nodes.size() << " nodes "<<std::endl;
+        // TODO cullings and whatever
+        // TRANSFORM UPDATES
+        // ETC
+        
+        auto ordered_nodes = orderSceneNodes(nodes);
+        
+        auto& stage = m_backBufferManager->getStage(stage_handle);
+
+        RenderTarget& target = m_renderTargetManager->get(stage.target);
+        RenderTargetSync& buffers = m_renderTargetManager->get(target.cmdBuffers);
+        RenderPass& pass = m_renderTargetManager->get(target.renderpass);
+
+        //get image for dimension setting purposes.
+        Image& image = m_imageManager->getImage(target.attachments[0]);
+
+        uint32_t frame_index = m_backBufferManager->getCurrentIndex();
+        
+        m_vk->waitForFrame(buffers);
+        m_vk->resetCmdBuffer(buffers.drawBuffer.buffer);
+        m_vk->resetCmdBuffer(buffers.transferBuffer.buffer);
+        m_descriptorManager->resetPools(frame_index);
+
+        auto& shader_mngr = m_materialMngr->getShaderManager();
+        
+        m_resourceManager->waitForTransfers();
+        m_resourceManager->beginCommitCommands();
+
+        beginBuffer({.buffer = buffers.drawBuffer});
+
+        //std::cout << "began buffer" << std::endl;
+        beginRenderpass({
+            .commandBuffer = buffers.drawBuffer,
+            .pass = pass,
+            .target = target,
+            .scissorDims = image.dimensions,
+            .scissorOffset = glm::vec2(0, 0),
+            .attachment_count = static_cast<uint32_t>(target.attachments.size())
+        });
+
+        //binds dummy pipeline and camera
+        // if(!m_materialMngr->BindMaterial(m_baseMaterial, frame_index, buffers.drawBuffer))
+        //     std::runtime_error("failed to bind material");
+
+
+        auto base_mat_handle = m_baseMaterials->getStageBaseMaterial(stage.stage_index);
+
+        //Bind base data to material
+        switch(stage.type){
+            //bind camera info to set 0 binding 0 of base material bindings
+            case StageType::CAMERA:
+                m_materialMngr->setBufferBindingAttribute(base_mat_handle,
+                                                          camera.getCameraBuffer(),
+                                                          0, 0);
+        }
+
+        //binds the base pipeline for this stage type;
+        auto& base_material = m_materialMngr->getMaterialContent(base_mat_handle);
+        if(!m_materialMngr->BindMaterial(base_mat_handle, frame_index, buffers.drawBuffer))
+             std::runtime_error("failed to bind base pipeline");
+
+        //Bind Pipeline <-- relevant when shader is reused.
+        Handle<Shader> boundPipeline;
+        Handle<Geometry> boundVertices;
+        std::vector<VERTEX_BUFFER_TYPE> boundVertexTypes;
+
+        for (const auto &node : ordered_nodes)
+        {
+            if (!node->material)
+            {
+                std::cout << "skip drawing node" << std::endl;
+                continue;
+            }
+            
+            auto& material = m_materialMngr->getMaterialContent(node->material);
+            m_materialMngr->BindMaterial(node->material, frame_index, buffers.drawBuffer);
+            
+            Handle<Shader>& shader = material.shader;
+            
+            // TODO separate to avoid rebinding when drawing a lot of the same object
+            bindVertexBuffers({
+                .commandBuffer = buffers.drawBuffer,
+                .frame = m_backBufferManager->getCurrentIndex(),
+                .geometry = node->geometry,
+                .bindIndex = true,
+                .vertex_buffers = material.vertexBufferBindings
+            });
+
+            glm::mat4 model_mat = node->getGlobalMatrix();
+
+            pushPushConstants({
+                .drawBuffer = buffers.drawBuffer,
+                .layout = shader_mngr.get(shader).layout.pipeline,
+                .push_constants = {
+                PushConstant{ //camera constant
+                    .ptr = &model_mat,
+                    .offset = 0,
+                    .size = sizeof(glm::mat4),
+                    .stages = STAGE_FLAG::ALL_GRAPHICS
+                }}}
+            );
+
+            //draw one node to target.
+            renderToRenderTarget(*node, stage.target, m_backBufferManager->getCurrentIndex());
+        }
+ 
+        m_vk->endRenderpassCommand({.commandBuffer = buffers.drawBuffer.buffer});
+
+        std::vector<VkSemaphore> wait_semaphores;
+        wait_semaphores.push_back(*(m_resourceManager->getCommandBufferWriter().getSignal()));
+ 
+        m_resourceManager->submitCommitCommands();
+        m_vk->submitDrawCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer,
+                            .fence = buffers.inFlightFen,
+                            .wait_semaphores = wait_semaphores,
+                            .signal_semaphore = &buffers.writeSem
+                            });
+
+        m_materialMngr->resetBindings();
+        //std::cout << "Submit Draw Command \n";
+
+
     }
 
     void Renderer::renderSceneNode(SceneNode &scene, Camera &camera, Handle<RenderTarget> &rendertargetHandle)
     {
-        updateCameraUniforms(camera);
-        updateFrameUniforms(m_backBufferManager->getCurrentIndex());
+        //writeCameraToFrameUniforms(camera);
+        //updateCameraFrameUniforms(m_backBufferManager->getCurrentIndex()); 
         renderSceneNode(scene, rendertargetHandle);
     }
 
@@ -478,14 +578,16 @@ namespace boitatah
 
     void Renderer::bindVertexBuffers(const BindVertexBuffersCommand& command ){
 
+
         auto geom = m_resourceManager->getResource(command.geometry);
-        auto vertexBufferHandle = geom.getBuffer(VERTEX_BUFFER_TYPE::POSITION);
-        auto colorBufferHandle = geom.getBuffer(VERTEX_BUFFER_TYPE::COLOR);
-        auto uvBufferHandle = geom.getBuffer(VERTEX_BUFFER_TYPE::UV);
-        std::array<BufferAccessData, 3> bufferData;
-        bufferData[0] = m_resourceManager->getCommitResourceAccessData(vertexBufferHandle, command.frame);
-        bufferData[1] = m_resourceManager->getCommitResourceAccessData(uvBufferHandle, command.frame);
-        bufferData[2] = m_resourceManager->getCommitResourceAccessData(colorBufferHandle, command.frame);
+        std::vector<BufferAccessData> bufferData;
+
+        for(uint32_t i = 0; i < command.vertex_buffers.size(); ++i){
+            auto buffer_handle = geom.getBuffer(command.vertex_buffers[i]);
+            bufferData.push_back(
+                m_resourceManager->getCommitResourceAccessData(buffer_handle, command.frame)
+            );
+        }
 
         std::vector<VkDeviceSize> offsets; 
         std::vector<VkBuffer> buffers;
@@ -588,11 +690,11 @@ namespace boitatah
             .commandBuffer = command.commandBuffer.buffer,
             .pass = command.pass.renderPass,
             .frameBuffer = command.target.buffer,
-            .clearColor = command.clearColor,
-
+            .clearColors = command.pass.clearColors,
             .scissorDims = command.scissorDims,
             .scissorOffset = command.scissorOffset,
-            .depth = command.pass.description.use_depthStencil
+            .depth = command.pass.description.use_depthStencil,
+            
             //.viewportDims = command.viewportDims,
             //.viewportOffset = command.viewportOffset,
         });
@@ -600,7 +702,7 @@ namespace boitatah
 
     void Renderer::setCameraUniforms(Camera &camera)
     {
-        frame_uniforms.camera = camera.getCameraUniforms();
+        camera_frame_uniforms.camera = camera.getCameraUniforms();
     }
 
     void Renderer::submitBuffer(const SubmitBufferCommand &command)
@@ -653,11 +755,7 @@ namespace boitatah
 
     Handle<Material> Renderer::createMaterial(const MaterialCreate &description)
     {
-        auto d = description;
-        if(!description.parent)
-            d.parent = m_baseMaterial;
-
-        return m_materialMngr->createMaterial(d);
+        return m_materialMngr->createMaterial(description);
     }
 
     Handle<ShaderLayout> Renderer::createShaderLayout(const ShaderLayoutDesc &desc)

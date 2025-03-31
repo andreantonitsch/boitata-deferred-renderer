@@ -400,9 +400,16 @@ VkImageView boitatah::vk::Vulkan::createImageView(VkImage image, const ImageDesc
             .r = VK_COMPONENT_SWIZZLE_IDENTITY,
             .g = VK_COMPONENT_SWIZZLE_IDENTITY,
             .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-            .a = VK_COMPONENT_SWIZZLE_IDENTITY},
-        .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .baseMipLevel = 0, .levelCount = 1, .baseArrayLayer = 0, .layerCount = 1},
-    };
+            .a = VK_COMPONENT_SWIZZLE_IDENTITY},};
+    if (desc.usage == IMAGE_USAGE::DEPTH_STENCIL ||
+        desc.usage == IMAGE_USAGE::RENDER_GRAPH_DEPTH){
+        createInfo.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+                             .baseMipLevel = 0, .levelCount = 1, 
+                             .baseArrayLayer = 0, .layerCount = 1};}
+    else {
+        createInfo.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                             .baseMipLevel = 0, .levelCount = 1, 
+                             .baseArrayLayer = 0, .layerCount = 1};}
 
     if (vkCreateImageView(device, &createInfo, nullptr, &view) != VK_SUCCESS)
     {
@@ -482,19 +489,15 @@ void boitatah::vk::Vulkan::beginCmdBuffer(const BeginCommandVk &command)
 
 void boitatah::vk::Vulkan::beginRenderpassCommand(const BeginRenderpassCommandVk &command)
 {
-    VkClearValue clearColor;
-    
-    clearColor.color = {{command.clearColor.x,
-                                 command.clearColor.y,
-                                 command.clearColor.z,
-                                 command.clearColor.w}};
-    std::vector<VkClearValue> clear_colors;
-    clear_colors.push_back(clearColor);
 
-    if(command.depth){
-        VkClearValue depth_clear;
-        depth_clear.depthStencil = {0.0f, 0};
-        clear_colors.push_back(depth_clear);
+    std::vector<VkClearValue> clear_colors;
+    for(auto& clear_color : command.clearColors){
+        VkClearValue cc;
+        cc.color = {{clear_color.x,
+                    clear_color.y,
+                    clear_color.z,
+                    clear_color.w}};
+        clear_colors.push_back(cc);
     }
 
     VkRect2D scissor = {
@@ -821,6 +824,9 @@ void boitatah::vk::Vulkan::endTransferCommands(const VkCommandBuffer &buffer,
             stages.push_back(VK_PIPELINE_STAGE_TRANSFER_BIT);
         submit.pWaitDstStageMask = stages.data();
     }
+
+
+    
     waitForFence(fence);
     vkQueueSubmit(queue, 1, &submit, fence);
 }
@@ -1209,12 +1215,17 @@ void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
                           VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     };
 
+    //TODO temp workaround
+    std::vector<VkPipelineColorBlendAttachmentState> blend_attachments;
+    for(auto& blend : desc.colorBlends)
+        blend_attachments.push_back(colorBlendAttachment);
+
     VkPipelineColorBlendStateCreateInfo colorBlending{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
         .logicOpEnable = VK_FALSE,
         .logicOp = VK_LOGIC_OP_COPY,
-        .attachmentCount = 1,
-        .pAttachments = &colorBlendAttachment,
+        .attachmentCount = static_cast<uint32_t>(blend_attachments.size()),
+        .pAttachments = blend_attachments.data(),
         .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f},
     };
 

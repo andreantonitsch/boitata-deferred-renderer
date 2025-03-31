@@ -22,40 +22,27 @@ int main()
                 .appName = "Test Frame Buffer",
                 .debug = true,
                 .swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB,
-                .backBufferDesc2 = BackBufferDesc2{
-                                        .dimensions = {windowWidth, windowHeight},
-                                        .render_stages = {
-                                            RenderStageDesc{
-                                                .type = StageType::OBJECT_LIST,
-                                                .attachments = {ATTACHMENT_TYPE::COLOR,
-                                                                ATTACHMENT_TYPE::POSITION,
-                                                                ATTACHMENT_TYPE::NORMAL,
-                                                                ATTACHMENT_TYPE::DEPTH_STENCIL},
-                                                .attachmentFormats = {  IMAGE_FORMAT::BGRA_8_SRGB,
-                                                                        IMAGE_FORMAT::RGBA_32_SFLOAT,
-                                                                        IMAGE_FORMAT::RGBA_32_SFLOAT,
-                                                                        IMAGE_FORMAT::DEPTH_32_SFLOAT},
-                                                .links = {},
-                                            }
-                                        },
-                                        .present_link = {0, 0},
-                                        }
-
+                // .backBufferDesc2 = BackBufferManager::BasicMultiWriteForwardPipeline(windowWidth,
+                //                                                            windowHeight, 1),
+                .backBufferDesc2 = BackBufferManager::BasicMultiWriteForwardPipeline(windowWidth,
+                                                                                     windowHeight,
+                                                                                     1),
                 });
 
-    Handle<RenderTexture> texture = utils::TextureLoader::loadRenderTexture(std::string("./resources/UV_checker1k.png"),
-     IMAGE_FORMAT::RGBA_8_SRGB,
-     TextureMode::READ, SamplerData(),
-     r.getResourceManager());
 
-    auto textureBinding = r.getMaterialManager().createUnlitMaterialBindings();
-    r.getMaterialManager().getBinding(textureBinding[1]).bindings[0].binding_handle.renderTex = texture;
-    auto material = r.getMaterialManager().createUnlitMaterial(textureBinding);
+    Handle<RenderTexture> texture = utils::TextureLoader::loadRenderTexture(
+                                        std::string("./resources/UV_checker1k.png"),
+                                        IMAGE_FORMAT::RGBA_8_SRGB,
+                                        TextureMode::READ, SamplerData(),
+                                        r.getResourceManager());
+
+    std::cout << "creating material" << std::endl;
+    auto material = r.getMaterials().createUnlitMaterial(1, 100, texture);
 
     Handle<Geometry> triangle = GeometryBuilder::Triangle(r.getResourceManager());
-    Handle<Geometry> quad = GeometryBuilder::Quad(r.getResourceManager());
-    Handle<Geometry> circle = GeometryBuilder::Circle(r.getResourceManager(), 0.5f, 32);
-    Handle<Geometry> pipe = GeometryBuilder::Pipe(r.getResourceManager(), 0.5, 2.0, 10, 32);
+    Handle<Geometry> quad =     GeometryBuilder::Quad(r.getResourceManager());
+    Handle<Geometry> circle =   GeometryBuilder::Circle(r.getResourceManager(), 0.5f, 32);
+    Handle<Geometry> pipe =     GeometryBuilder::Pipe(r.getResourceManager(), 0.5, 2.0, 10, 32);
 
     std::cout << "creating scene node" << std::endl;
     SceneNode triangleNode({
@@ -92,7 +79,7 @@ int main()
     scene.add(&quadNode);
     scene.add(&circleNode);
 
-    Camera camera({
+    BufferedCamera camera = r.createCamera({
                    .position = glm::float3(0,-2,-5),
                    .aspect = static_cast<float>(windowWidth) / windowHeight,
                    });
@@ -104,6 +91,7 @@ int main()
     float frame_TimeScale = 0.001;
     float dist = 5;
     std::cout << "setup complete" << std::endl;
+
     r.waitIdle();
     while (!r.isWindowClosed())
     {

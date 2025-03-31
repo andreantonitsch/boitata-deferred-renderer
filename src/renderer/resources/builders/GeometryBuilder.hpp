@@ -140,7 +140,7 @@ namespace boitatah{
 
                     vertices.push_back(
                     {iw - (0.5 * width), jh - (0.5 * height), 0.0f});
-                    color.push_back({1.0, 1.0, 0.0f});
+                    color.push_back({1.0, 1.0, 1.0f});
                     uv.push_back({iw,jh});
                     normal.push_back({0.0f, 0.0f, 1.0f});
                 }
@@ -194,7 +194,7 @@ namespace boitatah{
                     float x = glm::cos(angle);
                     float y = glm::sin(angle);
                     vertices.push_back({x * radius, y * radius, 0.0 });
-                    color.push_back({1.0, 1.0, 0.0f});
+                    color.push_back({1.0, 1.0, 1.0f});
                     uv.push_back({x / 2.0 + 0.5,y / 2.0 + 0.5});
                     normal.push_back({0.0, 0.0f, 1.0});
 
@@ -240,7 +240,7 @@ namespace boitatah{
                 for(uint32_t i = 0; i <= heightSegments; i++){
                     float segmentHeight = height_ratio * i - (height * 0.5);
                     vertices.push_back({x * radius, segmentHeight, z * radius });
-                    color.push_back({1.0, 1.0, 0.0f});
+                    color.push_back({1.0, 1.0, 1.0f});
                     uv.push_back({angle,segmentHeight / height});
                     normal.push_back({x, 0.0f, z});
 

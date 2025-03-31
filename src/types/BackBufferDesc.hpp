@@ -7,9 +7,9 @@
 
 namespace boitatah{
 
-    enum class StageType{
-        OBJECT_LIST, //renders a SceneNode list
-        SCREEN_QUAD  //renders a screenquad (for compositing/post-processing)
+    enum class StageType : uint32_t{
+        CAMERA      = 0, //renders a SceneNode list
+        SCREEN_QUAD = 1  //renders a screenquad (for compositing/post-processing)
     };
     struct PresentLink{
         //TargetLinkType type;
@@ -19,13 +19,14 @@ namespace boitatah{
 
     //Repeats a render target on this
     struct TargetLink{
-        uint32_t previous_target_idx = UINT32_MAX;
+        uint32_t prev_target_idx = UINT32_MAX;
     };
 
     //uses the same attachment as an attachment
     // as a previous stage
     struct AttachToAttachLink{
-        uint32_t previous_target_idx = UINT32_MAX;
+        uint32_t prev_target_idx = UINT32_MAX;
+        uint32_t prev_attach_idx = UINT32_MAX;
         uint32_t attachment_idx = UINT32_MAX;
     };
 
@@ -69,7 +70,8 @@ namespace boitatah{
 
 
     struct RenderStageDesc{
-        StageType type = StageType::OBJECT_LIST;
+        StageType type = StageType::CAMERA;
+        //depth_stencil attachments currently have to be the last in the list.
         std::vector<ATTACHMENT_TYPE> attachments = {ATTACHMENT_TYPE::COLOR,
                                                     ATTACHMENT_TYPE::DEPTH_STENCIL};
         std::vector<IMAGE_FORMAT> attachmentFormats = {
@@ -84,10 +86,10 @@ namespace boitatah{
 
     struct RenderStage{
         uint32_t stage_index;
-        StageType type = StageType::OBJECT_LIST;
+        StageType type = StageType::CAMERA;
         bool clear = true;
         Handle<RenderTarget> target;
-        Handle<MaterialBinding> materialBinding;
+        MaterialBinding materialBinding;
         std::vector<RenderTargetSync> wait_list;
         RenderStageDesc description;
     
@@ -99,4 +101,19 @@ namespace boitatah{
         PresentLink present_link;
     };
 
+    struct TimeUniforms{
+        float time;
+        float deltaTime;
+        float sinTime;
+        float a;
+    };
+
+    struct CameraFrameUniforms{
+        CameraUniforms camera;
+        TimeUniforms time;
+    };
+
+    struct ScreenQuadFrameUniforms{
+        TimeUniforms time;
+    };
 }

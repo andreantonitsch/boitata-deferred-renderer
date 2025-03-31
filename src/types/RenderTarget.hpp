@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
-#include <glm/vec2.hpp>
 #include "BttEnums.hpp"
 #include "commands/CommandBuffer.hpp"
 #include "../collections/Pool.hpp"
@@ -9,6 +8,7 @@
 
 
 #include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
 
 namespace boitatah{
 
@@ -26,6 +26,7 @@ namespace boitatah{
         IMAGE_LAYOUT initialLayout;
         IMAGE_LAYOUT finalLayout;
         bool clear;
+        glm::vec4 clearColor = glm::vec4(0);
         //AttachmentDescType type = AttachmentDescType::NEW_IMAGE;
     };
 
@@ -35,13 +36,14 @@ namespace boitatah{
         std::vector<AttachmentDesc> color_attachments;
         bool use_depthStencil = false;
         AttachmentDesc depth_attachment;
-        std::vector<std::pair<IMAGE_LAYOUT, IMAGE_LAYOUT>> attTransitions;
+        //std::vector<std::pair<IMAGE_LAYOUT, IMAGE_LAYOUT>> attTransitions;
     };
 
 
 
     struct RenderPass{
         VkRenderPass renderPass;
+        std::vector<glm::vec4> clearColors;
         RenderPassDesc description;
     };
 

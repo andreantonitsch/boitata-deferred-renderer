@@ -77,6 +77,10 @@ namespace boitatah
         std::vector<VertexAttribute> attributes;
     };
 
+    struct ColorBlend
+    {
+
+    };
 
     struct MakeShaderDesc
     {
@@ -89,6 +93,7 @@ namespace boitatah
         
         Handle<ShaderLayout> layout;
 
+        std::vector<ColorBlend> colorBlends;
         std::vector<VertexBindings> vertexBindings;
     };
 
@@ -100,6 +105,7 @@ namespace boitatah
         VkRenderPass renderpass;
         VkPipelineLayout layout;
         bool use_depth = false;
+        std::vector<ColorBlend> colorBlends;
         std::vector<VkVertexInputBindingDescription> bindings;
         std::vector<VkVertexInputAttributeDescription> attributes;
     };
@@ -112,39 +118,7 @@ namespace boitatah
 
         VkPipeline pipeline;
         ShaderLayout layout;
-    };
-
-    // gets updated every frame
-    struct FrameUniforms
-    {
-        glm::mat4 vp;
-        glm::mat4 projection;
-        glm::mat4 view;
-        glm::f32vec4 time; 
-        glm::f32vec4 deltaTime;
-        glm::f32vec4 sinTime;
-        float a;
-    };
-
-    struct TimeUniforms{
-        float time;
-        float deltaTime;
-        float sinTime;
-        float a;
-    };
-
-    struct FrameUniforms2{
-        CameraUniforms camera;
-        TimeUniforms time;
-    };
-
-    enum class UNIFORM_TYPE
-    {
-        FLOAT,
-        FLOAT2,
-        FLOAT3,
-        FLOAT4,
-        STRUCT,
+        MakeShaderDesc description;
 
     };
 

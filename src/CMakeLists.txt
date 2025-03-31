@@ -14,6 +14,7 @@ set(LIB_DIR_SOURCES
             renderer/modules/ImageManager.cpp
             renderer/modules/RenderTargetManager.cpp
             renderer/modules/MaterialManager.cpp
+            renderer/modules/StageBaseMaterialManager.cpp
             renderer/modules/GPUResourceManager.cpp
             renderer/modules/GPUResourcePool.cpp
             types/Texture.cpp

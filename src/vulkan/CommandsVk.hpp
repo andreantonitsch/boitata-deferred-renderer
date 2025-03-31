@@ -45,13 +45,14 @@ namespace boitatah::vk
         VkRenderPass pass;
         VkFramebuffer frameBuffer;
 
-        glm::vec4 clearColor;
+        std::vector<glm::vec4> clearColors;
 
         glm::ivec2 scissorDims;
         glm::ivec2 scissorOffset;
 
         bool depth = false;
-
+        uint32_t attachmentCount = 1;
+        
         // glm::ivec2 viewportDims;
         // glm::ivec2 viewportOffset;
     };

@@ -20,9 +20,6 @@
 
 namespace boitatah
 {
-    // class GPUBuffer;
-    // class Geometry;
-    // class RenderTexture;
 
     template<template <typename > class DerivedResource, typename Resource>
     class GPUResource;
@@ -49,27 +46,32 @@ namespace boitatah
 
 
             template<typename ResourceType>
-            bool checkReady(Handle<ResourceType> handle, uint32_t frame_index);
+            bool checkReady( Handle<ResourceType>    handle, 
+                             uint32_t                frame_index );
 
             template<typename ResourceType>
-            void forceCommitResource(Handle<ResourceType> resource);
+            void forceCommitResource( Handle<ResourceType>      resource );
             
             template<typename ResourceType>
-            void forceCommitResource(Handle<ResourceType> resource, uint32_t frame_index);
+            void forceCommitResource( Handle<ResourceType>      resource, 
+                                      uint32_t                  frame_index );
             
             //Pointer requires enough memory.
             template<typename ResourceType>
-            bool readResourceData(Handle<ResourceType> handle, void* destinationPtr);
+            bool readResourceData( Handle<ResourceType>     handle, 
+                                   void*                    destinationPtr );
             
             template<typename ResourceType>
-            void readResourceDataAsync(Handle<ResourceType> handle, void* destinationPtr);
+            void readResourceDataAsync( Handle<ResourceType>    handle,
+                                        void*                   destinationPtr );
             
-            void commitAll(uint32_t frameIndex);
+            void commitAll( uint32_t frameIndex );
 
             void beginCommitCommands();
 
             template<typename ResourceType>
-            void commitResourceCommand(Handle<ResourceType> handle, uint32_t frameIndex);
+            void commitResourceCommand( Handle<ResourceType>    handle,
+                                        uint32_t                frameIndex );
 
             void submitCommitCommands();
 
@@ -77,22 +79,23 @@ namespace boitatah
             void waitForTransfers();
 
 
-            Handle<GPUBuffer> create(const GPUBufferCreateDescription& description);
-            Handle<Geometry> create(const GeometryCreateDescription& description);
-            Handle<RenderTexture> create(const TextureCreateDescription& description);
+            Handle<GPUBuffer>       create( const GPUBufferCreateDescription&    description );
+            Handle<Geometry>        create( const GeometryCreateDescription&     description );
+            Handle<RenderTexture>   create( const TextureCreateDescription&      description );
 
             template <typename ResourceType>
-            void destroy(const Handle<ResourceType>& handle);
+            void destroy( const Handle<ResourceType>& handle );
 
             template <typename ResourceType>
-            inline ResourceType& getResource(Handle<ResourceType> handle)
+            inline ResourceType& getResource( Handle<ResourceType> handle )
             {
                 return m_resourcePool->get(handle);
             }
 
             //can only be using when commiting commands
             template <typename ResourceType>
-            inline ResourceType& getCommitResource(Handle<ResourceType>& handle, uint32_t frame_index)
+            inline ResourceType& getCommitResource( Handle<ResourceType>&   handle, 
+                                                    uint32_t                frame_index)
             {
                 return m_resourcePool->get(handle)
                             .get_content_commit_update(frame_index,
@@ -101,29 +104,35 @@ namespace boitatah
 
             //ACCESS DATA is the hot data for rendering
             template <typename ResourceType>
-            inline ResourceTraits<ResourceType>::RenderData getResourceAccessData(Handle<ResourceType> handle, uint32_t frame_index)
+            inline ResourceTraits<ResourceType>::RenderData getResourceAccessData(
+                                                            Handle<ResourceType>    handle,
+                                                            uint32_t                frame_index )
             {
                 return m_resourcePool->get(handle).get_render_data(frame_index);
             }
             //ACCESS DATA is the hot data for rendering
             //can only be used when writing transfers
             template <typename ResourceType>
-            inline ResourceTraits<ResourceType>::RenderData getCommitResourceAccessData(Handle<ResourceType> handle, uint32_t frame_index)
+            inline ResourceTraits<ResourceType>::RenderData getCommitResourceAccessData(
+                                                            Handle<ResourceType>        handle,
+                                                            uint32_t                    frame_index )
             {
                 return m_resourcePool->get(handle)
-                            .get_render_data_commit_update( frame_index,
-                                                        getCommandBufferWriter());
+                        .get_render_data_commit_update( 
+                            frame_index,
+                            getCommandBufferWriter());
             }
 
         private:
-            std::shared_ptr<vk::Vulkan> m_vulkan;
-            std::shared_ptr<buffer::BufferManager> m_bufferManager;
-            std::shared_ptr<ImageManager> m_imageManager;
+            std::shared_ptr<vk::Vulkan>             m_vulkan;
             
-            std::unique_ptr<GPUResourcePool> m_resourcePool;
-            std::shared_ptr<vk::VkCommandBufferWriter> m_commandBufferWriter;
+            std::shared_ptr<buffer::BufferManager>  m_bufferManager;
+            std::shared_ptr<ImageManager>           m_imageManager;
+            
+            std::unique_ptr<GPUResourcePool>            m_resourcePool;
+            std::shared_ptr<vk::VkCommandBufferWriter>  m_commandBufferWriter;
 
-            void commitGeometryData(Geometry& geo);
+            void commitGeometryData( Geometry& geo );
 
         };
 

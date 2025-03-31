@@ -9,6 +9,8 @@
 #include <renderer/resources/builders/GeometryBuilder.hpp>
 #include <utils/ImageLoader.hpp>
 #include <memory>
+#include <renderer/modules/StageBaseMaterialManager.hpp>
+
 using namespace boitatah;
 
 int main()
@@ -22,12 +24,9 @@ int main()
                 .appName = "Test Frame Buffer",
                 .debug = true,
                 .swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB,
-                .backBufferDesc = {.attachments = {ATTACHMENT_TYPE::COLOR,
-                                                    ATTACHMENT_TYPE::DEPTH_STENCIL},
-                                   .attachmentFormats = {IMAGE_FORMAT::BGRA_8_SRGB,
-                                                        IMAGE_FORMAT::DEPTH_32_SFLOAT
-                                   },
-                                   .dimensions = {windowWidth, windowHeight}}});
+                .backBufferDesc2 = BackBufferManager::BasicForwardPipeline(windowWidth,
+                                                                          windowHeight),
+              });
 
     Handle<RenderTexture> texture = utils::TextureLoader::loadRenderTexture(std::string("./resources/UV_checker1k.png"),
      IMAGE_FORMAT::RGBA_8_SRGB,
@@ -35,17 +34,17 @@ int main()
      r.getResourceManager());
 
     std::cout << "creating bindings" << std::endl;
-    auto textureBinding = r.getMaterialManager().createUnlitMaterialBindings();
-    r.getMaterialManager().getBinding(textureBinding[1]).bindings[0].binding_handle.renderTex = texture;
-    
-    std::cout << "creating material" << std::endl;
-    auto material = r.getMaterialManager().createUnlitMaterial(textureBinding);
+    auto material = r.getMaterials().createUnlitMaterial (StageType::CAMERA,
+                                                          RenderType::Forward,
+                                                          10,
+                                                          1,
+                                                          texture);
 
 
     Handle<Geometry> quad = GeometryBuilder::Quad(r.getResourceManager());
     Handle<Geometry> triangle = GeometryBuilder::Triangle(r.getResourceManager());
     Handle<Geometry> circle = GeometryBuilder::Circle(r.getResourceManager(), 0.5f, 32);
-    Handle<Geometry> pipe = GeometryBuilder::Pipe(r.getResourceManager(), 0.5, 2.0, 10, 32);
+    Handle<Geometry> pipe = GeometryBuilder::Pipe(r.getResourceManager(), 0.5, 1.0, 10, 32);
 
     std::cout << "creating scene node" << std::endl;
     SceneNode triangleNode({

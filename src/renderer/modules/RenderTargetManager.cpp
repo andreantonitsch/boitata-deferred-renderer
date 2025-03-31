@@ -22,6 +22,23 @@ namespace boitatah{
         });
     }
 
+    Handle<RenderPass> RenderTargetManager::createMatchingRenderPass(RenderTargetDesc &desc)
+    {
+        RenderPassDesc pass_desc;
+        auto color_attachments = desc.attachments;
+        if (color_attachments.back().layout == IMAGE_LAYOUT::DEPTH_STENCIL_ATT)
+        {
+            pass_desc.depth_attachment = color_attachments.back();
+            pass_desc.depth_attachment.index = color_attachments.size()-1;
+            color_attachments.pop_back();
+            pass_desc.use_depthStencil = true;
+        }
+        pass_desc.color_attachments = color_attachments;
+        //pass_desc.attTransitions[];
+    
+        return createRenderPass(pass_desc);
+    }
+
     Handle<RenderTarget> RenderTargetManager::createRenderTarget(const RenderTargetDesc &description)
     {
         std::vector<Handle<Image>> images(description.attachmentImages);
@@ -82,8 +99,13 @@ namespace boitatah{
             .renderPass = m_vk->createRenderPass(description),
             .description = description
         };
+        for(auto& desc : description.color_attachments)
+            pass.clearColors.push_back(desc.clearColor);
+        
+        if(description.use_depthStencil)
+            pass.clearColors.push_back(description.depth_attachment.clearColor);
 
-        return m_passPool->set(pass);
+        return m_passPool->move_set(pass);
     }
 
     Handle<RenderTargetSync> RenderTargetManager::createRenderTargetSyncData()

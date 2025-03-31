@@ -52,6 +52,7 @@ namespace boitatah{
             void setFoV(float fov);
             void setAspect(float aspect);
             bool perspective = true;
+
         private:
             float m_fov;
             float m_aspect;

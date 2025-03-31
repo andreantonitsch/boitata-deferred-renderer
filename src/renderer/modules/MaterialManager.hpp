@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <memory>
+
 namespace boitatah{
 
     class MaterialGraph{
@@ -46,7 +47,8 @@ namespace boitatah{
             std::shared_ptr<RenderTargetManager> m_targetManager;
             std::shared_ptr<DescriptorSetManager> m_descriptorManager;
 
-            ShaderModule compileShaderModule(const std::vector<char>& bytecode, std::string entryPoint);
+            ShaderModule compileShaderModule(const std::vector<char>& bytecode, 
+                                             std::string entryPoint);
             void updateShadersForRenderPass(Handle<RenderPass> renderPass);
             void updateShadersForRenderTarget(Handle<RenderPass> renderPass);
             void updateShadersForRenderTarget(std::vector<Handle<Shader>>& shaders,
@@ -75,18 +77,52 @@ namespace boitatah{
                             std::shared_ptr<DescriptorSetManager> setManager,
                             std::shared_ptr<GPUResourceManager> resourceManager);
             ShaderManager& getShaderManager();
+            
+            const std::vector<Handle<Material>> orderMaterials();
 
-            const std::vector<Handle<Material>>& orderMaterials();
             Handle<Material> createMaterial(const MaterialCreate& description);
+            Handle<Material> copyMaterial(const Handle<Material>& handle);
             Material& getMaterialContent(const Handle<Material>& handle);
             void destroyMaterial(const Handle<Material>& handle);
 
-            void setBaseMaterial(const Handle<Material>& handle);
+            //void setBaseMaterial(const Handle<Material>& handle);
 
-            Handle<MaterialBinding> createBinding(const Handle<DescriptorSetLayout> &description);
-            std::vector<Handle<MaterialBinding>> createBindings(const Handle<ShaderLayout> &description);
-            std::vector<Handle<MaterialBinding>> createUnlitMaterialBindings();
             MaterialBinding& getBinding(Handle<MaterialBinding>& handle);
+            Handle<MaterialBinding> createBinding(
+                                    const Handle<DescriptorSetLayout> &description);
+            std::vector<Handle<MaterialBinding>> createBindings(
+                                                 const Handle<ShaderLayout> &description);   
+
+            // Creates bindings same as createBindings about. 
+            // But overrides the first overrides.size() bindings with the bindings in overrides
+            // this is useful for basing materials on other materials and avoiding double binding       
+            std::vector<Handle<MaterialBinding>> createBindings(
+                                                 const Handle<ShaderLayout> &description,
+                                                 std::vector<Handle<MaterialBinding>> overrides);
+
+            bool setTextureBindingAttribute (const Handle<Material> material,
+                                             const Handle<RenderTexture>                &texture,
+                                             const uint32_t                             set, 
+                                             const uint32_t                             binding);
+            bool setTextureBindingAttribute (const Handle<Material> material,
+                                             const Handle<FixedTexture>                 &texture,
+                                             const uint32_t                             set, 
+                                             const uint32_t                             binding);
+            bool setBufferBindingAttribute  (const Handle<Material> material,
+                                             const Handle<GPUBuffer>                    &gpu_buffer,
+                                             const uint32_t                             set, 
+                                             const uint32_t                             binding);
+            bool setImageBindingAttribute   (const Handle<Material> material,
+                                             const Handle<Image>                        &image,
+                                             const uint32_t                             set, 
+                                             const uint32_t                             binding);
+            bool setSamplerBindingAttribute (const Handle<Material> material,
+                                             const Handle<Sampler>                      &sampler,
+                                             const uint32_t                             set, 
+                                             const uint32_t                             binding);
+
+            //std::vector<Handle<MaterialBinding>> createUnlitMaterialBindings();
+            
             
             bool BindMaterial(Handle<Material>                &handle,
                               uint32_t                        frame_index,
@@ -100,10 +136,10 @@ namespace boitatah{
                              uint32_t                        frame_index,
                              CommandBuffer                   &buffer);
 
-            Handle<Material> createUnlitMaterial(const std::vector<Handle<MaterialBinding>>& bindings);
+            //Handle<Material> createUnlitMaterial(const std::vector<Handle<MaterialBinding>>& bindings);
             void resetBindings();
 
-            void setupBaseMaterials(Handle<RenderPass> renderpass);
+            //void setupBaseMaterials(Handle<RenderPass> renderpass);
             void clearBaseMaterials();
 
         private:
@@ -112,20 +148,23 @@ namespace boitatah{
             std::shared_ptr<DescriptorSetManager> m_descriptorManager;
             std::shared_ptr<GPUResourceManager> m_resourceManager;
             std::unique_ptr<ShaderManager> m_shaderManager;
-            MaterialGraph m_materialGraph;
-            std::unique_ptr<Pool<Material>> m_materialPool;
+            
+            //MaterialGraph m_materialGraph;
+
+            std::shared_ptr<Pool<Material>> m_materialPool;
             std::unique_ptr<Pool<MaterialBinding>> m_bindingsPool;
+
+             std::vector<Handle<Material>> current_Materials;
 
             std::vector<Handle<MaterialBinding>> m_currentBindings;
             Handle<Shader> m_currentPipeline;
 
-            std::pair<Handle<Shader>, Handle<ShaderLayout>> unlit_shader;
+            //std::pair<Handle<Shader>, Handle<ShaderLayout>> unlit_shader;
 
-            Handle<Material> m_baseMaterial;
+            //Handle<Material> m_baseMaterial;
 
 
-            void setupUnlitMaterial(Handle<RenderPass> renderpass);
-            void inheritMaterial();
+            //void setupUnlitMaterial(Handle<RenderPass> renderpass);
 
     };
 };
