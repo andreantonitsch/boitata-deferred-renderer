@@ -28,22 +28,24 @@ namespace boitatah{
     
 
         //BackBufferManager(std::shared_ptr<RenderTargetManager> targetManager);
-        BackBufferManager(std::shared_ptr<RenderTargetManager> target_manager,
-                           std::shared_ptr<ImageManager> image_manager);
+        BackBufferManager(std::shared_ptr<RenderTargetManager>  target_manager,
+                           std::shared_ptr<ImageManager>        image_manager,
+                           std::shared_ptr<MaterialManager>     material_manager,
+                           std::shared_ptr<GPUResourceManager>  resource_manager);
         ~BackBufferManager(void);
 
-        void setup(BackBufferDesc &desc);
         void setup2(BackBufferDesc2 &desc);
 
-        Handle<RenderPass>      getRenderPass();
-        Handle<RenderTarget>    getNext();
-        Handle<RenderTarget>    getCurrent();
         uint32_t                getCurrentIndex();
 
-        std::vector<Handle<RenderStage>>&   getNext_Graph();
-        std::vector<Handle<RenderStage>>&   getCurrent_Graph();
-        RenderStage&                        getStage(Handle<RenderStage> &handle);
-        RenderStage&                        getStage(uint32_t index);
+        std::vector<Handle<RenderStage>>&           getNext_Graph();
+        std::vector<Handle<RenderStage>>&           getCurrent_Graph();
+        RenderStage&                                getStage(Handle<RenderStage> &handle);
+        RenderStage&                                getStage(uint32_t index);
+        Handle<MaterialBinding>                     getStageBinding(Handle<RenderStage> &handle);
+        Handle<MaterialBinding>                     getStageBinding(uint32_t stage_index);
+        const std::vector<Handle<RenderTexture>>&   getStageTextures(Handle<RenderStage>& handle);
+
         Handle<RenderTarget>                getPresentTarget();
         uint32_t                            getPresentTargetIndex();
         uint32_t                            getStageCount();
@@ -62,10 +64,15 @@ namespace boitatah{
             std::unique_ptr<Pool<RenderStage>>      m_stagePool;
             std::shared_ptr<ImageManager>           m_imageManager;
             std::shared_ptr<RenderTargetManager>    m_renderTargetManager;
+            std::shared_ptr<MaterialManager>        m_material_manager;
+            std::shared_ptr<GPUResourceManager>     m_resource_mngr;
 
-            //std::shared_ptr<MaterialManager> m_materialManager;
-            std::array<std::vector<Handle<RenderStage>>, 2> graphs;
-            std::vector<Handle<RenderTarget>>               buffers;
+            Handle<Sampler> sampler;
+            
+            std::array<std::vector<Handle<RenderStage>>, 2> m_graphs;
+            std::vector<std::vector<Handle<RenderTexture>>> m_stage_textures;
+            std::vector<Handle<MaterialBinding>>            m_stage_bindings;
+            std::vector<Handle<RenderTarget>>               m_buffers;
 
             PresentLink         present_link;
             Handle<RenderPass>  renderpass;

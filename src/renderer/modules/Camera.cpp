@@ -17,7 +17,6 @@ namespace boitatah
     CameraUniforms Camera::getCameraUniforms()
     {
         updateMatrices();
-
         return CameraUniforms{
             .vp = getProjection()* getView() ,
             .projection = getProjection(),
@@ -25,6 +24,7 @@ namespace boitatah
             .viewPos = m_position,
             .aspect = m_aspect,
         };
+
     }
 
     void Camera::translate(glm::vec3 direction)

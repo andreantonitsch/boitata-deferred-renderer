@@ -79,10 +79,6 @@ namespace boitatah::command_buffers{
                 self().__imp_copyBuffer(command, m_buffer);
             };
             
-            void transitionLayout(const TransitionLayoutCommand  &command){
-                self().__imp_transitionLayout(command, m_buffer);
-            };
-
             bool checkTransfers(){
                 return self().__imp_checkTransfers();
             }

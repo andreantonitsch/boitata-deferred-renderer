@@ -244,10 +244,10 @@ void boitatah::vk::Vulkan::completeInit()
 #pragma region Synchronization
 void boitatah::vk::Vulkan::waitForFrame(RenderTargetSync &bufferData)
 {
-    VkResult result = vkWaitForFences(device, 1, &bufferData.inFlightFen, VK_TRUE, UINT64_MAX);
+    VkResult result = vkWaitForFences(device, 1, &bufferData.in_flight_fence, VK_TRUE, UINT64_MAX);
     if (result != VK_SUCCESS)
         std::cout << "wait for fence failed " << result << std::endl;
-    vkResetFences(device, 1, &bufferData.inFlightFen);
+    vkResetFences(device, 1, &bufferData.in_flight_fence);
 }
 
 void boitatah::vk::Vulkan::waitIdle()
@@ -571,18 +571,25 @@ void boitatah::vk::Vulkan::submitDrawCmdBuffer(const SubmitDrawCommandVk &comman
     vkEndCommandBuffer(command.commandBuffer);
     // TODO buffer available.
     // std::vector<VkSemaphore> semaphores{SemImageAvailable};
-    std::vector<VkPipelineStageFlags> stageFlags{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    std::vector<VkPipelineStageFlags> stageFlags{};
     // std::vector<VkSemaphore> signals{SemRenderFinished};
     VkSubmitInfo submitInfo{
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .commandBufferCount = 1,
         .pCommandBuffers = &command.commandBuffer,
+
     };
-    
-    if( command.wait_semaphores.size() != 0){
+    submitInfo.pWaitDstStageMask = nullptr;
+    submitInfo.pWaitSemaphores = nullptr;
+
+    if( command.wait_semaphores.size() > 0){
         ///std::cout << "waiting for semaphore " << command.wait_semaphore << std::endl;
         submitInfo.waitSemaphoreCount = command.wait_semaphores.size();
         submitInfo.pWaitSemaphores = command.wait_semaphores.data();
+
+        for(int i = 0; i < command.wait_semaphores.size(); i++){
+            stageFlags.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+        }
         submitInfo.pWaitDstStageMask = stageFlags.data();
     }
 
@@ -646,12 +653,12 @@ bool boitatah::vk::Vulkan::presentFrame(Image &image,
                                         uint32_t &scIndex,
                                         const PresentCommandVk &command)
 {
-    auto transferBuffer = command.commandBuffer;
+    auto transfer_buffer = command.commandBuffer;
 
     // // Finished Transfer
-    beginCommands(transferBuffer);
+    beginCommands(transfer_buffer);
     CmdCopyImage({
-        .buffer = transferBuffer,
+        .buffer = transfer_buffer,
         .srcImage = image.image,
         .srcImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         .dstImage = swapchainImage.image,
@@ -659,7 +666,7 @@ bool boitatah::vk::Vulkan::presentFrame(Image &image,
         .extent = image.dimensions,
     });
 
-    endTransferCommands(transferBuffer,
+    endTransferCommands(transfer_buffer,
                 queues.transferQueue,
                 command.waitSemaphores,
                 command.signalSemaphore,
@@ -814,19 +821,19 @@ void boitatah::vk::Vulkan::endTransferCommands(const VkCommandBuffer &buffer,
         submit.signalSemaphoreCount = 1;
         submit.pSignalSemaphores = &signal;
     }
+    submit.waitSemaphoreCount = 0;
+    submit.pWaitSemaphores = nullptr;
 
     std::vector<VkPipelineStageFlags> stages{};
-    if (wait.size() != 0)
+    if (wait.size() > 0)
     {
         submit.waitSemaphoreCount = static_cast<uint32_t>(wait.size());
         submit.pWaitSemaphores = wait.data();
-        for(int i = 0; i<wait.size(); i++)
+        for(int i = 0; i< wait.size(); i++)
             stages.push_back(VK_PIPELINE_STAGE_TRANSFER_BIT);
         submit.pWaitDstStageMask = stages.data();
     }
 
-
-    
     waitForFence(fence);
     vkQueueSubmit(queue, 1, &submit, fence);
 }
@@ -1125,10 +1132,10 @@ boitatah::RenderTargetSync boitatah::vk::Vulkan::allocateBufferSync()
             .transferBuffer = allocateCommandBuffer({.count = 1,
                                                      .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                                                      .type = COMMAND_BUFFER_TYPE::TRANSFER}),
-            .writeSem = createSemaphore(),
-            .schainAcqSem = createSemaphore(),
-            .transferSem = createSemaphore(),
-            .inFlightFen = createFence(true),
+            .draw_semaphore = createSemaphore(),
+            .sc_aquired_semaphore = createSemaphore(),
+            .transfer_semaphore = createSemaphore(),
+            .in_flight_fence = createFence(true),
         };
     return sync;
 }
@@ -1368,10 +1375,10 @@ void boitatah::vk::Vulkan::destroyRenderTargetCmdData(const RenderTargetSync &sy
     vkFreeCommandBuffers(device, commandPools.graphicsPool, 1, &(sync.drawBuffer.buffer));
     vkFreeCommandBuffers(device, commandPools.transferPool, 1, &(sync.transferBuffer.buffer));
 
-    vkDestroyFence(device, sync.inFlightFen, nullptr);
-    vkDestroySemaphore(device, sync.schainAcqSem, nullptr);
-    vkDestroySemaphore(device, sync.writeSem, nullptr);
-    vkDestroySemaphore(device, sync.transferSem, nullptr);
+    vkDestroyFence(device, sync.in_flight_fence, nullptr);
+    vkDestroySemaphore(device, sync.sc_aquired_semaphore, nullptr);
+    vkDestroySemaphore(device, sync.draw_semaphore, nullptr);
+    vkDestroySemaphore(device, sync.transfer_semaphore, nullptr);
 }
 
 void boitatah::vk::Vulkan::destroyBuffer(BufferVkData buffer) const
@@ -1457,6 +1464,7 @@ void boitatah::vk::Vulkan::setQueues()
 
 void boitatah::vk::Vulkan::CmdTransitionLayout(const TransitionLayoutCmdVk &command)
 {
+
     VkImageMemoryBarrier barrier{
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
         .srcAccessMask = command.srcAccess,
@@ -1475,10 +1483,13 @@ void boitatah::vk::Vulkan::CmdTransitionLayout(const TransitionLayoutCmdVk &comm
         },
     };
 
+    if(command.src == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+
     vkCmdPipelineBarrier(
         command.buffer,
-        command.srcStage, /*TODO*/
-        command.dstStage, /*TODO*/
+        command.srcStage, 
+        command.dstStage, 
         0,
         0, nullptr,
         0, nullptr,

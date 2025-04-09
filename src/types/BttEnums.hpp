@@ -67,9 +67,9 @@ namespace boitatah
         COLOR_ATT           = 1,
         PRESENT_SRC         = 2,
         WRITE               = 3,
-        READ                = 4,
-        TRANSFER_DST        = 5,
+        SHADER_READ                = 4,
         DEPTH_STENCIL_ATT   = 6,
+        TRANSFER_READ             = 7,
     };
 
     enum class IMAGE_USAGE
@@ -84,6 +84,7 @@ namespace boitatah
         COLOR_ATT_TRANSFER_SRC  = 8,
         RENDER_GRAPH_COLOR      = 9,
         RENDER_GRAPH_DEPTH      = 10,
+        STAGING                 = 11,
 
     };
 
@@ -144,7 +145,14 @@ namespace boitatah
         COMBINED_IMAGE_SAMPLER  = 3U,
     };
 
-    enum class STAGE_FLAG
+    enum class PIPELINE_STAGE
+    {
+        TOP             = 1,
+        TRANSFER        = 2,
+        BOTTOM          = 3
+    };
+
+    enum class SHADER_STAGE
     {
         VERTEX          = 1,
         FRAGMENT        = 2,
@@ -364,12 +372,14 @@ namespace boitatah
             return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
         case IMAGE_LAYOUT::WRITE:
             return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL; 
-        case IMAGE_LAYOUT::READ:
+        case IMAGE_LAYOUT::SHADER_READ:
             return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         case IMAGE_LAYOUT::UNDEFINED:
             return VK_IMAGE_LAYOUT_UNDEFINED;
         case IMAGE_LAYOUT::DEPTH_STENCIL_ATT:
             return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        case IMAGE_LAYOUT::TRANSFER_READ:
+            return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         default:
             return VK_IMAGE_LAYOUT_UNDEFINED;
         }
@@ -412,28 +422,36 @@ namespace boitatah
             return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         
         case IMAGE_USAGE::TRANSFER_DST_SAMPLED:
-            return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+            return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_DST_BIT | 
+                                          VK_IMAGE_USAGE_SAMPLED_BIT);
         
         case IMAGE_USAGE::SAMPLED:
             return VK_IMAGE_USAGE_SAMPLED_BIT;
         
         case IMAGE_USAGE::COLOR_ATT_TRANSFER_DST:
-            return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+            return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_DST_BIT | 
+                                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
         
         case IMAGE_USAGE::COLOR_ATT_TRANSFER_SRC:
-            return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+            return (VkImageUsageFlagBits)(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | 
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
         
         case IMAGE_USAGE::DEPTH_STENCIL:
             return (VkImageUsageFlagBits) VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
         
         case IMAGE_USAGE::RENDER_GRAPH_COLOR:
             return(VkImageUsageFlagBits)(   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                                            VK_IMAGE_USAGE_SAMPLED_BIT |
+                                            // VK_IMAGE_USAGE_SAMPLED_BIT |
                                             VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
         case IMAGE_USAGE::RENDER_GRAPH_DEPTH:
-            return(VkImageUsageFlagBits)(VK_IMAGE_USAGE_SAMPLED_BIT |
+            return(VkImageUsageFlagBits)(//VK_IMAGE_USAGE_SAMPLED_BIT |
                                          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+                                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+        case IMAGE_USAGE::STAGING:
+            return(VkImageUsageFlagBits)(//VK_IMAGE_USAGE_SAMPLED_BIT |
+                                         VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
         default:
@@ -524,23 +542,41 @@ namespace boitatah
     template VkBufferUsageFlags boitatah::castEnum<VkBufferUsageFlags, BUFFER_USAGE>(BUFFER_USAGE MODE);
 
     template <>
-    inline VkShaderStageFlags boitatah::castEnum(STAGE_FLAG stages)
+    inline VkPipelineStageFlags boitatah::castEnum(PIPELINE_STAGE stages)
     {
         switch (stages)
         {
-        case STAGE_FLAG::VERTEX:
+        case PIPELINE_STAGE::TOP:
+            return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        case PIPELINE_STAGE::TRANSFER:
+            return VK_PIPELINE_STAGE_TRANSFER_BIT;
+        case PIPELINE_STAGE::BOTTOM:
+            return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        default:
+            return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        }
+    }
+    template VkPipelineStageFlags boitatah::castEnum<VkPipelineStageFlags, PIPELINE_STAGE>(PIPELINE_STAGE MODE);
+
+
+    template <>
+    inline VkShaderStageFlags boitatah::castEnum(SHADER_STAGE stages)
+    {
+        switch (stages)
+        {
+        case SHADER_STAGE::VERTEX:
             return VK_SHADER_STAGE_VERTEX_BIT;
-        case STAGE_FLAG::FRAGMENT:
+        case SHADER_STAGE::FRAGMENT:
             return VK_SHADER_STAGE_FRAGMENT_BIT;
-        case STAGE_FLAG::VERTEX_FRAGMENT:
+        case SHADER_STAGE::VERTEX_FRAGMENT:
             return VK_SHADER_STAGE_VERTEX_BIT ||VK_SHADER_STAGE_FRAGMENT_BIT;
-        case STAGE_FLAG::ALL_GRAPHICS:
+        case SHADER_STAGE::ALL_GRAPHICS:
             return VK_SHADER_STAGE_ALL_GRAPHICS;
         default:
             return VK_SHADER_STAGE_ALL_GRAPHICS;
         }
     }
-    template VkShaderStageFlags boitatah::castEnum<VkShaderStageFlags, STAGE_FLAG>(STAGE_FLAG MODE);
+    template VkShaderStageFlags boitatah::castEnum<VkShaderStageFlags, SHADER_STAGE>(SHADER_STAGE MODE);
 
 
 #pragma endregion Enum Specializations
@@ -596,6 +632,62 @@ namespace boitatah
             return 8;
         case IMAGE_FORMAT::DEPTH_24_UNORM_UINT_STENCIL:
             return 4;
+        default:
+            return 0;
+        }
+    }
+
+    static uint32_t formatChannels(IMAGE_FORMAT format);
+    inline uint32_t formatChannels(IMAGE_FORMAT format)
+    {
+        switch (format)
+        {
+        case IMAGE_FORMAT::RGBA_8_SRGB:
+            return 4;
+        case IMAGE_FORMAT::BGRA_8_SRGB:
+            return 4;
+        case IMAGE_FORMAT::RGBA_8_UNORM:
+            return 4;
+        case IMAGE_FORMAT::BGRA_8_UNORM:
+            return 4;
+        case IMAGE_FORMAT::R_32_SFLOAT:
+            return 1;
+        case IMAGE_FORMAT::RG_32_SFLOAT:
+            return 2;
+        case IMAGE_FORMAT::RGB_32_SFLOAT:
+            return 3;
+        case IMAGE_FORMAT::RGBA_32_SFLOAT:
+            return 4;
+        case IMAGE_FORMAT::R_32_SINT:
+            return 1;
+        case IMAGE_FORMAT::RG_32_SINT:
+            return 2;
+        case IMAGE_FORMAT::RGB_32_SINT:
+            return 3;
+        case IMAGE_FORMAT::RGBA_32_SINT:
+            return 4;
+        case IMAGE_FORMAT::R_32_UINT:
+            return 1;
+        case IMAGE_FORMAT::RG_32_UINT:
+            return 2;
+        case IMAGE_FORMAT::RGB_32_UINT:
+            return 3;
+        case IMAGE_FORMAT::RGBA_32_UINT:
+            return 4;
+        case IMAGE_FORMAT::R_64_SFLOAT:
+            return 1;
+        case IMAGE_FORMAT::RG_64_SFLOAT:
+            return 2;
+        case IMAGE_FORMAT::RGB_64_SFLOAT:
+            return 3;
+        case IMAGE_FORMAT::RGBA_64_SFLOAT:
+            return 4;
+        case IMAGE_FORMAT::DEPTH_32_SFLOAT:
+            return 1;
+        case IMAGE_FORMAT::DEPTH_32_SFLOAT_UINT_STENCIL:
+            return 1;
+        case IMAGE_FORMAT::DEPTH_24_UNORM_UINT_STENCIL:
+            return 1;
         default:
             return 0;
         }

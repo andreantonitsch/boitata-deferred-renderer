@@ -37,6 +37,7 @@ namespace boitatah
         IMAGE_LAYOUT initialLayout;
         IMAGE_USAGE usage;
         SAMPLES samples = SAMPLES::SAMPLES_1;
+        bool skip_view = false;
     };
 
     struct Image
@@ -46,6 +47,14 @@ namespace boitatah
         glm::u32vec2 dimensions;
         bool swapchain = false;
         VkDeviceMemory memory;
+    };
+
+    struct ImageAccessData{
+        VkImageView view;
+    };
+
+    struct SamplerAccessData{
+        VkSampler sampler;
     };
 
 }

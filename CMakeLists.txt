@@ -14,10 +14,8 @@ add_subdirectory(${SPIRV_Headers_SOURCE_DIR})
 
 add_subdirectory(src/)
 
-add_executable(test_geometry src/examples/test_geometry.cpp)
 add_executable(test_partitionlist src/examples/test_partitionlist.cpp)
 add_executable(test_buffer_allocator src/examples/test_buffer_allocator.cpp)
-add_executable(test_camera src/examples/test_camera.cpp)
 add_executable(test_buffer_manager src/examples/test_buffer_manager.cpp)
 add_executable(test_object_manager src/examples/test_object_manager.cpp)
 add_executable(test_multi_write_attachment src/examples/test_multi_write_attachment.cpp)
@@ -36,10 +34,8 @@ set(LIBS Vulkan::Vulkan
          glm
          boitatah)
 
-target_link_libraries(test_geometry ${LIBS})
 target_link_libraries(test_partitionlist ${LIBS})
 target_link_libraries(test_buffer_allocator ${LIBS})
-target_link_libraries(test_camera ${LIBS})
 target_link_libraries(test_buffer_manager ${LIBS})
 target_link_libraries(test_object_manager ${LIBS})
 target_link_libraries(test_multi_write_attachment ${LIBS})

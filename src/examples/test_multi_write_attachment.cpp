@@ -22,8 +22,6 @@ int main()
                 .appName = "Test Frame Buffer",
                 .debug = true,
                 .swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB,
-                // .backBufferDesc2 = BackBufferManager::BasicMultiWriteForwardPipeline(windowWidth,
-                //                                                            windowHeight, 1),
                 .backBufferDesc2 = BackBufferManager::BasicMultiWriteForwardPipeline(windowWidth,
                                                                                      windowHeight,
                                                                                      1),
@@ -37,7 +35,7 @@ int main()
                                         r.getResourceManager());
 
     std::cout << "creating material" << std::endl;
-    auto material = r.getMaterials().createUnlitMaterial(1, 100, texture);
+    auto material = r.getMaterials().createUnlitMaterial(0, 100, texture);
 
     Handle<Geometry> triangle = GeometryBuilder::Triangle(r.getResourceManager());
     Handle<Geometry> quad =     GeometryBuilder::Quad(r.getResourceManager());
@@ -92,16 +90,13 @@ int main()
     float dist = 5;
     std::cout << "setup complete" << std::endl;
 
-    r.waitIdle();
     while (!r.isWindowClosed())
     {
-        //camera.orbit(glm::vec3(0), glm::vec3(0, 0.1f, 0));
         float t = count * frame_TimeScale;
         count++;
         camera.setPosition(glm::vec3(glm::cos(t) * dist, -2, -glm::sin(t) * dist));
         camera.lookAt(glm::vec3(0));
         r.render_graph(scene, camera);
-        ///camera.rotate(glm::vec3(0.0, 0.01, 0.0));
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
     }
     r.waitIdle();

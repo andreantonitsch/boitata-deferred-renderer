@@ -35,6 +35,8 @@ namespace boitatah::vk{
         VkImageLayout src;
         VkImageLayout dst;
         VkImage image;
+        VkPipelineStageFlags srcStage;
+        VkPipelineStageFlags dstStage;
     };
 
     struct VulkanWriterCopyBufferCommand 

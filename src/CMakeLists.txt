@@ -18,6 +18,7 @@ set(LIB_DIR_SOURCES
             renderer/modules/GPUResourceManager.cpp
             renderer/modules/GPUResourcePool.cpp
             types/Texture.cpp
+            types/Lights.cpp
             renderer/resources/GPUBuffer.cpp
             renderer/modules/Swapchain.cpp
             renderer/modules/Camera.cpp

@@ -35,44 +35,41 @@ namespace boitatah
         //Create the swapchain
         createSwapchain();
 
-        //Create a backbuffer
-        m_backBufferManager = std::make_shared<BackBufferManager>(m_renderTargetManager,
-                                                                  m_imageManager);
-        
-        if (m_options.backBufferDesc.dimensions != glm::u32vec2(0, 0))
-            m_backBufferManager->setup(m_options.backBufferDesc);
-        else
-            m_backBufferManager->setup2(m_options.backBufferDesc2);
 
-        m_transferCommandBuffer = allocateCommandBuffer({.count = 1,
-                                                         .level = COMMAND_BUFFER_LEVEL::PRIMARY,
-                                                         .type = COMMAND_BUFFER_TYPE::TRANSFER});
-        
-        m_transferFence = m_vk->createFence(true); //create fence signaled
 
         //Initialize the VulkanBuffer manager
         m_bufferManager = std::make_shared<BufferManager>(m_vk);
 
         //Initializethe command buffer writer
-        m_ResourceManagerTransferWriter = std::make_shared<VkCommandBufferWriter>(m_vk);
-        m_ResourceManagerTransferWriter->setCommandBuffer(allocateCommandBuffer({.count = 1,
+        m_buffer_writer = std::make_shared<VkCommandBufferWriter>(m_vk);
+        m_buffer_writer->setCommandBuffer(allocateCommandBuffer({.count = 1,
                                                     .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                                                     .type = COMMAND_BUFFER_TYPE::TRANSFER}).buffer);
-        m_ResourceManagerTransferWriter->setFence(m_vk->createFence(true));
-        m_ResourceManagerTransferWriter->setSignal(m_vk->createSemaphore());
+        m_buffer_writer->setFence(m_vk->createFence(true));
+        m_buffer_writer->setSignal(m_vk->createSemaphore());
         
 
         //Initialize the renderer Modules
         m_resourceManager = std::make_shared<GPUResourceManager>(   m_vk, m_bufferManager, 
-                                                                    m_imageManager, 
-                                                                    m_ResourceManagerTransferWriter);
+                                                                    m_imageManager,
+                                                                    10);
         
         m_descriptorManager= std::make_shared<DescriptorSetManager>(m_vk, 4096);
         m_materialMngr = std::make_shared<MaterialManager>(m_vk, 
                                                            m_renderTargetManager, 
                                                            m_descriptorManager,
                                                            m_resourceManager); 
+
+        //Create a backbuffer
+        m_backBufferManager = std::make_shared<BackBufferManager>(m_renderTargetManager,
+                                                                  m_imageManager,
+                                                                  m_materialMngr,
+                                                                  m_resourceManager);
         
+
+        m_backBufferManager->setup2(m_options.backBufferDesc2);
+        
+
         std::cout << "starting base material creation" << std::endl;
         // Initialize Base Materials
         m_baseMaterials = std::make_shared<Materials>(
@@ -100,7 +97,7 @@ namespace boitatah
             static_cast<uint32_t>(newWindowSize.y),
         };
 
-        m_backBufferManager->setup(m_options.backBufferDesc);
+        m_backBufferManager->setup2(m_options.backBufferDesc2);
     }
 
     void Renderer::createSwapchain()
@@ -154,11 +151,6 @@ namespace boitatah
     void Renderer::cleanup()
     {
         m_vk->waitIdle();
-        if(m_vk->checkFenceStatus(m_transferFence))
-            m_vk->waitForFence(m_transferFence);
-
-        m_vk->destroyFence(m_transferFence);
-        
     }
 
     Renderer::~Renderer(void)
@@ -219,7 +211,7 @@ namespace boitatah
         m_vk->waitIdle();
     }
 
-    void Renderer::renderToRenderTarget(SceneNode &scene,
+    void Renderer::write_draw_command(SceneNode &scene,
                                         const Handle<RenderTarget> &rendertarget,
                                         uint32_t frameIndex = 0)
     {
@@ -231,9 +223,9 @@ namespace boitatah
             throw std::runtime_error("Failed to write command buffer \n\tRender Pass");
         RenderPass& pass = m_renderTargetManager->get(target.renderpass);
 
-        if (!m_renderTargetManager->isActive(target.cmdBuffers)){
+        if (!m_renderTargetManager->isActive(target.sync)){
             throw std::runtime_error("Failed to Render to Target");}
-        RenderTargetSync& buffers = m_renderTargetManager->get(target.cmdBuffers);
+        RenderTargetSync& buffers = m_renderTargetManager->get(target.sync);
 
         // vertex and mesh data
         Geometry geom = m_resourceManager->getResource(scene.geometry);
@@ -247,7 +239,8 @@ namespace boitatah
     }
 
 
-    void Renderer::presentRenderTargetNow(Handle<RenderTarget> &rendertarget, 
+    void Renderer::presentRenderTargetNow(Handle<RenderTarget> &rendertarget,
+                                          VkSemaphore stage_wait,
                                           uint32_t attachment_index = 0)
     {
         m_window->windowEvents();
@@ -256,9 +249,9 @@ namespace boitatah
             throw std::runtime_error("Failed to write command buffer \n\tRender Pass");
         RenderTarget& target = m_renderTargetManager->get(rendertarget);
 
-        if (!m_renderTargetManager->isActive(target.cmdBuffers)){
+        if (!m_renderTargetManager->isActive(target.sync)){
             throw std::runtime_error("Failed to Render to Target");}
-        RenderTargetSync& buffers = m_renderTargetManager->get(target.cmdBuffers);
+        RenderTargetSync& buffers = m_renderTargetManager->get(target.sync);
 
         if(!m_imageManager->contains(target.attachments[attachment_index]))
             throw std::runtime_error("failed to get framebuffer for Presentation");
@@ -267,7 +260,7 @@ namespace boitatah
 
         //m_vk->waitForFrame(buffers);
         // SubmitDrawCommand command{.bufferData = buffers, .submitType = COMMAND_BUFFER_TYPE::PRESENT};
-        auto swapchainImage = m_swapchain->getNext(buffers.schainAcqSem);
+        auto swapchainImage = m_swapchain->getNext(buffers.sc_aquired_semaphore);
 
         // failed to find swapchain image.
         if (swapchainImage.index == UINT32_MAX) // Fail case.
@@ -276,8 +269,9 @@ namespace boitatah
             return;
         }
         std::vector<VkSemaphore> waits;
-        waits.push_back(buffers.schainAcqSem);
-        waits.push_back(buffers.writeSem);
+        waits.push_back(buffers.sc_aquired_semaphore);
+        waits.push_back(stage_wait);
+        
         bool successfullyPresent = m_vk->presentFrame(image,
                                                       swapchainImage.image,
                                                       swapchainImage.sc,
@@ -285,8 +279,8 @@ namespace boitatah
                                                       {
                                                           .commandBuffer = buffers.transferBuffer.buffer,
                                                           .waitSemaphores = waits,
-                                                          .signalSemaphore = buffers.transferSem,
-                                                          .fence = buffers.inFlightFen,
+                                                          .signalSemaphore = buffers.transfer_semaphore,
+                                                          .fence = buffers.in_flight_fence,
                                                       });
 
         // If present was unsucessful we must remake the swapchain
@@ -297,154 +291,40 @@ namespace boitatah
         }
     }
 
-    void Renderer::renderSceneNode(SceneNode &scene, Handle<RenderTarget> &rendertarget)
-    {
-        std::vector<SceneNode *> nodes;
-        scene.sceneAsList(nodes);
-
-        //std::cout << "drawing scene with " << nodes.size() << " nodes "<<std::endl;
-        // TODO cullings and whatever
-        // TRANSFORM UPDATES
-        // ETC
-        
-        auto ordered_nodes = nodes; //orderSceneNodes(nodes);
-        
-        RenderTarget& target = m_renderTargetManager->get(rendertarget);
-        RenderTargetSync& buffers = m_renderTargetManager->get(target.cmdBuffers);
-        RenderPass& pass = m_renderTargetManager->get(target.renderpass);
-        Image& image = m_imageManager->getImage(target.attachments[0]);
-
-        uint32_t frame_index = m_backBufferManager->getCurrentIndex();
-        
-        m_vk->waitForFrame(buffers);
-
-        m_vk->resetCmdBuffer(buffers.drawBuffer.buffer);
-        m_vk->resetCmdBuffer(buffers.transferBuffer.buffer);
-        m_descriptorManager->resetPools(frame_index);
-
-        auto& shader_mngr = m_materialMngr->getShaderManager();
-        
-        m_resourceManager->waitForTransfers();
-        m_resourceManager->beginCommitCommands();
-
-        beginBuffer({.buffer = buffers.drawBuffer});
-
-        //std::cout << "began buffer" << std::endl;
-        beginRenderpass({
-            .commandBuffer = buffers.drawBuffer,
-            .pass = pass,
-            .target = target,
-            .scissorDims = image.dimensions,
-            .scissorOffset = glm::vec2(0, 0),
-        });
-
-        //binds dummy pipeline and camera
-        // if(!m_materialMngr->BindMaterial(m_baseMaterial, frame_index, buffers.drawBuffer))
-        //     std::runtime_error("failed to bind material");
-
-        //Bind Pipeline <-- relevant when shader is reused.
-        Handle<Shader> boundPipeline;
-        Handle<Geometry> boundVertices;
-        std::vector<VERTEX_BUFFER_TYPE> boundVertexTypes;
-
-        for (const auto &node : ordered_nodes)
-        {
-            if (!node->material)
-            {
-                std::cout << "skip drawing node" << std::endl;
-                continue;
-            }
-            
-            auto& material = m_materialMngr->getMaterialContent(node->material);
-            m_materialMngr->BindMaterial(node->material, frame_index, buffers.drawBuffer);
-            
-            Handle<Shader>& shader = material.shader;
-            
-            // TODO separate to avoid rebinding when drawing a lot of the same object
-            bindVertexBuffers({
-                .commandBuffer = buffers.drawBuffer,
-                .frame = m_backBufferManager->getCurrentIndex(),
-                .geometry = node->geometry,
-                .bindIndex = true
-            });
-
-            glm::mat4 model_mat = node->getGlobalMatrix();
-
-            pushPushConstants({
-                .drawBuffer = buffers.drawBuffer,
-                .layout = shader_mngr.get(shader).layout.pipeline,
-                .push_constants = {
-                PushConstant{ //camera constant
-                    .ptr = &model_mat,
-                    .offset = 0,
-                    .size = sizeof(glm::mat4),
-                    .stages = STAGE_FLAG::ALL_GRAPHICS
-                }}}
-            );
-
-            renderToRenderTarget(*node, rendertarget, m_backBufferManager->getCurrentIndex());
-        }
- 
-        m_vk->endRenderpassCommand({.commandBuffer = buffers.drawBuffer.buffer});
-
-        std::vector<VkSemaphore> wait_semaphores;
-        wait_semaphores.push_back(*(m_resourceManager->getCommandBufferWriter().getSignal()));
- 
-        m_resourceManager->submitCommitCommands();
-        m_vk->submitDrawCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer,
-                            .fence = buffers.inFlightFen,
-                            .wait_semaphores = wait_semaphores,
-                            .signal_semaphore = &buffers.writeSem
-                            });
-
-        m_materialMngr->resetBindings();
-        //std::cout << "Submit Draw Command \n";
-    }
-    void Renderer::render(SceneNode &scene)
-    {
-        auto backbuffer = m_backBufferManager->getNext();
-        //updateCameraFrameUniforms(m_backBufferManager->getCurrentIndex());
-        renderSceneNode(scene, backbuffer);
-        presentRenderTargetNow(backbuffer);
-    }
-    
-    void Renderer::render(SceneNode &scene, Camera &camera)
-    {
-        auto backbuffer = m_backBufferManager->getNext();
-        renderSceneNode(scene, camera, backbuffer);
-        presentRenderTargetNow(backbuffer);
-    }
-
     void Renderer::render_graph(SceneNode &scene, BufferedCamera &camera)
     {
-        auto backbuffer = m_backBufferManager->getNext_Graph();
+        auto& backbuffer = m_backBufferManager->getNext_Graph();
+        m_descriptorManager->resetPools(m_backBufferManager->getCurrentIndex());
+
+        VkSemaphore last_stage_wait = VK_NULL_HANDLE;
 
         for(const auto& stage : backbuffer){
-            render_graph_stage(scene, camera, stage);
+            last_stage_wait = render_graph_stage(scene, camera, stage, last_stage_wait);
         }
 
         auto present_target = m_backBufferManager->getPresentTarget();
         auto present_target_index = m_backBufferManager->getPresentTargetIndex();
-        presentRenderTargetNow(present_target, present_target_index);
+        presentRenderTargetNow(present_target, last_stage_wait, present_target_index);
     }
 
-    void Renderer::render_graph_stage(SceneNode &scene, BufferedCamera &camera, Handle<RenderStage> stage_handle)
+    VkSemaphore Renderer::render_graph_stage(SceneNode &scene, 
+                                      BufferedCamera &camera, 
+                                      Handle<RenderStage> stage_handle,
+                                      VkSemaphore wait_for_last_stage)
     {
 
         std::vector<SceneNode *> nodes;
         scene.sceneAsList(nodes);
 
-        //std::cout << "drawing scene with " << nodes.size() << " nodes "<<std::endl;
         // TODO cullings and whatever
-        // TRANSFORM UPDATES
         // ETC
         
         auto ordered_nodes = orderSceneNodes(nodes);
         
         auto& stage = m_backBufferManager->getStage(stage_handle);
-
+        //std::cout << "drawing stage " << stage.stage_index <<std::endl;
         RenderTarget& target = m_renderTargetManager->get(stage.target);
-        RenderTargetSync& buffers = m_renderTargetManager->get(target.cmdBuffers);
+        RenderTargetSync& buffers = m_renderTargetManager->get(target.sync);
         RenderPass& pass = m_renderTargetManager->get(target.renderpass);
 
         //get image for dimension setting purposes.
@@ -452,17 +332,21 @@ namespace boitatah
 
         uint32_t frame_index = m_backBufferManager->getCurrentIndex();
         
-        m_vk->waitForFrame(buffers);
+        //m_vk->waitForFrame(buffers);
         m_vk->resetCmdBuffer(buffers.drawBuffer.buffer);
         m_vk->resetCmdBuffer(buffers.transferBuffer.buffer);
-        m_descriptorManager->resetPools(frame_index);
+        
 
         auto& shader_mngr = m_materialMngr->getShaderManager();
-        
-        m_resourceManager->waitForTransfers();
-        m_resourceManager->beginCommitCommands();
 
-        beginBuffer({.buffer = buffers.drawBuffer});
+        //m_resourceManager->waitForTransfers();
+        m_resourceManager->beginCommitCommands();
+        auto& writer = m_resourceManager->getCurrentBufferWriter();
+        
+        // if(wait_for_last_stage != VK_NULL_HANDLE)
+        //     writer.setWait(wait_for_last_stage);
+
+        m_vk->beginCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer});
 
         //std::cout << "began buffer" << std::endl;
         beginRenderpass({
@@ -474,26 +358,22 @@ namespace boitatah
             .attachment_count = static_cast<uint32_t>(target.attachments.size())
         });
 
-        //binds dummy pipeline and camera
-        // if(!m_materialMngr->BindMaterial(m_baseMaterial, frame_index, buffers.drawBuffer))
-        //     std::runtime_error("failed to bind material");
-
 
         auto base_mat_handle = m_baseMaterials->getStageBaseMaterial(stage.stage_index);
-
         //Bind base data to material
         switch(stage.type){
             //bind camera info to set 0 binding 0 of base material bindings
-            case StageType::CAMERA:
+            case StageType::CAMERA:{
                 m_materialMngr->setBufferBindingAttribute(base_mat_handle,
                                                           camera.getCameraBuffer(),
                                                           0, 0);
+                break;
+            }
         }
-
         //binds the base pipeline for this stage type;
-        auto& base_material = m_materialMngr->getMaterialContent(base_mat_handle);
+        // auto& base_material = m_materialMngr->getMaterialContent(base_mat_handle);
         if(!m_materialMngr->BindMaterial(base_mat_handle, frame_index, buffers.drawBuffer))
-             std::runtime_error("failed to bind base pipeline");
+            std::runtime_error("failed to bind base pipeline");
 
         //Bind Pipeline <-- relevant when shader is reused.
         Handle<Shader> boundPipeline;
@@ -502,13 +382,18 @@ namespace boitatah
 
         for (const auto &node : ordered_nodes)
         {
+            //skip empty node
             if (!node->material)
             {
-                std::cout << "skip drawing node" << std::endl;
                 continue;
             }
-            
             auto& material = m_materialMngr->getMaterialContent(node->material);
+
+            //skip wrong stage node
+            if( !((1u << stage.stage_index) &  material.stage_mask)){
+                continue;
+            }
+
             m_materialMngr->BindMaterial(node->material, frame_index, buffers.drawBuffer);
             
             Handle<Shader>& shader = material.shader;
@@ -532,37 +417,47 @@ namespace boitatah
                     .ptr = &model_mat,
                     .offset = 0,
                     .size = sizeof(glm::mat4),
-                    .stages = STAGE_FLAG::ALL_GRAPHICS
+                    .stages = SHADER_STAGE::ALL_GRAPHICS
                 }}}
             );
 
-            //draw one node to target.
-            renderToRenderTarget(*node, stage.target, m_backBufferManager->getCurrentIndex());
+            // //draw one node to target.
+            write_draw_command(*node, stage.target, m_backBufferManager->getCurrentIndex());
         }
  
         m_vk->endRenderpassCommand({.commandBuffer = buffers.drawBuffer.buffer});
 
         std::vector<VkSemaphore> wait_semaphores;
-        wait_semaphores.push_back(*(m_resourceManager->getCommandBufferWriter().getSignal()));
- 
+        wait_semaphores.push_back(*writer.getSignal());
+
+
+        if(wait_for_last_stage != VK_NULL_HANDLE)
+            wait_semaphores.push_back(wait_for_last_stage);
+
         m_resourceManager->submitCommitCommands();
+        
         m_vk->submitDrawCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer,
-                            .fence = buffers.inFlightFen,
+                            .fence = buffers.in_flight_fence,
                             .wait_semaphores = wait_semaphores,
-                            .signal_semaphore = &buffers.writeSem
+                            .signal_semaphore = &buffers.draw_semaphore
                             });
-
+        
         m_materialMngr->resetBindings();
-        //std::cout << "Submit Draw Command \n";
+        
+        // copies the frames into read textures
+        m_resourceManager->beginCommitCommands();
 
+        auto& buffer_writer = m_resourceManager->getCurrentBufferWriter();
+        auto& stage_textures =  m_backBufferManager->getStageTextures(stage_handle);
+        for(int i = 0; i < stage_textures.size(); i++){  
+            m_resourceManager->getResource(stage_textures[i])
+                              .CmdCopyImageFromImage(target.attachments[i],
+                                                     IMAGE_LAYOUT::COLOR_ATT);
+        }
+        buffer_writer.setWait(buffers.draw_semaphore);
+        m_resourceManager->submitCommitCommands();
 
-    }
-
-    void Renderer::renderSceneNode(SceneNode &scene, Camera &camera, Handle<RenderTarget> &rendertargetHandle)
-    {
-        //writeCameraToFrameUniforms(camera);
-        //updateCameraFrameUniforms(m_backBufferManager->getCurrentIndex()); 
-        renderSceneNode(scene, rendertargetHandle);
+        return *buffer_writer.getSignal();
     }
 
 #pragma endregion Rendering
@@ -656,34 +551,6 @@ namespace boitatah
 
     }
 
-    void Renderer::copyBuffer(const CopyBufferCommand &command)
-    {   
-        bool fetchedBuffers = true;
-        Buffer * srcBuffer;
-        Buffer *dstBuffer;
-
-        BufferReservation srcReservation;
-        BufferReservation dstReservation;
-
-        fetchedBuffers &= m_bufferManager->getAddressBuffer(command.src, srcBuffer);
-        fetchedBuffers &= m_bufferManager->getAddressBuffer(command.dst, dstBuffer);
-
-        m_bufferManager->getAddressReservation(command.src,srcReservation);
-        m_bufferManager->getAddressReservation(command.dst, dstReservation);
-
-        if(!fetchedBuffers)
-            throw std::runtime_error("Failed to fetch buffers to copy");
-
-        // vk->waitIdle();
-        m_vk->waitForFence(m_transferFence);
-        m_vk->beginCmdBuffer({.commandBuffer = command.buffer.buffer});
-    }
-
-    void Renderer::beginBuffer(const BeginBufferCommand &command)
-    {
-        m_vk->beginCmdBuffer({.commandBuffer = command.buffer.buffer});
-    }
-
     void Renderer::beginRenderpass(const BeginRenderpassCommand &command)
     {
         m_vk->beginRenderpassCommand({
@@ -694,25 +561,9 @@ namespace boitatah
             .scissorDims = command.scissorDims,
             .scissorOffset = command.scissorOffset,
             .depth = command.pass.description.use_depthStencil,
-            
-            //.viewportDims = command.viewportDims,
-            //.viewportOffset = command.viewportOffset,
         });
     }
 
-    void Renderer::setCameraUniforms(Camera &camera)
-    {
-        camera_frame_uniforms.camera = camera.getCameraUniforms();
-    }
-
-    void Renderer::submitBuffer(const SubmitBufferCommand &command)
-    {
-        m_vk->submitCmdBuffer({
-            .commandBuffer = command.buffer.buffer,
-            .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
-            .fence = m_transferFence,
-        });
-    }
 
     void Renderer::pushPushConstants(const PushConstantsCommand &command)
     {
@@ -761,11 +612,6 @@ namespace boitatah
     Handle<ShaderLayout> Renderer::createShaderLayout(const ShaderLayoutDesc &desc)
     {
         return m_materialMngr->getShaderManager().makeShaderLayout(desc);
-    }
-
-    Handle<RenderPass> Renderer::getBackBufferRenderPass()
-    {
-        return m_backBufferManager->getRenderPass();
     }
 
     Handle<RenderTargetSync> Renderer::createRenderTargetCmdData()

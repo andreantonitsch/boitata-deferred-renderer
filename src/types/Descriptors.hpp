@@ -5,6 +5,8 @@
 #include <span>
 #include <buffers/BufferStructs.hpp>
 #include <types/TextureStructs.hpp>
+#include <types/Image.hpp>
+
 namespace boitatah
 {
     using namespace boitatah::buffer;
@@ -12,7 +14,7 @@ namespace boitatah
     struct BindingDesc{
         //uint32_t binding = 0;
         DESCRIPTOR_TYPE type;
-        STAGE_FLAG stages;
+        SHADER_STAGE stages;
         uint32_t descriptorCount = 1;
     };
     
@@ -50,6 +52,8 @@ namespace boitatah
         union{
             BufferAccessData bufferData;
             TextureAccessData textureData;
+            ImageAccessData imageData;
+            SamplerAccessData samplerData;
         }access;
     };
 

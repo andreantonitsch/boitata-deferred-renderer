@@ -70,7 +70,7 @@ namespace boitatah{
         VkFramebuffer buffer;
         std::vector<Handle<Image>> attachments;
         Handle<RenderPass> renderpass;
-        Handle<RenderTargetSync> cmdBuffers;
+        Handle<RenderTargetSync> sync;
     };
 
 

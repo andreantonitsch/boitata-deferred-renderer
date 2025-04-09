@@ -33,11 +33,10 @@ namespace boitatah
             GPUResourceManager(std::shared_ptr<vk::Vulkan> vk_instance,
                                std::shared_ptr<buffer::BufferManager> bufferManager,
                                std::shared_ptr<ImageManager> imageManager,
-                               std::shared_ptr<vk::VkCommandBufferWriter> commandBufferWriter); //contructor
+                               uint32_t buffer_writer_count); //contructor
 
-
-            vk::VkCommandBufferWriter& getCommandBufferWriter(){
-                return *m_commandBufferWriter;
+            vk::VkCommandBufferWriter& getCurrentBufferWriter(){
+                return *m_buffer_writers[m_current_writer];
             }
             
             std::shared_ptr<buffer::BufferManager> getBufferManager();
@@ -65,7 +64,7 @@ namespace boitatah
             void readResourceDataAsync( Handle<ResourceType>    handle,
                                         void*                   destinationPtr );
             
-            void commitAll( uint32_t frameIndex );
+            //void commitAll( uint32_t frameIndex );
 
             void beginCommitCommands();
 
@@ -74,6 +73,14 @@ namespace boitatah
                                         uint32_t                frameIndex );
 
             void submitCommitCommands();
+
+            void beginNewCommitCommands();
+
+            template<typename ResourceType>
+            void commitNewResourceCommand( Handle<ResourceType>    handle,
+                                        uint32_t                frameIndex );
+
+            void submitNewCommitCommands();
 
             bool checkTransfers();
             void waitForTransfers();
@@ -99,7 +106,7 @@ namespace boitatah
             {
                 return m_resourcePool->get(handle)
                             .get_content_commit_update(frame_index,
-                                                       getCommandBufferWriter());
+                                                       getCurrentBufferWriter());
             }
 
             //ACCESS DATA is the hot data for rendering
@@ -120,7 +127,7 @@ namespace boitatah
                 return m_resourcePool->get(handle)
                         .get_render_data_commit_update( 
                             frame_index,
-                            getCommandBufferWriter());
+                            getCurrentBufferWriter());
             }
 
         private:
@@ -130,9 +137,11 @@ namespace boitatah
             std::shared_ptr<ImageManager>           m_imageManager;
             
             std::unique_ptr<GPUResourcePool>            m_resourcePool;
-            std::shared_ptr<vk::VkCommandBufferWriter>  m_commandBufferWriter;
-
+            std::vector<std::shared_ptr<vk::VkCommandBufferWriter>> m_buffer_writers;
+            uint32_t m_current_writer;
             void commitGeometryData( Geometry& geo );
+
+            bool recording = false;
 
         };
 
@@ -165,7 +174,7 @@ namespace boitatah
         inline void GPUResourceManager::commitResourceCommand(Handle<ResourceType> handle, uint32_t frameIndex)
         {
             auto& resource = m_resourcePool->get(handle);
-            resource.commit(frameIndex, getCommandBufferWriter());
+            resource.commit(frameIndex, getCurrentBufferWriter());
         }
 
         template <typename ResourceType>

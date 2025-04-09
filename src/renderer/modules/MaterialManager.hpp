@@ -90,8 +90,12 @@ namespace boitatah{
             MaterialBinding& getBinding(Handle<MaterialBinding>& handle);
             Handle<MaterialBinding> createBinding(
                                     const Handle<DescriptorSetLayout> &description);
+            Handle<MaterialBinding> createBinding(
+                                    const std::vector<MaterialBindingAtt>& bindings);
+            
             std::vector<Handle<MaterialBinding>> createBindings(
                                                  const Handle<ShaderLayout> &description);   
+            Handle<DescriptorSetLayout> createBindingsSetLayout(Handle<MaterialBinding>& binding);
 
             // Creates bindings same as createBindings about. 
             // But overrides the first overrides.size() bindings with the bindings in overrides

@@ -109,6 +109,8 @@ namespace boitatah{
         mat.name = description.name;
         mat.bindings = description.bindings;
         //mat.parent = description.parent;
+        mat.stage_mask = 1u << description.stage_mask;
+        
         mat.vertexBufferBindings = description.vertexBufferBindings;
         auto handle = m_materialPool->set(mat);
         
@@ -159,15 +161,35 @@ namespace boitatah{
         return m_bindingsPool->set(binding);
     }
 
+    Handle<MaterialBinding> MaterialManager::createBinding(const std::vector<MaterialBindingAtt> &bindings)
+    {
+        MaterialBinding binding{.bindings = bindings};
+        return m_bindingsPool->set(binding);
+    }
+
     std::vector<Handle<MaterialBinding>> MaterialManager::createBindings(const Handle<ShaderLayout> &description)
     {
         return createBindings(description, {});
     }
 
+    Handle<DescriptorSetLayout> MaterialManager::createBindingsSetLayout(Handle<MaterialBinding> &binding_handle)
+    {
+        std::vector<BindingDesc> desc;
+        auto& binding = getBinding(binding_handle);
+        for(auto& bind_att : binding.bindings){
+            BindingDesc bind{};
+            bind.descriptorCount = 1;
+            bind.stages = SHADER_STAGE::ALL_GRAPHICS,
+            bind.type = bind_att.type;
+            desc.push_back(bind);
+        }
+        return m_descriptorManager->getLayout({.bindingDescriptors = desc});
+    }
+
     std::vector<Handle<MaterialBinding>> MaterialManager::createBindings(const Handle<ShaderLayout> &description,
     std::vector<Handle<MaterialBinding>> overrides)
     {
-        std::vector<Handle<MaterialBinding>>bindings(overrides);
+        auto bindings = overrides;
         std::cout << " creating bindings " << std::endl;
 
         int base_binding_count = bindings.size();
@@ -281,8 +303,6 @@ namespace boitatah{
         auto& layoutContent = m_descriptorManager->getLayoutContent(setLayout);
         auto set = m_descriptorManager->getSet(layoutContent, frame_index);
         
-        //std::cout << " binding set binding  << " << set_index  <<  std::endl;
-        //std::cout << " handle  << " << handle.i  << std::endl;
         std::vector<BindBindingDesc> bindings;
         for(int i = 0; i < binding.bindings.size(); i++){
             BindBindingDesc desc;
@@ -294,13 +314,28 @@ namespace boitatah{
                                                     getCommitResourceAccessData(
                                                         binding.bindings[i].binding_handle.buffer,
                                                         frame_index);
-                                                    break;
+                    break;
+                    
                 case DESCRIPTOR_TYPE::COMBINED_IMAGE_SAMPLER:
                     desc.access.textureData = m_resourceManager->
                                                     getCommitResourceAccessData(
                                                         binding.bindings[i].binding_handle.renderTex,
                                                     frame_index);
-                                                    break;
+                    break;
+
+                case DESCRIPTOR_TYPE::IMAGE:{
+                    auto& image = m_resourceManager->getImageManager().
+                                                    getImage(
+                                                        binding.bindings[i].binding_handle.image);
+                    desc.access.imageData = {.view = image.view};
+                    break;} 
+
+                case DESCRIPTOR_TYPE::SAMPLER:{
+                    auto& sampler = m_resourceManager->getImageManager().
+                                        getSampler(binding.bindings[i].binding_handle.sampler);
+                    desc.access.samplerData = {.sampler = sampler.sampler};
+                    break; }
+
             }
 
             bindings.push_back(desc);
@@ -320,71 +355,11 @@ namespace boitatah{
     }
 
 
-    // Handle<Material> MaterialManager::createUnlitMaterial(const std::vector<Handle<MaterialBinding>>& bindings)
-    // {
-    //     return createMaterial({
-    //         //.parent = m_baseMaterial,
-    //         .shader = unlit_shader.first,
-    //         .bindings = bindings,
-    //         .vertexBufferBindings = {
-    //             VERTEX_BUFFER_TYPE::POSITION,
-    //             VERTEX_BUFFER_TYPE::UV,
-    //             VERTEX_BUFFER_TYPE::COLOR,
-    //         },
-    //         .name = "unlit material",
-    //     });
-    // }
-
     void MaterialManager::resetBindings()
     {
         m_currentBindings.clear();
         m_currentPipeline = Handle<Shader>();
     }
-
-    // void MaterialManager::setupBaseMaterials(Handle<RenderPass> renderpass)
-    // {
-    //     setupUnlitMaterial(renderpass);
-    // }
-
-    // void MaterialManager::setupUnlitMaterial(Handle<RenderPass> renderpass)
-    // {
-    //     //binds one texture
-    //     Handle<DescriptorSetLayout> layout = m_descriptorManager->getLayout({
-    //         .bindingDescriptors = {
-    //             {
-    //                 .type = DESCRIPTOR_TYPE::COMBINED_IMAGE_SAMPLER,
-    //                 .stages = STAGE_FLAG::FRAGMENT,
-    //                 .descriptorCount = 1,
-    //             },
-    //         }});
-
-    //     std::vector<Handle<DescriptorSetLayout>> full_layout;
-
-    //     utils::concatenate_vectors(full_layout,
-    //                                m_shaderManager->get(getMaterialContent(m_baseMaterial)
-    //                                                     .shader).layout.descriptorSets);
-        
-    //     full_layout.push_back(layout);
-        
-    //     Handle<ShaderLayout> unlit_layout = m_shaderManager->makeShaderLayout({
-    //         .setLayouts = full_layout
-    //     });
-
-    //     Handle<Shader> shader = m_shaderManager->makeShader({
-    //         .vert = { .byteCode =  utils::readFile("./shaders/basic_camera_mat.vert.spv"),
-    //                     .entryFunction = "main"},
-    //         .frag=  { .byteCode =  utils::readFile("./shaders/unlit_material.frag.spv"),
-    //                     .entryFunction = "main"},
-    //         .renderPass = renderpass,
-    //         .layout = unlit_layout,
-    //         .vertexBindings = {
-    //                 {.stride = 12, .attributes = {{.location = 0, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},
-    //                 {.stride = 8, .attributes = {{.location = 1, .format = IMAGE_FORMAT::RG_32_SFLOAT, .offset = 0}}},
-    //                 {.stride = 12, .attributes = {{.location = 2, .format = IMAGE_FORMAT::RGB_32_SFLOAT, .offset = 0}}},
-    //                           }
-    //         });
-    //     unlit_shader = {shader, unlit_layout};
-    // }
 
     ShaderModule ShaderManager::compileShaderModule(const std::vector<char> &bytecode, std::string entryPoint)
     {
@@ -437,7 +412,7 @@ namespace boitatah{
                                             PushConstantDesc{
                                             .offset = 0, //<-- must be larger or equal than sizeof(glm::mat4)
                                             .size = sizeof(glm::mat4), //<- M matrices
-                                            .stages = STAGE_FLAG::ALL_GRAPHICS}},
+                                            .stages = SHADER_STAGE::ALL_GRAPHICS}},
                                     }),
                                 .descriptorSets = description.setLayouts,
                                 };

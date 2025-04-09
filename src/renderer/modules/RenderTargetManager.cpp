@@ -88,7 +88,7 @@ namespace boitatah{
             .buffer = m_vk->createFramebuffer(vkDesc),
             .attachments = images,
             .renderpass = passhandle,
-            .cmdBuffers = createRenderTargetSyncData()};
+            .sync = createRenderTargetSyncData()};
 
         return m_targetPool->set(framebuffer);
     }
@@ -140,7 +140,7 @@ namespace boitatah{
 
         //destroyRenderPass(target.renderpass); 
         RenderTargetSync data;
-            if (m_buffersPool->clear(target.cmdBuffers, data))
+            if (m_buffersPool->clear(target.sync, data))
                 m_vk->destroyRenderTargetCmdData(data);
 
         target.attachments.clear();

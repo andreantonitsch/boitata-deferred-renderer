@@ -22,7 +22,7 @@ namespace boitatah{
 
             uint8_t dirty = 255u;
             uint8_t commited = 255u;
-
+            uint32_t last_updated_frame = 0U;
             DerivedResource<Resource>& self(){return *static_cast<DerivedResource<Resource> *>(this);};
 
             GPUResource() = default;
@@ -49,22 +49,25 @@ namespace boitatah{
             /// @brief commits to update this resource next time resources are updated
             void commit(uint32_t frame_index, ResourceTraits<Resource>::CommandBufferWriter& writer)
             {
+                if(frame_index == last_updated_frame)
+                    return;
+                last_updated_frame = frame_index;
                 set_commited(frame_index);
+                clean_dirt(frame_index);
                 self().__impl_commit(frame_index, writer);
             };
-
+            void ready_content( uint32_t                                      frameIndex, 
+                               ResourceTraits<Resource>::CommandBufferWriter   &writer){
+                if((!check_content_ready(frameIndex)||
+                     check_dirt(frameIndex) ))
+                        commit(frameIndex, writer);
+            }
             // can only be used when writting a transfer buffer.
             ResourceTraits<Resource>::ContentType& get_content_commit_update(
                             uint32_t                                        frameIndex, 
                             ResourceTraits<Resource>::CommandBufferWriter   &writer)
             {
-                if((!check_content_ready(frameIndex)
-                   ||check_dirt(frameIndex) )
-                   //&&!check_commited(frameIndex))
-                ){
-                        commit(frameIndex, writer);
-                        clean_dirt(frameIndex);
-                    }
+                ready_content(frameIndex, writer);
                 return get_content(frameIndex);
             };
             
@@ -75,17 +78,11 @@ namespace boitatah{
                             ResourceTraits<Resource>::CommandBufferWriter   &writer)
             {
                 //data is not commited, and not ready // dirty
-                if((!check_content_ready(frameIndex)
-                   ||check_dirt(frameIndex) )
-                   //&&!check_commited(frameIndex))
-                ){
-                        commit(frameIndex, writer);
-                        clean_dirt(frameIndex);
-                    }
+                ready_content(frameIndex, writer);
                 return get_render_data(frameIndex);
             };
             bool check_content_ready(int frameIndex){
-                return self().__impl_check_content_ready(frameIndex%2);
+                return self().__impl_ready_for_use(frameIndex);
             };
 
             bool check_dirt(uint32_t frameIndex) 
@@ -147,8 +144,8 @@ namespace boitatah{
 
             Resource& resource(){return *static_cast<Resource *>(this); };
 
-            bool __impl_check_content_ready(uint32_t frame_index){
-                return true;
+            bool __impl_ready_for_use(uint32_t frame_index){
+                return resource().ReadyForUse(replicated_content[frame_index%2]);
             }
 
             ResourceTraits<Resource>::ContentType& __impl_get_resource_content(uint32_t frame_index){
@@ -158,10 +155,6 @@ namespace boitatah{
             ResourceTraits<Resource>::RenderData __impl_get_render_data(uint32_t frameIndex)
             {
                 return resource().GetRenderData(frameIndex);
-            };
-
-            bool __impl_ready_for_use(uint32_t frame_index){
-                return self().check_dirt(frame_index) ;
             };
 
             void __impl_release(){

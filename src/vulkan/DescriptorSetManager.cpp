@@ -36,23 +36,23 @@ namespace boitatah::vk {
                                         const DescriptorSet &set,
                                         uint32_t frame_index)
     {   
-        std::vector<VkWriteDescriptorSet> writes;
-        std::vector<VkDescriptorImageInfo> images;
-        std::vector<VkDescriptorBufferInfo> buffers;
-        std::vector<VkBufferView> views;
-        
+        //TODO adjust with std::any or something.
+        // this will waste memory but preserve the pointers up to 10
+        std::vector<VkWriteDescriptorSet> writes{};
+        std::vector<VkDescriptorImageInfo> images(10);
+        std::vector<VkDescriptorBufferInfo> buffers(10);
+        std::vector<VkBufferView> views(10);
+        uint32_t count = 0;
         for(auto& binding : bindings){
-            VkWriteDescriptorSet write;
+            VkWriteDescriptorSet write{};
             write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.pNext = nullptr;
             write.descriptorCount = 1;
             write.dstSet = set.descriptorSet;
             write.dstBinding = binding.binding;
             write.descriptorType = castEnum<VkDescriptorType>(binding.type);
-            write.dstArrayElement = 0U;
             switch(binding.type){
                 case DESCRIPTOR_TYPE::UNIFORM_BUFFER:{
-                    VkDescriptorBufferInfo info;
+                    VkDescriptorBufferInfo info{};
                     auto bufferAccess =  binding.access.bufferData;
                     info.buffer = bufferAccess.buffer->getBuffer();
                     info.offset = bufferAccess.offset;
@@ -60,22 +60,44 @@ namespace boitatah::vk {
                     buffers.push_back(info);
                     write.pBufferInfo = &buffers.back();
                     break;}
+
                 case DESCRIPTOR_TYPE::COMBINED_IMAGE_SAMPLER:{
-                    VkDescriptorImageInfo info;
+                    VkDescriptorImageInfo info4{};
                     auto textureAccess =  binding.access.textureData;
-                    info.imageLayout = textureAccess.layout;
-                    info.sampler = textureAccess.sampler;
-                    info.imageView = textureAccess.image;
-                    images.push_back(info);
+                    info4.imageLayout = textureAccess.layout;
+                    info4.sampler = textureAccess.sampler;
+                    info4.imageView = textureAccess.view;
+                    images.push_back(info4);
                     write.pImageInfo = &images.back();
                     break;}
+
+                case DESCRIPTOR_TYPE::IMAGE:{
+                    VkDescriptorImageInfo info2{};
+                    auto imageAccess =  binding.access.imageData;
+                    info2.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    info2.imageView = imageAccess.view;
+                    images.push_back(info2);
+                    write.pImageInfo = &(images.back());
+                    std::cout << (write.pImageInfo)->imageLayout << std::endl;
+                    break;}
+
+                case DESCRIPTOR_TYPE::SAMPLER:{
+                    VkDescriptorImageInfo info3{};
+                    auto samplerAccess =  binding.access.samplerData;
+                    info3.sampler = samplerAccess.sampler;
+                    info3.imageView = VK_NULL_HANDLE;
+                    images.push_back(info3);
+                    write.pImageInfo = &images.back();
+                    break;}
+
                 default:
                     std::cout << "Trying to bind invalid descriptor type" << std::endl;
                     break;
             }
-
             writes.push_back(write);
         }
+
+        //TODO correct pointers.
 
         vkUpdateDescriptorSets(m_vk->getDevice(), writes.size(), writes.data(), 0, nullptr);
     }

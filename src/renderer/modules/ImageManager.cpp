@@ -11,25 +11,38 @@ ImageManager::ImageManager(std::shared_ptr<vk::Vulkan> vulkan) : m_vk(vulkan) {
         .dynamic = true,
         .name = "Image Manager Image Pool"
     });
+    m_sampler_pool = std::make_unique<Pool<Sampler>>(PoolOptions{
+        .size = 4096,
+        .dynamic = true,
+        .name = "Image Manager Sampler Pool"
+    });
 }
 
-Sampler ImageManager::createSampler(const SamplerData &samplerData)
+Handle<Sampler> ImageManager::createSampler(const SamplerData &samplerData)
 {   
     Sampler sampler;
     sampler.data = samplerData;
     sampler.sampler = m_vk->createSampler(samplerData);
-    return sampler;
+    return m_sampler_pool->set(sampler);
 }
 
-void ImageManager::destroySampler(Sampler sampler)
+Sampler &ImageManager::getSampler(const Handle<Sampler> handle)
 {
-    m_vk->destroySampler(sampler.sampler);
+   return m_sampler_pool->get(handle);
+}
+
+void ImageManager::destroySampler(Handle<Sampler> sampler)
+{
+    auto& samp = m_sampler_pool->get(sampler);
+    m_vk->destroySampler(samp.sampler);
+    m_sampler_pool->clear(sampler);
 }
 
 Handle<Image> ImageManager::createImage(const ImageDesc &description)
 {
     Image image = m_vk->createImage(description);
-    image.view = m_vk->createImageView(image.image, description);
+    if(!description.skip_view)
+        image.view = m_vk->createImageView(image.image, description);
 
     return m_imagePool->set(image);
 }

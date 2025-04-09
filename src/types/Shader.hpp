@@ -17,13 +17,13 @@ namespace boitatah
         void* ptr;
         uint32_t offset;
         uint32_t size;
-        STAGE_FLAG stages;
+        SHADER_STAGE stages;
     };
 
     struct PushConstantDesc{
         uint32_t offset;
         uint32_t size;
-        STAGE_FLAG stages;
+        SHADER_STAGE stages;
     };
 
     // becomes a shaderlayout with 3 descriptor set layouts and push constants

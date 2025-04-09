@@ -92,7 +92,7 @@ namespace boitatah::vk{
 
                 if(m_wait != VK_NULL_HANDLE){
                     submit.waitSemaphoreCount = 1;
-                    submit.pWaitSemaphores = &m_wait;
+                    submit.pWaitSemaphores = &(self().m_wait);
                 }
 
                 if (m_signal != VK_NULL_HANDLE && command.signal)
@@ -119,16 +119,36 @@ namespace boitatah::vk{
             void __imp_transitionImage(const VulkanWriterTransitionLayoutCommand &command, VkCommandBuffer buffer ){
 
                 auto vk = std::shared_ptr<Vulkan>(vk_instance);
-                vk->CmdTransitionLayout({
+                auto vk_command = TransitionLayoutCmdVk{
                     .buffer = buffer,
                     .src = command.src,
                     .dst = command.dst,
                     .image = command.image,
-                    .srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                    .dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    .srcAccess = 0,
-                    .dstAccess = VK_ACCESS_TRANSFER_WRITE_BIT
-                });
+                    .srcStage = command.srcStage,
+                    .dstStage = command.dstStage,
+                };
+
+                switch(command.srcStage){
+                    case  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT:
+                        vk_command.srcAccess = 0;
+                        break;
+                    case VK_PIPELINE_STAGE_TRANSFER_BIT:
+                        vk_command.srcAccess = VK_ACCESS_TRANSFER_WRITE_BIT;
+                        break;
+                    default: vk_command.srcAccess = 0; break;
+                }
+
+                switch(command.dstStage){
+                    case VK_PIPELINE_STAGE_TRANSFER_BIT:
+                        vk_command.dstAccess = VK_ACCESS_TRANSFER_READ_BIT;
+                        break;
+                    case VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT:
+                        vk_command.dstAccess = 0;
+                        break;
+                    default: vk_command.dstAccess = 0; break;
+                }
+
+                vk->CmdTransitionLayout(vk_command);
 
             }
 
@@ -153,6 +173,8 @@ namespace boitatah::vk{
                     .src = command.srcImgLayout,
                     .dst = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     .image = command.image,
+                    .srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                    .dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT,
                 }, commandBuffer);
                 
                 VkBufferImageCopy copy{};
@@ -182,7 +204,9 @@ namespace boitatah::vk{
                 __imp_transitionImage({
                     .src = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     .dst = command.dstImgLayout,
-                    .image = command.image,
+                    .image = command.image,                    
+                    .srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    .dstStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                 }, commandBuffer);
 
             }

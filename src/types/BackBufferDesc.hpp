@@ -35,16 +35,20 @@ namespace boitatah{
     // set Bindings.
     struct AttachToTextureLink{
         //TargetLinkType type;
-        uint32_t prev_target_idx;
+        uint32_t prev_stage_idx;
         uint32_t prev_attach_idx;
-        uint32_t binding_idx;
+        //uint32_t binding_idx;
 
         AttachToTextureLink(std::initializer_list<uint32_t> indices){
             std::vector<uint32_t> v(indices);
-            prev_target_idx = v[0];
+            prev_stage_idx = v[0];
             prev_attach_idx = v[1];
-            binding_idx = v[1];
+            //binding_idx = v[2];
         };
+    };
+
+    struct Attach_Texture_Link{
+
     };
 
     //links renderpasses together with a binding set
@@ -80,17 +84,18 @@ namespace boitatah{
             };
         bool clear = true;
         SAMPLES samples = SAMPLES::SAMPLES_1;
+        //SamplerData sampler_desc = SamplerData{};
         BindingLinks links;
     };
-
 
     struct RenderStage{
         uint32_t stage_index;
         StageType type = StageType::CAMERA;
         bool clear = true;
         Handle<RenderTarget> target;
-        MaterialBinding materialBinding;
-        std::vector<RenderTargetSync> wait_list;
+        //std::vector<Handle<RenderTexture>> attachment_copy_tex;
+        //Handle<MaterialBinding> materialBinding;
+        std::vector<Handle<RenderTargetSync>> wait_list;
         RenderStageDesc description;
     
     };
@@ -101,19 +106,5 @@ namespace boitatah{
         PresentLink present_link;
     };
 
-    struct TimeUniforms{
-        float time;
-        float deltaTime;
-        float sinTime;
-        float a;
-    };
 
-    struct CameraFrameUniforms{
-        CameraUniforms camera;
-        TimeUniforms time;
-    };
-
-    struct ScreenQuadFrameUniforms{
-        TimeUniforms time;
-    };
 }

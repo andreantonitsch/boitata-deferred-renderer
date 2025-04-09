@@ -4,7 +4,8 @@
 namespace boitatah{
 
     struct TextureAccessData{
-        VkImageView image;
+        VkImageView view;
+        VkImage image;
         VkImageLayout layout;
         VkSampler sampler;
     };

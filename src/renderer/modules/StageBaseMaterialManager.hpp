@@ -12,6 +12,7 @@ namespace boitatah{
 
     enum class ShaderType : uint32_t{
         Unlit      = 0,
+        Lambert    = 1,
         PBR        = 1,
         ComposePBR = 2,
     };
@@ -43,8 +44,14 @@ namespace boitatah{
             Handle<Material> createUnlitMaterial(uint32_t                stage_mask,
                                                  uint32_t                priority,
                                                  Handle<RenderTexture>   texture);
+            Handle<Material> createLambertMaterial(uint32_t                stage_mask,
+                                                 uint32_t                priority,
+                                                 Handle<RenderTexture>   texture);
 
-
+            Handle<Material> createUnlitDeferredComposeMaterial(uint32_t     stage_mask,
+                                                                uint32_t     priority);
+            Handle<Material> createLambertDeferredComposeMaterial(uint32_t   stage_mask,
+                                                                uint32_t     priority);
             Handle<Material> createPBRComposerMaterial(uint32_t priority, uint32_t stage_mask);
 
             Handle<MaterialBinding> getCameraStageBinding();
@@ -55,11 +62,12 @@ namespace boitatah{
             using ShaderMap = std::array<
                                 std::array<
                                     std::pair<Handle<Shader>, Handle<ShaderLayout>>,
-                                    3>, 
+                                    4>, 
                                 2>;
 
             void BuildShaderMap();
             void BuildUnlitShader(uint32_t stage_index);
+            void BuildLambertShader(uint32_t stage_index);
 
             Handle<Material> GenerateBaseCameraMaterial(Handle<RenderStage> stage_handle);
             Handle<Material> GenerateBaseScreenQuadMaterial(Handle<RenderStage> stage_handle);

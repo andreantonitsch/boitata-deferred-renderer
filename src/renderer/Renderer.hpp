@@ -18,7 +18,8 @@
 #include "../types/commands/CommandBuffer.hpp"
 #include "../types/RenderTarget.hpp"
 #include "../types/commands/Commands.hpp"
-
+#include "./types/Lights.hpp"
+ 
 #include "../buffers/Buffer.hpp"
 #include "../buffers/BufferManager.hpp"
 
@@ -74,6 +75,8 @@ namespace boitatah
         Materials& getMaterials();
         
         BufferedCamera createCamera(const CameraDesc& desc);
+        void setLightArray(const Handle<LightArray>& array);
+
 
         // Window methods
         bool isWindowClosed();
@@ -82,18 +85,19 @@ namespace boitatah
         void waitIdle();
 
         // Render Methods
-        void renderToRenderTarget(SceneNode &scene, const Handle<RenderTarget> &rendertarget, uint32_t frameIndex);
-        void render(SceneNode &scene);
-        void render(SceneNode &scene, Camera &camera);
+        void write_draw_command(SceneNode &scene, const Handle<RenderTarget> &rendertarget, uint32_t frameIndex);
         void render_graph(SceneNode &scene, BufferedCamera &camera);
-        void render_graph_stage(SceneNode &scene, BufferedCamera &camera, Handle<RenderStage> stage);
-        void present_graph(SceneNode &scene, Camera &camera);
-
-        void presentRenderTargetNow(Handle<RenderTarget> &rendertarget, uint32_t attachment_index);
+        VkSemaphore render_graph_stage(SceneNode            &scene, 
+                                        BufferedCamera      &camera, 
+                                        Handle<RenderStage> stage,
+                                        VkSemaphore         wait_for_last_stage);
+        void present_graph(SceneNode    &scene,
+                           Camera       &camera);
+        void presentRenderTargetNow(Handle<RenderTarget>    &rendertarget,
+                                    VkSemaphore             stage_wait,
+                                    uint32_t                attachment_index);
         void schedulePresentRenderTarget(Handle<RenderTarget> &rendertarget, uint32_t attachment_index = 0);
-        void renderSceneNode(SceneNode &scene, Handle<RenderTarget> &rendertarget);
-        void renderSceneNode(SceneNode &scene, Camera &camera, Handle<RenderTarget> &rendertarget);
-
+    
         // Object Creation
         // Creates PSO object, shader + pipeline.
         // Needs a Framebuffer for compatibility.
@@ -108,13 +112,10 @@ namespace boitatah
         
         // Command Buffers
         CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
-        void beginBuffer(const BeginBufferCommand &command);
-        void submitBuffer(const SubmitBufferCommand &command);
         void clearCommandBuffer(const CommandBuffer &buffer);
 
         void beginRenderpass(const BeginRenderpassCommand &command);
 
-        void setCameraUniforms(Camera& camera);
 
         // Constructs a transfer queue for uniform updating on the beginning of the frame.
         void transferImage(const TransferImageCommand &command);
@@ -137,7 +138,7 @@ namespace boitatah
     private:
         // Base objects
         std::shared_ptr<BufferManager> m_bufferManager;
-        std::shared_ptr<VkCommandBufferWriter> m_ResourceManagerTransferWriter;
+        std::shared_ptr<VkCommandBufferWriter> m_buffer_writer;
         std::shared_ptr<Swapchain> m_swapchain;
         std::shared_ptr<BackBufferManager> m_backBufferManager;
         std::shared_ptr<GPUResourceManager> m_resourceManager;
@@ -149,24 +150,9 @@ namespace boitatah
         std::shared_ptr<RenderTargetManager> m_renderTargetManager;
         std::shared_ptr<Materials> m_baseMaterials;
 
-        // Frame Uniforms
-        CameraFrameUniforms         camera_frame_uniforms;
-        ScreenQuadFrameUniforms     screen_quad_frame_uniforms;
         
-        //Handle<GPUBuffer> m_frameUniformsBuffer;
-        //Handle<MaterialBinding> m_frameUniforms;
-        
-        //void writeCameraToFrameUniforms(Camera& camera);
-        //void updateCameraFrameUniforms(uint32_t frame_index);
-
-
-        //Handle<Material> m_baseMaterial;
-        //Handle<DescriptorSetLayout> base_setLayout;
-        //Handle<ShaderLayout> m_baseLayout;
-        //Handle<Shader> m_dummyPipeline;
-
-        CommandBuffer m_transferCommandBuffer;
-        VkFence m_transferFence;
+        //TODO temp member
+        Handle<LightArray> lights;
 
         void handleWindowResize();
         void createSwapchain();

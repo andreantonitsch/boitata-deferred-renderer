@@ -12,12 +12,14 @@ namespace boitatah{
         private:
             std::shared_ptr<vk::Vulkan> m_vk;
             std::unique_ptr<Pool<Image>> m_imagePool;
+            std::unique_ptr<Pool<Sampler>> m_sampler_pool;
             void destroySampler(VkSampler sampler);
 
         public:
             ImageManager(std::shared_ptr<vk::Vulkan> vulkan);
-            Sampler createSampler(const SamplerData& samplerData);
-            void destroySampler(const Sampler sampler);
+            Handle<Sampler> createSampler(const SamplerData& samplerData);
+            Sampler& getSampler(const Handle<Sampler> handle);
+            void destroySampler(const Handle<Sampler> sampler);
             void updateSampler(Sampler& sampler);
 
             Handle<Image> createImage(const ImageDesc &description);
