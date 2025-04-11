@@ -31,51 +31,44 @@ int main()
                                         r.getResourceManager());
 
     std::cout << "creating material" << std::endl;
-    auto material = r.getMaterials().createUnlitMaterial(0, 100, texture);
+    auto material = r.getMaterials().createLambertMaterial(0, 100, texture);
 
-    Handle<Geometry> triangle = GeometryBuilder::Triangle(r.getResourceManager());
     Handle<Geometry> quad =     GeometryBuilder::Quad(r.getResourceManager());
-    Handle<Geometry> circle =   GeometryBuilder::Circle(r.getResourceManager(), 0.5f, 32);
-    Handle<Geometry> pipe =     GeometryBuilder::Pipe(r.getResourceManager(), 0.5, 2.0, 10, 32);
+    Handle<Geometry> pipe =     GeometryBuilder::Cylinder(r.getResourceManager(), 0.5, 2.0, 10, 32);
 
-    std::cout << "creating scene node" << std::endl;
-    SceneNode triangleNode({
-        .name = "triangle",
-        .geometry = triangle,
-        .material = material,
-        .position = glm::vec3(-3.0f, 0, 0),
-    });
-    SceneNode quadNode({
-        .name = "quad",
-        .geometry = quad,
-        .material = material,
-        .position = glm::vec3(-1.5f, 0, 0),
-    });
-
-    SceneNode circleNode({
-        .name = "circle",
-        .geometry = circle,
-        .material = material,
-        .position = glm::vec3(0.0f, 0, 0),
-    });
+    SceneNode scene({.name = "root scene"});
+    std::vector<SceneNode> nodes;
 
     SceneNode pipeNode({
         .name = "pipe",
         .geometry = pipe,
         .material = material,
-        .position = glm::vec3(1.5f, 0, 0),
+        .position = glm::vec3(0, 0, 0),
     });
 
+    nodes.reserve(100);
+    for(int i = 0; i < 5; i++)
+        for(int j = 0; j < 5; j++){
+            nodes.push_back(pipeNode);
+            nodes.back().translate(glm::vec3(-5 + 2*i, 0.5, - 5 + 2*j));
+            scene.add(&nodes.back());
+        }
+    //scene.add(&pipeNode);
+
     // Scene Description.
-    SceneNode scene({.name = "root scene"});
-    scene.add(&pipeNode);
-    scene.add(&triangleNode);
-    scene.add(&quadNode);
-    scene.add(&circleNode);
-
     std::cout << "creating deferred composer material" << std::endl;
-    auto composer_material = r.getMaterials().createUnlitDeferredComposeMaterial(1, 150u);
-
+    auto composer_material = r.getMaterials().createLambertDeferredComposeMaterial(1, 150u);
+    
+    Handle<LightArray> light_handle = r.createLightArray(100);
+    r.setLightArray(light_handle);
+    auto& lights = r.getLightArray(light_handle);
+    lights.update();
+    
+    r.getMaterialManager().setBufferBindingAttribute(composer_material, lights.metadata(), 1, 0);
+    r.getMaterialManager().setBufferBindingAttribute(composer_material, lights.light_array(), 1, 1);
+    
+    r.getMaterialManager().printMaterial(composer_material);
+    
     SceneNode composerNode({
         .name = "composer",
         .geometry = quad,
@@ -94,7 +87,7 @@ int main()
     uint32_t count = 0;
     float frame_TimeScale = 0.001;
     float dist = 5;
-
+    std::cout << " setup done" << std::endl;
     while (!r.isWindowClosed())
     {
         float t = count * frame_TimeScale;

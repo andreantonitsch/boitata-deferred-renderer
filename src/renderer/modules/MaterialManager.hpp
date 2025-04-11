@@ -79,6 +79,9 @@ namespace boitatah{
             ShaderManager& getShaderManager();
             
             const std::vector<Handle<Material>> orderMaterials();
+            void printMaterial(Handle<Material> handle); 
+            void printBindings(Handle<MaterialBinding> handle);
+            void printVertexBuffers(Handle<Material> handle);
 
             Handle<Material> createMaterial(const MaterialCreate& description);
             Handle<Material> copyMaterial(const Handle<Material>& handle);

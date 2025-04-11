@@ -199,7 +199,9 @@ namespace boitatah{
 
     Handle<Geometry> GeometryBuilder::Cylinder(GPUResourceManager &manager, float radius, float height, float heightSegments, uint32_t sides)
     {
-        return Handle<Geometry>();
+        auto builder = createGeometry(manager);
+        auto geo = builder.geometryFromGeometryData(cylinder(radius, height, heightSegments, sides));
+        return geo;
     }
 
     Handle<Geometry> GeometryBuilder::Cylinder(Renderer &renderer, float radius, float height, float heightSegments, uint32_t sides)

@@ -63,7 +63,7 @@ namespace boitatah{
                                 std::array<
                                     std::pair<Handle<Shader>, Handle<ShaderLayout>>,
                                     4>, 
-                                2>;
+                                10>;
 
             void BuildShaderMap();
             void BuildUnlitShader(uint32_t stage_index);

@@ -139,6 +139,82 @@ namespace boitatah{
         //return m_materialGraph.getOrder();
     }
 
+
+
+    void MaterialManager::printMaterial(Handle<Material> handle)
+    {
+        auto& material = getMaterialContent(handle);
+
+        std::cout << "#Material: id" << handle.i << " name " << material.name <<  std::endl;
+        std::cout << "\t Shader:\t" << material.shader.i << std::endl;
+        std::cout << "\t Stage:\t" << material.stage_mask << std::endl;
+        std::cout << "\t VertexBuffers: " << std::endl;
+        
+        printVertexBuffers(handle);
+        size_t count = 0;
+        for(auto& binding : material.bindings){
+            std::cout << "\tSet " << count++ << " ";
+            printBindings(binding);
+         }
+    }
+
+    void MaterialManager::printBindings(Handle<MaterialBinding> handle)
+    {
+        auto& bc = getBinding(handle);
+        std::cout << "Material Bindings:" << std::endl;
+        for(auto& b : bc.bindings)
+            switch(b.type){
+                case DESCRIPTOR_TYPE::UNIFORM_BUFFER:
+                    std::cout << "\t\tUniform Buffer" << " ( " 
+                            << b.binding_handle.buffer.i << " ," << b.binding_handle.buffer.gen << " )"<<std::endl;
+                    break;
+                case DESCRIPTOR_TYPE::IMAGE:
+                    std::cout << "\t\tImage" << " ( " 
+                            << b.binding_handle.image.i << " ," << b.binding_handle.image.gen << " )"<<std::endl;
+                    break;
+                case DESCRIPTOR_TYPE::SAMPLER:
+                    std::cout << "\t\tImage" << " ( " 
+                            << b.binding_handle.sampler.i << " ," << b.binding_handle.sampler.gen << " )"<<std::endl;
+                    break;
+                case DESCRIPTOR_TYPE::COMBINED_IMAGE_SAMPLER:
+                    std::cout << "\t\tImage" << " ( " 
+                            << b.binding_handle.renderTex.i << " ," << b.binding_handle.renderTex.gen << " )"<< std::endl;
+                    break;
+            }
+    }
+
+    void MaterialManager::printVertexBuffers(Handle<Material> handle)
+    {
+        auto& material = getMaterialContent(handle);
+        for(auto v_buffer : material.vertexBufferBindings )
+            switch(v_buffer){
+                case VERTEX_BUFFER_TYPE::POSITION:
+                    std::cout << "\t\tPosition" << std::endl;
+                    break;
+                case VERTEX_BUFFER_TYPE::NORMAL:
+                    std::cout << "\t\tNormal" << std::endl;
+                    break;
+                case VERTEX_BUFFER_TYPE::COLOR:
+                    std::cout << "\t\tColor" << std::endl;
+                    break;
+                case VERTEX_BUFFER_TYPE::UV:
+                    std::cout << "\t\tUV" << std::endl;
+                    break;
+                case VERTEX_BUFFER_TYPE::UV2:
+                    std::cout << "\t\tUV2" << std::endl;
+                    break;
+                case VERTEX_BUFFER_TYPE::MISC0:
+                    std::cout << "\t\tMISC0" << std::endl;
+                    break;
+                case VERTEX_BUFFER_TYPE::MISC1:
+                    std::cout << "\t\tMISC0" << std::endl;
+                    break;
+                case VERTEX_BUFFER_TYPE::MISC2:
+                    std::cout << "\t\tMISC0" << std::endl;
+                    break;
+            }
+    }
+
     Material& MaterialManager::getMaterialContent(const Handle<Material> &handle)
     {
         return m_materialPool->get(handle);

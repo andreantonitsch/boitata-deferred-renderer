@@ -75,9 +75,12 @@ namespace boitatah
         Materials& getMaterials();
         
         BufferedCamera createCamera(const CameraDesc& desc);
+
+        // TODO temp light stuff
         void setLightArray(const Handle<LightArray>& array);
-
-
+        Handle<LightArray> createLightArray(uint32_t size);
+        LightArray& getLightArray(Handle<LightArray> handle);
+        
         // Window methods
         bool isWindowClosed();
 
@@ -150,7 +153,8 @@ namespace boitatah
         std::shared_ptr<RenderTargetManager> m_renderTargetManager;
         std::shared_ptr<Materials> m_baseMaterials;
 
-        
+        std::unique_ptr<Pool<LightArray>> m_lightpool;
+
         //TODO temp member
         Handle<LightArray> lights;
 

@@ -16,18 +16,6 @@ namespace boitatah
 {
 
     class GPUResourceManager;
-    class LightArray;
-    struct LightArrayRenderData{
-
-    };
-
-    struct LightArrayGPUData {};
-    template<>
-    struct ResourceTraits<LightArray>{
-        using ContentType = LightArrayGPUData;
-        using CommandBufferWriter = vk::VkCommandBufferWriter;
-        using RenderData = LightArrayRenderData;
-    };
 
 
     enum class LIGHT_TYPE : uint8_t{
@@ -35,61 +23,52 @@ namespace boitatah
     }; 
 
     struct Light{
-        private:
-        friend class LightArray;
+        //private:
+        //friend class LightArray;
         uint32_t index;
         
-        public:
+        //public:
         glm::vec3 position;
         glm::vec3 color;
         float intensity;
+        float a;
         LIGHT_TYPE type;
         uint8_t active;
         uint8_t b;
         uint8_t c;
     };
     
-    struct LightArrayCreateDescription
+    class LightArray 
     {
-        uint32_t capacity;
-    };
 
-    class LightArray : public MutableGPUResource<LightArray>
-    {
-        friend class GPUResourceManager;
         private:
             std::shared_ptr<GPUResourceManager> m_manager;
-            Handle<GPUBuffer> m_buffer;
+            Handle<GPUBuffer> m_light_buffer;
+            Handle<GPUBuffer> m_lightmetada;
             std::vector<Light> light_content;
             std::vector<uint32_t> light_index;
-            uint32_t active_lights = 0u;
-            bool dirty = false;
+            uint32_t m_active_lights = 0u;
+            uint32_t m_light_capacity = 0u;
+            Light m_default_light;
         public:
             LightArray() = default;
-            LightArray(std::shared_ptr<GPUResourceManager> manager):
-                MutableGPUResource<LightArray>({ //Base Constructor
-                                                    .sharing = SHARING_MODE::EXCLUSIVE,
-                                                    .type = RESOURCE_TYPE::GEOMETRY,
-                                                    .mutability = RESOURCE_MUTABILITY::MUTABLE,
-                                                  }, manager),
-                m_manager(manager) { };
+            LightArray(uint32_t light_capacity, 
+                       Light&& default_light,
+                       std::shared_ptr<GPUResourceManager> manager);
 
             ~LightArray() = default;
             LightArray(const LightArray& other) = default;
+            LightArray(LightArray& other) = default;
 
             uint32_t addLight(Light&& light);
             void removeLight(uint32_t index);
 
-            Light& operator[](int idx){dirty = true; return light_content[idx];};
+            Light& operator[](int idx){return light_content[idx];};
             void update();
-            //Handle<GPUBuffer> operator[](int idx) const{return m_buffers[idx];};
 
-            LightArrayRenderData GetRenderData() {return LightArrayRenderData{};}
-            LightArrayGPUData CreateGPUData() {return LightArrayGPUData{};}
-            bool ReadyForUse(LightArrayGPUData& content){ return !dirty; };
-            void SetContent(LightArrayGPUData& content){};
-            void ReleaseData(LightArrayGPUData& content){};
-            void Release();
+            Handle<GPUBuffer> metadata();
+            Handle<GPUBuffer> light_array();
+
 
     };
 

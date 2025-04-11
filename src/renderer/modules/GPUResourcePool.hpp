@@ -5,6 +5,7 @@
 #include <renderer/resources/GPUBuffer.hpp>
 #include <types/Geometry.hpp>
 #include <types/Texture.hpp>
+#include <types/Lights.hpp>
 
 namespace boitatah{
 

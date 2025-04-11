@@ -20,6 +20,7 @@ add_executable(test_buffer_manager src/examples/test_buffer_manager.cpp)
 add_executable(test_object_manager src/examples/test_object_manager.cpp)
 add_executable(test_multi_write_attachment src/examples/test_multi_write_attachment.cpp)
 add_executable(test_deferred_renderer src/examples/test_deferred_renderer.cpp)
+add_executable(test_lit_deferred_renderer src/examples/test_lit_deferred_renderer.cpp)
 
 
 #-lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
@@ -40,5 +41,6 @@ target_link_libraries(test_buffer_manager ${LIBS})
 target_link_libraries(test_object_manager ${LIBS})
 target_link_libraries(test_multi_write_attachment ${LIBS})
 target_link_libraries(test_deferred_renderer ${LIBS})
+target_link_libraries(test_lit_deferred_renderer ${LIBS})
 
 

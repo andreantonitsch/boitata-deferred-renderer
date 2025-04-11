@@ -24,6 +24,8 @@ namespace boitatah{
             .name = "render texture pool",
         });
 
+        
+
         // m_fixedTexPool = std::make_unique<Pool<FixedTexture>>(PoolOptions{
         //     .size = 1024,
         //     .dynamic = true,

@@ -35,7 +35,11 @@ namespace boitatah
         //Create the swapchain
         createSwapchain();
 
-
+        m_lightpool = std::make_unique<Pool<LightArray>>(PoolOptions{
+            .size = 5,
+            .dynamic =true,
+            .name = " light pool" 
+        });
 
         //Initialize the VulkanBuffer manager
         m_bufferManager = std::make_shared<BufferManager>(m_vk);
@@ -199,6 +203,28 @@ namespace boitatah
         return BufferedCamera(desc, m_resourceManager);
     }
 
+    void Renderer::setLightArray(const Handle<LightArray> &array)
+    {
+        lights = array;
+    }
+
+    Handle<LightArray> Renderer::createLightArray(uint32_t size)
+    {
+
+        LightArray array(size, 
+                        Light{.color = glm::vec3(1.0, 1.0, 1.0),
+                            .intensity = 1.0,
+                            .type = LIGHT_TYPE::POINT}, 
+                        m_resourceManager);
+
+        return m_lightpool->set(array);
+    }
+
+    LightArray &Renderer::getLightArray(Handle<LightArray> handle)
+    {
+        return m_lightpool->get(handle);
+    }
+
     bool Renderer::isWindowClosed()
     {
         return m_window->isWindowClosed();
@@ -339,16 +365,11 @@ namespace boitatah
 
         auto& shader_mngr = m_materialMngr->getShaderManager();
 
-        //m_resourceManager->waitForTransfers();
         m_resourceManager->beginCommitCommands();
         auto& writer = m_resourceManager->getCurrentBufferWriter();
-        
-        // if(wait_for_last_stage != VK_NULL_HANDLE)
-        //     writer.setWait(wait_for_last_stage);
 
         m_vk->beginCmdBuffer({.commandBuffer = buffers.drawBuffer.buffer});
 
-        //std::cout << "began buffer" << std::endl;
         beginRenderpass({
             .commandBuffer = buffers.drawBuffer,
             .pass = pass,
@@ -370,16 +391,15 @@ namespace boitatah
                 break;
             }
         }
+
         //binds the base pipeline for this stage type;
-        // auto& base_material = m_materialMngr->getMaterialContent(base_mat_handle);
-        if(!m_materialMngr->BindMaterial(base_mat_handle, frame_index, buffers.drawBuffer))
-            std::runtime_error("failed to bind base pipeline");
+        // if(!m_materialMngr->BindMaterial(base_mat_handle, frame_index, buffers.drawBuffer))
+        //     std::runtime_error("failed to bind base pipeline");
 
         //Bind Pipeline <-- relevant when shader is reused.
         Handle<Shader> boundPipeline;
         Handle<Geometry> boundVertices;
         std::vector<VERTEX_BUFFER_TYPE> boundVertexTypes;
-
         for (const auto &node : ordered_nodes)
         {
             //skip empty node
@@ -393,11 +413,9 @@ namespace boitatah
             if( !((1u << stage.stage_index) &  material.stage_mask)){
                 continue;
             }
-
             m_materialMngr->BindMaterial(node->material, frame_index, buffers.drawBuffer);
             
             Handle<Shader>& shader = material.shader;
-            
             // TODO separate to avoid rebinding when drawing a lot of the same object
             bindVertexBuffers({
                 .commandBuffer = buffers.drawBuffer,
@@ -420,7 +438,6 @@ namespace boitatah
                     .stages = SHADER_STAGE::ALL_GRAPHICS
                 }}}
             );
-
             // //draw one node to target.
             write_draw_command(*node, stage.target, m_backBufferManager->getCurrentIndex());
         }
@@ -487,7 +504,7 @@ namespace boitatah
         std::vector<VkDeviceSize> offsets; 
         std::vector<VkBuffer> buffers;
 
-        for (std::size_t i = 0; i < 3; i++)
+        for (std::size_t i = 0; i < command.vertex_buffers.size(); i++)
         {
             offsets.push_back(static_cast<VkDeviceSize>(bufferData[i].offset));
             buffers.push_back(bufferData[i].buffer->getBuffer());

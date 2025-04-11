@@ -196,18 +196,6 @@ namespace boitatah::buffer
         return false;
     }
 
-    // void BufferManager::queueingBufferUpdates()
-    // {
-    //     //std::cout << "queue buffer updates" << std::endl;
-    //     for(auto& handle : activeBuffers){
-    //         Buffer*& buffer = bufferPool.get(handle);
-
-    //         if(buffer != nullptr && buffer->hasUpdates())
-    //             buffer->queueTransfers();
-    //     }
-    //     //std::cout << "finished queue buffer updates" << std::endl;
-    // }
-
     void BufferManager::memoryCopy(uint32_t dataSize, const void *data, Handle<BufferAddress> &handle)
     {
         //TODO handle except
@@ -279,7 +267,7 @@ namespace boitatah::buffer
             if(m_bufferPool.tryGet(address.buffer, buffer))
                 return true;
         }
-        std::cout << "failed get address buffer on buffer " << handle.i << std::endl;
+        std::cout << "failed get address buffer on buffer " << handle.i << " generation " << handle.gen << std::endl;
         return false;
     }
 

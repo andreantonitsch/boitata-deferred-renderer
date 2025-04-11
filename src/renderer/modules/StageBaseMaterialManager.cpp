@@ -90,9 +90,10 @@ namespace boitatah{
             .vertexBufferBindings = {
                 VERTEX_BUFFER_TYPE::POSITION,
                 VERTEX_BUFFER_TYPE::UV, 
+                VERTEX_BUFFER_TYPE::NORMAL,
                 VERTEX_BUFFER_TYPE::COLOR,
             },
-            .name = "unlit material",
+            .name = "lambert material",
         });
         m_material_mngr->setTextureBindingAttribute(material, texture, 1, 0);
         return material;
@@ -102,17 +103,12 @@ namespace boitatah{
     {
         auto compat_stage_handle = m_back_buffer->getCompatibleRenderStage( 1u<< stage_mask);
         auto& compatible_stage = m_back_buffer->getStage(compat_stage_handle);
-        //auto compatible_bindings = m_back_buffer->getStageBinding(compat_stage_handle);
 
         uint32_t stage_index =  compatible_stage.stage_index;
         auto base_mat_handle = getStageBaseMaterial(stage_index);
         auto& base_mat = m_material_mngr->getMaterialContent(base_mat_handle);
         auto override_binding = base_mat.bindings;
-        std::cout << "@@@@ deferred bindings are @@@@" << std::endl; 
-        for(auto& binding : m_material_mngr->getBinding(base_mat.bindings[0]).bindings){
-            std::cout << binding.binding_handle.renderTex.i << std::endl;    
-        }
-        //override_binding.push_back(compatible_bindings);
+
         // create unlit material bindings     
         auto shader = base_shaders[static_cast<uint32_t>(stage_index)]
                                   [static_cast<uint32_t>(ShaderType::Unlit)];
@@ -127,15 +123,48 @@ namespace boitatah{
                 VERTEX_BUFFER_TYPE::UV, 
                 VERTEX_BUFFER_TYPE::COLOR,
             },
-            .name = "unlit material",
+            .name = "unlit compose material",
+        });
+        return material;
+    }
+    Handle<Material> Materials::createLambertDeferredComposeMaterial(uint32_t stage_mask,
+                                                                     uint32_t priority)
+    {
+        auto compat_stage_handle = m_back_buffer->getCompatibleRenderStage( 1u<< stage_mask);
+        auto& compatible_stage = m_back_buffer->getStage(compat_stage_handle);
+
+        uint32_t stage_index =  compatible_stage.stage_index;
+        auto base_mat_handle = getStageBaseMaterial(stage_index);
+        auto& base_mat = m_material_mngr->getMaterialContent(base_mat_handle);
+        auto override_binding = base_mat.bindings;
+
+        // create unlit material bindings     
+        auto shader = base_shaders[static_cast<uint32_t>(stage_index)]
+                                  [static_cast<uint32_t>(ShaderType::Lambert)];
+        auto bindings = m_material_mngr->createBindings(shader.second, override_binding);
+        
+        auto material =  m_material_mngr->createMaterial({
+            .stage_mask = stage_mask,
+            .priority = priority,
+            .shader = shader.first,
+            .bindings = bindings,
+            .vertexBufferBindings = {
+                VERTEX_BUFFER_TYPE::POSITION,
+                VERTEX_BUFFER_TYPE::UV,
+                VERTEX_BUFFER_TYPE::NORMAL,
+                VERTEX_BUFFER_TYPE::COLOR,
+            },
+            .name = "lambert compose material",
         });
         return material;
     };
 
     void Materials::BuildShaderMap()
     {
-        for(std::size_t i = 0; i < m_back_buffer->getStageCount(); ++i)
+        for(std::size_t i = 0; i < m_back_buffer->getStageCount(); ++i){
             BuildUnlitShader(i);
+            BuildLambertShader(i);
+        }
     }
 
     void Materials::BuildUnlitShader(uint32_t stage_index)
@@ -146,7 +175,6 @@ namespace boitatah{
         auto& base_material = m_material_mngr->getMaterialContent(base_material_handle);
         auto& base_shader = m_material_mngr->getShaderManager()
                                           .get(base_material.shader);
-        //auto compatible_bindings = m_back_buffer->getStageBinding(stage_index);
 
         //TODO make this less cumbersome.
         auto setLayouts = m_material_mngr->getShaderManager()
@@ -156,10 +184,6 @@ namespace boitatah{
     
         auto& pass = m_target_mngr->get(stage.target).renderpass;
 
-        // if(compatible_bindings){
-        //     setLayouts.push_back( m_material_mngr->
-        //                             createBindingsSetLayout(compatible_bindings));
-        // }
 
         auto shader_desc = MakeShaderDesc{
                         .name = "unlit shader",
@@ -264,11 +288,15 @@ namespace boitatah{
                                         {//.binding = 0,
                                             .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
                                             .stages = SHADER_STAGE::FRAGMENT,
-                                            .descriptorCount= 2,
+                                            .descriptorCount= 1,
+                                        },
+                                        {//.binding = 0,
+                                            .type = DESCRIPTOR_TYPE::UNIFORM_BUFFER,
+                                            .stages = SHADER_STAGE::FRAGMENT,
+                                            .descriptorCount= 1,
                                         }
                                         }
                                     });
-        setLayouts.push_back(lights_layout);
 
         //TODO make this less hardcoded.
         switch(stage.type){
@@ -286,29 +314,29 @@ namespace boitatah{
                 setLayouts.push_back(texture_layout);
 
                 shader_desc.vert = {.byteCode =  utils::readFile(
-                                            "./shaders/base_shaders/unlit_camera_mat.vert.spv"),
+                                            "./shaders/base_shaders/lit_camera_mat.vert.spv"),
                                     .entryFunction = "main"};
 
                 if(stage.description.attachments.size() == 2){
                     shader_desc.frag=  { .byteCode =  utils::readFile(
-                                                "./shaders/base_shaders/unlit_material_forward.frag.spv"),
+                                                "./shaders/base_shaders/lambert_material_forward.frag.spv"),
                                         .entryFunction = "main"};}
 
                 if(stage.description.attachments.size() == 4){
                     std::cout << "building defered unlit camera shader" << std::endl;
                     shader_desc.frag=  { .byteCode =  utils::readFile(
-                                                "./shaders/base_shaders/unlit_material_deferred.frag.spv"),
+                                                "./shaders/base_shaders/lit_material_deferred.frag.spv"),
                                         .entryFunction = "main"};}
                 break;
             }
             case StageType::SCREEN_QUAD:
                 std::cout << "building defered unlit compose shader" << std::endl;
-\
+                setLayouts.push_back(lights_layout);
                 shader_desc.vert = {.byteCode =  utils::readFile(
                                             "./shaders/base_shaders/base_screen_quad.vert.spv"),
                                     .entryFunction = "main"};
                 shader_desc.frag = {.byteCode =  utils::readFile(
-                                            "./shaders/base_shaders/unlit_deferred_compose.frag.spv"),
+                                            "./shaders/base_shaders/lambert_deferred_compose.frag.spv"),
                                     .entryFunction = "main"};
                 break;
 
@@ -332,7 +360,7 @@ namespace boitatah{
                       ->getShaderManager()
                       .makeShader(shader_desc);
 
-        base_shaders[stage_index][static_cast<uint32_t>(ShaderType::Unlit)] = {
+        base_shaders[stage_index][static_cast<uint32_t>(ShaderType::Lambert)] = {
             shader, shader_layout
         };   
     }
@@ -353,7 +381,8 @@ namespace boitatah{
                         });
         auto uniforms = m_material_mngr->createBinding(base_setLayout);
 
-        std::vector<VertexBindings> vertex_bindings = {{.stride = 12, 
+        std::vector<VertexBindings> vertex_bindings = {
+                                {.stride = 12, 
                                 .attributes = {{.location = 0, 
                                                 .format = IMAGE_FORMAT::RGB_32_SFLOAT, 
                                                 .offset = 0}}},
@@ -363,6 +392,10 @@ namespace boitatah{
                                                 .offset = 0}}},
                                 {.stride = 12, 
                                 .attributes = {{.location = 2, 
+                                                .format = IMAGE_FORMAT::RGB_32_SFLOAT, 
+                                                .offset = 0}}},
+                                {.stride = 12, 
+                                .attributes = {{.location = 3, 
                                                 .format = IMAGE_FORMAT::RGB_32_SFLOAT, 
                                                 .offset = 0}}}};
 

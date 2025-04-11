@@ -23,7 +23,7 @@ layout(set = 1, binding = 0) uniform LightData1{
     uint active_lights;
 };
 
-layout(set = 1, binding = 1) uniform LightData2{\
+layout(set = 1, binding = 1) uniform LightData2{
     LightData[9999] light_points;
 };
 
@@ -32,10 +32,6 @@ void main() {
     vec4 albedo = texture(color_tex , UV);
     vec4 position = texture(position_tex , UV);
     vec4 normal = texture(normal_tex , UV);
-
-
-
-
 
 
     color = albedo;
