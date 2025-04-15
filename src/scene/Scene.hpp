@@ -65,8 +65,8 @@ namespace boitatah
             {
                 m_localTransform = glm::mat4(1.0f);
                 scale(desc.scale);
-                translate(desc.position);
                 rotate(desc.rotation);
+                translate(desc.position);
             }
 
             void sceneAsList(std::vector<SceneNode*> &sceneList) const
@@ -99,7 +99,7 @@ namespace boitatah
                                                             eulerAngles.y,
                                                             eulerAngles.z);
 
-                m_localTransform = rotationMatrix * m_localTransform;
+                m_localTransform = m_localTransform * rotationMatrix;
             }
 
             void translate(const glm::vec3 &translation)
@@ -107,6 +107,14 @@ namespace boitatah
                 dirty();
                 m_localTransform = glm::translate(m_localTransform,
                                                 translation);
+            }
+
+            void set_position(const glm::vec3 &position)
+            {
+                dirty();
+                m_localTransform[3][0] = position.x;
+                m_localTransform[3][1] = position.y;
+                m_localTransform[3][2] = position.z;
             }
 
             void updateGlobalMatrix()

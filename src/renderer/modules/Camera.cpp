@@ -135,8 +135,8 @@ namespace boitatah
 
     void Camera::updateView(){
         m_view = glm::lookAtLH(m_position,
-                             m_position + getDirection(),
-                             m_up);
+                              m_position + getDirection(),
+                              m_up);
         m_dirty_view = false;
     }
     void Camera::updateProj() {

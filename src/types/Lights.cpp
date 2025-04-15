@@ -7,7 +7,7 @@ namespace boitatah{
       m_default_light(default_light),
       m_manager(manager){
         
-        light_content.reserve(light_capacity);
+        light_content.resize(light_capacity);
         std::fill(light_content.begin(), light_content.end(), default_light);
         m_lightmetada = m_manager->create(GPUBufferCreateDescription{
             .size = sizeof(uint32_t) * 100,
@@ -22,7 +22,7 @@ namespace boitatah{
         });
 
         std::cout << "light array created at buffers " << m_light_buffer.i << " and " << m_lightmetada.i << std::endl;
-
+        m_active_lights = 0;
     };
 
     uint32_t LightArray::addLight(Light &&light)
@@ -37,7 +37,7 @@ namespace boitatah{
     void LightArray::update()
     {
         m_manager->getResource(m_light_buffer).copyData(light_content.data(),
-                                                  m_active_lights * sizeof(Light));
+                                                        m_active_lights * sizeof(Light));
         m_manager->getResource(m_lightmetada).copyData(&m_active_lights, sizeof(uint32_t));
     }
 

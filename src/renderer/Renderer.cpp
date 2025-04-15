@@ -212,7 +212,7 @@ namespace boitatah
     {
 
         LightArray array(size, 
-                        Light{.color = glm::vec3(1.0, 1.0, 1.0),
+                        Light{.color = glm::vec4(1.0, 1.0, 1.0, 0.0),
                             .intensity = 1.0,
                             .type = LIGHT_TYPE::POINT}, 
                         m_resourceManager);

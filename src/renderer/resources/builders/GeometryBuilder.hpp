@@ -139,10 +139,10 @@ namespace boitatah{
                 {1.0f, 1.0f}},
 
             .normal = {
-                {0.0f, 0.0f, 1.0f},
-                {0.0f, 0.0f, 1.0f},
-                {0.0f, 0.0f, 1.0f},
-                {0.0f, 0.0f, 1.0f},},
+                {0.0f, 0.0f, -1.0f},
+                {0.0f, 0.0f, -1.0f},
+                {0.0f, 0.0f, -1.0f},
+                {0.0f, 0.0f, -1.0f},},
 
             .indices = {0U, 1U, 2U,
                         1U, 3U, 2U,
@@ -355,6 +355,81 @@ namespace boitatah{
         return cyl;
     };
 
+    static constexpr GeometryBuildData icosahedron(){
+
+        auto phi = glm::golden_ratio<float>();
+
+        auto ihp = 1.0f / phi;
+
+        GeometryBuildData ico{};
+
+        auto center = glm::vec3(0.0f);
+
+        ico.vertices.push_back({0, ihp, -1}); //0
+        ico.vertices.push_back({ihp, 1, 0});  //1
+        ico.vertices.push_back({-ihp, 1, 0}); //2
+        ico.vertices.push_back({0, ihp, 1});  //3
+        ico.vertices.push_back({0, -ihp, 1}); //4
+
+        ico.vertices.push_back({-1, 0, ihp}); //5
+        ico.vertices.push_back({0, -ihp, -1});//6
+        ico.vertices.push_back({1, 0, -ihp});  //7
+        ico.vertices.push_back({1, 0, ihp}); //8
+        ico.vertices.push_back({-1, 0, -ihp}); //9
+
+        ico.vertices.push_back({ihp, -1, 0}); //10
+        ico.vertices.push_back({-ihp, -1,  0}); //11
+
+        for(int i = 0; i < 12; i++)
+            ico.color.push_back(glm::vec3(1));
+
+        for(int i = 0; i < 12; i++){
+            
+            auto vert = ico.vertices[i];
+            auto u = glm::atan2<float, glm::highp>(vert.z, vert.x) * glm::one_over_two_pi<float>();
+            // auto u = glm::atan2<float>(glm::vec2(vert.z, vert.x)) / glm::two_pi<float>();
+            auto v = asin(vert.y) / glm::pi<float>() + 0.5f;
+            ico.uv.push_back({u,v});
+        }
+
+        for(int i = 0; i < 12; i++){
+            ico.vertices[i] = glm::normalize(ico.vertices[i]);
+            ico.normal.push_back(ico.vertices[i]);
+        }
+
+        //faces
+        ico.indices = { 1,   2,   0, //
+                        2,   1,   3,
+                        4,   5,   3,
+                        8,   4,   3,
+                        6,   7,   0,
+                        9 ,  6 ,  0,
+                        10,  11,  4,
+                        11,   10,   6,
+                        5,   9,   2, 
+                        9,   5,   11,
+                        7,   8,   1,
+                        8,   7,   10,
+                        5,   2,   3,
+                        1,   8,   3,
+                        2,   9,  0,
+                        7,   1,   0,
+                        9,   11,   6,
+                        10,  7,  6,
+                        11,  5,   4,
+                        8,   10,  4  };
+        
+
+        return ico;
+
+    };
+
+    //https://catlikecoding.com/unity/tutorials/procedural-meshes/cube-sphere/
+    static constexpr GeometryBuildData cube();
+    static constexpr GeometryBuildData cube_sphere();
+    static constexpr GeometryBuildData to_sphere(GeometryBuildData& mesh);
+    static constexpr GeometryBuildData sub_div(GeometryBuildData& mesh);
+
  
     class GeometryBuilder{
         private:
@@ -460,6 +535,9 @@ namespace boitatah{
             static Handle<Geometry> Pipe(Renderer& renderer, float radius, float height, float heightSegments, uint32_t sides);
             
             static Handle<Geometry> Capsule(GPUResourceManager& manager, float radius, float height, float heightSegments, uint32_t sides);
+
+            static Handle<Geometry> Icosahedron(GPUResourceManager& manager);
+            static Handle<Geometry> Icosahedron(Renderer& renderer);
 
     };
 

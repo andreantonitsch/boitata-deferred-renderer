@@ -25,6 +25,6 @@ layout(set = 1, binding = 0) uniform sampler2D color_tex;
 
 void main() {
     color = texture(color_tex, UV) * vec4(vertexColor, 1.0);
-    normal = vec4(normal.xyz, 1.0);
+    normal = vec4(normalize(vertexNormal.xyz), 1.0);
     position = vertexPosition;
 }

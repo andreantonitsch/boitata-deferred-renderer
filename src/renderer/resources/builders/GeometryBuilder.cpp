@@ -225,4 +225,20 @@ namespace boitatah{
     {
         return GeometryBuilder::Quad(renderer.getResourceManager());
     }
+
+
+    Handle<Geometry> GeometryBuilder::Icosahedron(
+                                            GPUResourceManager &manager)
+    {
+        auto builder = createGeometry(manager);
+        Handle<Geometry> geo = builder.geometryFromGeometryData(icosahedron());
+        return geo;
+    }
+
+    Handle<Geometry> GeometryBuilder::Icosahedron(Renderer& renderer)
+    {
+        return GeometryBuilder::Icosahedron(renderer.getResourceManager());
+    }
+
+
 }

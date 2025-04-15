@@ -23,19 +23,19 @@ namespace boitatah
     }; 
 
     struct Light{
-        //private:
-        //friend class LightArray;
-        uint32_t index;
         
         //public:
-        glm::vec3 position;
-        glm::vec3 color;
+        glm::vec4 position;
+        glm::vec4 color;
         float intensity;
         float a;
         LIGHT_TYPE type;
         uint8_t active;
         uint8_t b;
         uint8_t c;
+        //private:
+        //friend class LightArray;
+        uint32_t index;
     };
     
     class LightArray 

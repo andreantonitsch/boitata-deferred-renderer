@@ -25,7 +25,7 @@ layout(set = 0, binding = 0) uniform Camera{
 void main() {
     vertexPosition =  PushConstants.model * vec4(position, 1.0);
     gl_Position = camera_data.vp * vertexPosition;
-    vertexNormal = camera_data.vp * PushConstants.model * vec4(normal, 0.0);
+    vertexNormal = normalize(PushConstants.model * vec4(normal, 0.0));
     vertexColor = color;
     outUV = inUV;
 }
