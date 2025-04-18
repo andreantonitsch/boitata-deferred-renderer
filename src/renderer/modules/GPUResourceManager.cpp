@@ -1,9 +1,7 @@
 #include "GPUResourceManager.hpp"
 #include "../resources/GPUBuffer.hpp"
 #include "../resources/GPUResource.hpp"
-#include <types/Geometry.hpp>
 #include "../../types/BttEnums.hpp"
-#include <types/Texture.hpp>
 
 namespace boitatah{
     GPUResourceManager::GPUResourceManager( std::shared_ptr<vk::Vulkan>  vk_instance,

@@ -52,9 +52,6 @@ namespace boitatah::vk
 
         bool depth = false;
         uint32_t attachmentCount = 1;
-        
-        // glm::ivec2 viewportDims;
-        // glm::ivec2 viewportOffset;
     };
     struct EndRenderpassCommandVk{
         VkCommandBuffer commandBuffer;

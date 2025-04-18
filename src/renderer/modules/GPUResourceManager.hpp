@@ -14,7 +14,7 @@
 #include "GPUResourcePool.hpp"
 #include <renderer/resources/GPUBuffer.hpp>
 #include <types/Texture.hpp>
-#include <types/Geometry.hpp>
+#include <renderer/resources/Geometry.hpp>
 
 #include <command_buffers/CommandBufferWriter.hpp>
 

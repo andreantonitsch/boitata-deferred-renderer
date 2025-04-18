@@ -6,7 +6,7 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 #include "../../types/RenderTarget.hpp"
-#include "../../types/BackBufferDesc.hpp"
+#include <renderer/modules/BackBufferDesc.hpp>
 #include <renderer/modules/RenderTargetManager.hpp>
 #include <renderer/modules/MaterialManager.hpp>
 #include <types/Material.hpp>

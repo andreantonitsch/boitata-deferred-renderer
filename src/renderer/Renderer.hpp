@@ -12,7 +12,7 @@
 #include <vulkan/Vulkan.hpp>
 #include "../vulkan/Window.hpp"
 
-#include "../types/BackBufferDesc.hpp"
+#include <renderer/modules/BackBufferDesc.hpp>
 #include "../types/BttEnums.hpp"
 #include "../types/Shader.hpp"
 #include "../types/commands/CommandBuffer.hpp"
@@ -25,7 +25,7 @@
 
 #include <renderer/modules/ImageManager.hpp>
 #include <renderer/modules/RenderTargetManager.hpp>
-#include "modules/GPUResourceManager.hpp"
+#include <renderer/modules/GPUResourceManager.hpp>
 #include "modules/BackBuffer.hpp"
 #include "modules/Swapchain.hpp"
 #include "modules/Camera.hpp"
@@ -59,6 +59,13 @@ namespace boitatah
         BackBufferDesc2 backBufferDesc2;
     };
 
+    struct RenderObject{
+        Handle<Geometry> geometry;
+        Handle<Material> material;
+    };
+
+    typedef SceneNode<RenderObject>  RenderScene;
+
     class Renderer
     {
     public:
@@ -88,14 +95,14 @@ namespace boitatah
         void waitIdle();
 
         // Render Methods
-        void write_draw_command(SceneNode &scene, const Handle<RenderTarget> &rendertarget, uint32_t frameIndex);
-        void render_graph(SceneNode &scene, BufferedCamera &camera);
-        VkSemaphore render_graph_stage(SceneNode            &scene, 
-                                        BufferedCamera      &camera, 
-                                        Handle<RenderStage> stage,
-                                        VkSemaphore         wait_for_last_stage);
-        void present_graph(SceneNode    &scene,
-                           Camera       &camera);
+        void write_draw_command(RenderScene &scene, const Handle<RenderTarget> &rendertarget, uint32_t frameIndex);
+        void render_graph(RenderScene &scene, BufferedCamera &camera);
+        VkSemaphore render_graph_stage(RenderScene                  &scene, 
+                                        BufferedCamera              &camera, 
+                                        Handle<RenderStage>         stage,
+                                        VkSemaphore                 wait_for_last_stage);
+        void present_graph(RenderScene              &scene,
+                           Camera                   &camera);
         void presentRenderTargetNow(Handle<RenderTarget>    &rendertarget,
                                     VkSemaphore             stage_wait,
                                     uint32_t                attachment_index);
@@ -161,7 +168,8 @@ namespace boitatah
         void handleWindowResize();
         void createSwapchain();
 
-        std::vector<SceneNode*> orderSceneNodes(const std::vector<SceneNode*>& nodes) const;
+        std::vector<std::shared_ptr<RenderScene>> 
+        orderSceneNodes(const std::vector<std::shared_ptr<RenderScene>> &nodes) const;
 
         // Options Members
         RendererOptions m_options;

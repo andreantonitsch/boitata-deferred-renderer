@@ -112,24 +112,25 @@ namespace boitatah
         m_swapchain->createSwapchain(); // options.windowDimensions, false, false);
     }
 
-    std::vector<SceneNode *> Renderer::orderSceneNodes(const std::vector<SceneNode *> &nodes) const
+    std::vector<std::shared_ptr<RenderScene>> 
+    Renderer::orderSceneNodes(const std::vector<std::shared_ptr<RenderScene>> &nodes) const
     {
         // BIN THE NODES ACCORDING TO THE MATERIAL ORDER 
         auto cpy_nodes = nodes;
-        std::vector<std::vector<SceneNode*>>bins;
+        std::vector<std::vector<std::shared_ptr<RenderScene>>>  bins;
         auto& material_order = m_materialMngr->orderMaterials();
         for(auto& material : material_order){
             bins.push_back({});
 
             auto it = cpy_nodes.begin();
-            it = std::find_if(it, cpy_nodes.end(),[&material](SceneNode*& node){
-                return node->material == material;
+            it = std::find_if(it, cpy_nodes.end(),[&material](std::shared_ptr<RenderScene> node){
+                return node->content.material == material;
             });
             while(it != cpy_nodes.end()){
                 bins.back().push_back(*it);
                 it = cpy_nodes.erase(it);
-                            it = std::find_if(it, cpy_nodes.end(),[&material](SceneNode*& node){
-                return node->material == material;
+                            it = std::find_if(it, cpy_nodes.end(),[&material](std::shared_ptr<RenderScene> node){
+                return node->content.material == material;
             });
             }
         }
@@ -237,7 +238,7 @@ namespace boitatah
         m_vk->waitIdle();
     }
 
-    void Renderer::write_draw_command(SceneNode &scene,
+    void Renderer::write_draw_command(RenderScene &scene,
                                         const Handle<RenderTarget> &rendertarget,
                                         uint32_t frameIndex = 0)
     {
@@ -254,7 +255,7 @@ namespace boitatah
         RenderTargetSync& buffers = m_renderTargetManager->get(target.sync);
 
         // vertex and mesh data
-        Geometry geom = m_resourceManager->getResource(scene.geometry);
+        Geometry geom = m_resourceManager->getResource(scene.content.geometry);
         drawCommand({
             .drawBuffer = buffers.drawBuffer,
             .indexCount = geom.IndexCount(),
@@ -317,7 +318,7 @@ namespace boitatah
         }
     }
 
-    void Renderer::render_graph(SceneNode &scene, BufferedCamera &camera)
+    void Renderer::render_graph(RenderScene &scene, BufferedCamera &camera)
     {
         auto& backbuffer = m_backBufferManager->getNext_Graph();
         m_descriptorManager->resetPools(m_backBufferManager->getCurrentIndex());
@@ -333,19 +334,19 @@ namespace boitatah
         presentRenderTargetNow(present_target, last_stage_wait, present_target_index);
     }
 
-    VkSemaphore Renderer::render_graph_stage(SceneNode &scene, 
+    VkSemaphore Renderer::render_graph_stage(RenderScene &scene, 
                                       BufferedCamera &camera, 
                                       Handle<RenderStage> stage_handle,
                                       VkSemaphore wait_for_last_stage)
     {
 
-        std::vector<SceneNode *> nodes;
+        std::vector<std::weak_ptr<RenderScene>> nodes;
         scene.sceneAsList(nodes);
 
         // TODO cullings and whatever
         // ETC
         
-        auto ordered_nodes = orderSceneNodes(nodes);
+        auto ordered_nodes = nodes;//orderSceneNodes(nodes);
         
         auto& stage = m_backBufferManager->getStage(stage_handle);
         //std::cout << "drawing stage " << stage.stage_index <<std::endl;
@@ -400,27 +401,28 @@ namespace boitatah
         Handle<Shader> boundPipeline;
         Handle<Geometry> boundVertices;
         std::vector<VERTEX_BUFFER_TYPE> boundVertexTypes;
-        for (const auto &node : ordered_nodes)
+        for (const auto &node_weak : ordered_nodes)
         {
+            auto node = std::shared_ptr<RenderScene>(node_weak);
             //skip empty node
-            if (!node->material)
+            if (!node->content.material)
             {
                 continue;
             }
-            auto& material = m_materialMngr->getMaterialContent(node->material);
+            auto& material = m_materialMngr->getMaterialContent(node->content.material);
 
             //skip wrong stage node
             if( !((1u << stage.stage_index) &  material.stage_mask)){
                 continue;
             }
-            m_materialMngr->BindMaterial(node->material, frame_index, buffers.drawBuffer);
+            m_materialMngr->BindMaterial(node->content.material, frame_index, buffers.drawBuffer);
             
             Handle<Shader>& shader = material.shader;
             // TODO separate to avoid rebinding when drawing a lot of the same object
             bindVertexBuffers({
                 .commandBuffer = buffers.drawBuffer,
                 .frame = m_backBufferManager->getCurrentIndex(),
-                .geometry = node->geometry,
+                .geometry = node->content.geometry,
                 .bindIndex = true,
                 .vertex_buffers = material.vertexBufferBindings
             });

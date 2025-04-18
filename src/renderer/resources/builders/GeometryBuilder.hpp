@@ -4,13 +4,14 @@
 
 #include <buffers/BufferManager.hpp>
 #include <types/BttEnums.hpp>
-#include <types/Geometry.hpp>
+#include <renderer/resources/Geometry.hpp>
 #include <renderer/resources/GPUBuffer.hpp>
-#include <renderer/Renderer.hpp>
+//#include <renderer/Renderer.hpp>
 #include <renderer/modules/GPUResourceManager.hpp>
 #include <collections/Pool.hpp>
 #include <memory>
 #include <utils/utils.hpp>
+
 namespace boitatah{
 
     struct GeometryBuildData
@@ -447,12 +448,12 @@ namespace boitatah{
             Handle<Geometry> geometryFromGeometryData(const GeometryBuildData& data);
         public:
             static GeometryBuilder createGeometry(GPUResourceManager& manager);
-            static GeometryBuilder createGeometry(Renderer& renderer);
+            //static GeometryBuilder createGeometry(Renderer& renderer);
             static std::vector<glm::vec3> computeSmoothNormals(const std::vector<glm::vec3>& vertices);
             static std::vector<glm::vec3> computeFlatNormals(const std::vector<glm::vec3>& vertices);
 
             static GeometryBuilder createProceduralGeometry(GPUResourceManager& manager);
-            static GeometryBuilder createProceduralGeometry(Renderer& renderer);
+            //static GeometryBuilder createProceduralGeometry(Renderer& renderer);
 
             GeometryBuilder(GPUResourceManager& manager) : m_manager(manager){};
             
@@ -514,30 +515,30 @@ namespace boitatah{
 
 
             static Handle<Geometry> Triangle(GPUResourceManager& manager);
-            static Handle<Geometry> Triangle(Renderer& renderer);
+            // static Handle<Geometry> Triangle(Renderer& renderer);
 
             static Handle<Geometry> Quad(GPUResourceManager& manager);
-            static Handle<Geometry> Quad(Renderer& renderer);
+            // static Handle<Geometry> Quad(Renderer& renderer);
 
             static Handle<Geometry> Plane(GPUResourceManager& manager, float width, float height, uint32_t widthDiv, uint32_t heightDiv);
-            static Handle<Geometry> Plane(Renderer& renderer, float width, float height, uint32_t widthDiv, uint32_t heightDiv);
+            // static Handle<Geometry> Plane(Renderer& renderer, float width, float height, uint32_t widthDiv, uint32_t heightDiv);
 
             static Handle<Geometry> Sphere(GPUResourceManager& manager, float radius, uint32_t detail);
-            static Handle<Geometry> Sphere(Renderer& renderer, float radius, uint32_t detail);
+            // static Handle<Geometry> Sphere(Renderer& renderer, float radius, uint32_t detail);
 
             static Handle<Geometry> Circle(GPUResourceManager& manager, float radius, uint32_t sides);
-            static Handle<Geometry> Circle(Renderer& renderer, float radius, uint32_t sides);
+            // static Handle<Geometry> Circle(Renderer& renderer, float radius, uint32_t sides);
 
             static Handle<Geometry> Cylinder(GPUResourceManager& manager, float radius, float height, float heightSegments, uint32_t sides);
-            static Handle<Geometry> Cylinder(Renderer& renderer, float radius, float height, float heightSegments, uint32_t sides);
+            // static Handle<Geometry> Cylinder(Renderer& renderer, float radius, float height, float heightSegments, uint32_t sides);
             
             static Handle<Geometry> Pipe(GPUResourceManager& manager, float radius, float height, float heightSegments, uint32_t sides);
-            static Handle<Geometry> Pipe(Renderer& renderer, float radius, float height, float heightSegments, uint32_t sides);
+            // static Handle<Geometry> Pipe(Renderer& renderer, float radius, float height, float heightSegments, uint32_t sides);
             
             static Handle<Geometry> Capsule(GPUResourceManager& manager, float radius, float height, float heightSegments, uint32_t sides);
 
             static Handle<Geometry> Icosahedron(GPUResourceManager& manager);
-            static Handle<Geometry> Icosahedron(Renderer& renderer);
+            // static Handle<Geometry> Icosahedron(Renderer& renderer);
 
     };
 

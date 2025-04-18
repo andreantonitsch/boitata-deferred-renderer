@@ -39,35 +39,35 @@ int main()
     Handle<Geometry> pipe =     GeometryBuilder::Pipe(r.getResourceManager(), 0.5, 2.0, 10, 32);
 
     std::cout << "creating scene node" << std::endl;
-    SceneNode triangleNode({
+    RenderScene triangleNode({
         .name = "triangle",
-        .geometry = triangle,
-        .material = material,
+        .content = RenderObject{.geometry = triangle,
+                    .material = material,},
         .position = glm::vec3(-3.0f, 0, 0),
     });
-    SceneNode quadNode({
+    RenderScene quadNode({
         .name = "quad",
-        .geometry = quad,
-        .material = material,
+        .content = {.geometry = quad,
+        .material = material},
         .position = glm::vec3(-1.5f, 0, 0),
     });
 
-    SceneNode circleNode({
+    RenderScene circleNode({
         .name = "circle",
-        .geometry = circle,
-        .material = material,
+        .content = {.geometry = circle,
+        .material = material},
         .position = glm::vec3(0.0f, 0, 0),
     });
 
-    SceneNode pipeNode({
+    RenderScene pipeNode({
         .name = "pipe",
-        .geometry = pipe,
-        .material = material,
+        .content = {.geometry = pipe,
+        .material = material},
         .position = glm::vec3(1.5f, 0, 0),
     });
 
     // Scene Description.
-    SceneNode scene({.name = "root scene"});
+    RenderScene scene({.name = "root scene"});
     scene.add(&pipeNode);
     scene.add(&triangleNode);
     scene.add(&quadNode);
@@ -76,10 +76,10 @@ int main()
     std::cout << "creating deferred composer material" << std::endl;
     auto composer_material = r.getMaterials().createUnlitDeferredComposeMaterial(1, 150u);
 
-    SceneNode composerNode({
+    RenderScene composerNode({
         .name = "composer",
-        .geometry = quad,
-        .material = composer_material,
+        .content{.geometry = quad,
+        .material = composer_material},
     });
     scene.add(&composerNode);
 

@@ -12,29 +12,28 @@
 
 
 #include <vector>
-#include "../types/Shader.hpp"
-#include "../types/Material.hpp"
-#include <optional>
 #include <string>
-#include "../types/Geometry.hpp"
+#include <memory>
 
 namespace boitatah
 {
 
+    template<typename T>
     struct SceneNode;
 
+    template<typename T>  
     struct SceneNodeDesc
     {
         std::string name = "node";
-        std::vector<SceneNode *> children;
-        std::optional<SceneNode *> parentNode;
-        Handle<Geometry> geometry = Handle<Geometry>();
-        Handle<Material> material = Handle<Material>();
+        std::vector<std::shared_ptr<SceneNode<T>>> children;
+        std::shared_ptr<SceneNode<T>> parentNode;
+        T content;
         glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f);
     };
 
+    template<typename T>
     struct SceneNode
     {
         private:
@@ -42,26 +41,20 @@ namespace boitatah
 
         public:
             std::string name = "node";
-            std::vector<SceneNode *> children;
-            std::optional<SceneNode *> parentNode;
-            Handle<Material> material;
+            std::vector<std::shared_ptr<SceneNode<T>>> children;
+            std::shared_ptr<SceneNode<T>> parentNode;
 
             // Transform
             glm::mat4 m_localTransform;
             glm::mat4 m_globalTransform;
             std::vector<void*> customPushConstants;
-
-            // Mesh
-            Handle<Geometry> geometry;
-
-            // Material
+            T content;
 
             // Constructor
-            SceneNode(const SceneNodeDesc &desc) : material(desc.material),
-                                            //children(desc.children),
-                                            name(desc.name),
-                                            //parentNode(desc.parentNode),
-                                            geometry(desc.geometry)
+            SceneNode(const SceneNodeDesc<T> &desc) : content(desc.content),
+                                                   name(desc.name),
+                                                   parentNode(desc.parentNode),
+                                                   children(desc.children)
             {
                 m_localTransform = glm::mat4(1.0f);
                 scale(desc.scale);
@@ -69,13 +62,14 @@ namespace boitatah
                 translate(desc.position);
             }
 
-            void sceneAsList(std::vector<SceneNode*> &sceneList) const
+            void sceneAsList(std::vector<std::weak_ptr<SceneNode<T>>> &sceneList) const
             {
                 sceneList.insert(sceneList.end(), children.begin(), children.end());
 
                 for (const auto &child : children)
                 {
-                    child->sceneAsList(sceneList);
+                    auto child_ptr = std::shared_ptr<SceneNode<T>>(child);
+                    child_ptr->sceneAsList(sceneList);
                 }
             }
 
@@ -89,7 +83,7 @@ namespace boitatah
             {
                 dirty();
                 m_localTransform = glm::rotate(m_localTransform,
-                                            angle_radians, axis);
+                                            angle_radians, axis);   
             }
 
             void rotate(const glm::vec3 &eulerAngles)
@@ -119,9 +113,9 @@ namespace boitatah
 
             void updateGlobalMatrix()
             {
-                if (parentNode.has_value())
+                if (parentNode != nullptr)
                 {
-                    m_globalTransform = parentNode.value()->getGlobalMatrix() *
+                    m_globalTransform = parentNode->getGlobalMatrix() *
                                         m_localTransform;
                 }
                 else
@@ -147,10 +141,16 @@ namespace boitatah
                 }
             }
 
-            void add(SceneNode* node){
-                children.push_back(node);
+            void add(SceneNode<T>* node){
+                children.push_back(std::shared_ptr<SceneNode<T>>(node));
                 node->dirty();
-                node->parentNode = this;
+                node->parentNode = std::shared_ptr<SceneNode<T>>(this);
+            }
+
+            void add(std::shared_ptr<SceneNode<T>> node){
+                children.push_back(std::weak_ptr<SceneNode<T>>(node));
+                node->dirty();
+                node->parentNode = std::shared_ptr<SceneNode<T>>(this);
             }
     };
 }

@@ -25,7 +25,7 @@ int main()
                 });
 
     Handle<RenderTexture> texture = utils::TextureLoader::loadRenderTexture(
-                                        std::string("./resources/UV_checker1k.png"),
+                                        std::string("./resources/UV_checker2k.png"),
                                         IMAGE_FORMAT::RGBA_8_SRGB,
                                         TextureMode::READ, SamplerData(),
                                         r.getResourceManager());
@@ -37,22 +37,22 @@ int main()
     //Handle<Geometry> pipe =     GeometryBuilder::Cylinder(r.getResourceManager(), 0.5, 2.0, 10, 32);
     Handle<Geometry> pipe =     GeometryBuilder::Icosahedron(r.getResourceManager());
 
-    SceneNode scene({.name = "root scene"});
-    std::vector<SceneNode> nodes;
+    RenderScene scene({.name = "root scene"});
+    std::vector<RenderScene> nodes;
 
-    SceneNode floor({
+    RenderScene floor({
         .name = "pipe",
-        .geometry = quad,
-        .material = material,
+        .content = {.geometry = quad,
+        .material = material},
         .position = glm::vec3(0, 0.0, 0),
         .rotation = glm::vec3(glm::radians(-90.0), 0, 0),
         .scale = glm::vec3(100, 1.0, 100.0)
     });
 
-    SceneNode ico({
+    RenderScene ico({
         .name = "pipe",
-        .geometry = pipe,
-        .material = material,
+        .content = {.geometry = pipe,
+        .material = material},
         .position = glm::vec3(0, 0, 0),
     });
 
@@ -89,10 +89,10 @@ int main()
     
     r.getMaterialManager().printMaterial(composer_material);
     
-    SceneNode composerNode({
+    RenderScene composerNode({
         .name = "composer",
-        .geometry = quad,
-        .material = composer_material,
+        .content = {.geometry = quad,
+        .material = composer_material},
     });
     scene.add(&composerNode);
 
@@ -120,8 +120,9 @@ int main()
                                              dist * ((cos((t * i)/25+0.001) * i / 20)),
                                             0);
         lights.update();
-        //camera.lookAt(glm::vec3(0));
-        //camera.setPosition(glm::float3(0,-45 * abs(sin(t/50)) -5, -5));
+        camera.setPosition(glm::float3(0,-45 * abs(sin(t/20)) -5, -5));
+        camera.lookAt(glm::vec3(0));
+
         r.render_graph(scene, camera);
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
     }

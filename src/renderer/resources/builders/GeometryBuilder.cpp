@@ -23,11 +23,11 @@ namespace boitatah{
         return builder;
     }
 
-    GeometryBuilder GeometryBuilder::createGeometry(Renderer& renderer)
-    {
-        GeometryBuilder builder(renderer.getResourceManager());
-        return builder;
-    }
+    // GeometryBuilder GeometryBuilder::createGeometry(Renderer& renderer)
+    // {
+    //     GeometryBuilder builder(renderer.getResourceManager());
+    //     return builder;
+    // }
 
     GeometryBuilder GeometryBuilder::createProceduralGeometry(GPUResourceManager &manager)
     {
@@ -35,11 +35,11 @@ namespace boitatah{
         return builder;
     }
 
-    GeometryBuilder GeometryBuilder::createProceduralGeometry(Renderer &renderer)
-    {
-        GeometryBuilder builder(renderer.getResourceManager());
-        return builder;
-    }
+    // GeometryBuilder GeometryBuilder::createProceduralGeometry(Renderer &renderer)
+    // {
+    //     GeometryBuilder builder(renderer.getResourceManager());
+    //     return builder;
+    // }
 
     GeometryBuilder& GeometryBuilder::SetIndexes(const std::initializer_list<uint32_t> &&indices)
     {
@@ -143,11 +143,11 @@ namespace boitatah{
         return geo;
     }
 
-    Handle<Geometry> GeometryBuilder::Triangle(
-                                            Renderer &renderer)
-    {
-        return GeometryBuilder::Triangle(renderer.getResourceManager());
-    }
+    // Handle<Geometry> GeometryBuilder::Triangle(
+    //                                         Renderer &renderer)
+    // {
+    //     return GeometryBuilder::Triangle(renderer.getResourceManager());
+    // }
 
     Handle<Geometry> GeometryBuilder::Quad(
                                         GPUResourceManager &manager)
@@ -173,18 +173,18 @@ namespace boitatah{
         return geo;
     }
 
-    Handle<Geometry> GeometryBuilder::Plane(Renderer    &renderer, 
-                                            float       width, 
-                                            float       height, 
-                                            uint32_t    widthDiv, 
-                                            uint32_t    heightDiv)
-    {
-        return GeometryBuilder::Plane(  renderer.getResourceManager(), 
-                                        width, 
-                                        height, 
-                                        widthDiv, 
-                                        heightDiv);
-    }
+    // Handle<Geometry> GeometryBuilder::Plane(Renderer    &renderer, 
+    //                                         float       width, 
+    //                                         float       height, 
+    //                                         uint32_t    widthDiv, 
+    //                                         uint32_t    heightDiv)
+    // {
+    //     return GeometryBuilder::Plane(  renderer.getResourceManager(), 
+    //                                     width, 
+    //                                     height, 
+    //                                     widthDiv, 
+    //                                     heightDiv);
+    // }
 
     Handle<Geometry> GeometryBuilder::Circle(GPUResourceManager &manager, float radius, uint32_t sides)
     {
@@ -192,10 +192,10 @@ namespace boitatah{
         Handle<Geometry> geo = builder.geometryFromGeometryData(circle(radius, sides));
         return geo;
     }
-    Handle<Geometry> GeometryBuilder::Circle(Renderer &renderer, float radius, uint32_t sides)
-    {
-         return GeometryBuilder::Circle(renderer.getResourceManager(), radius, sides);
-    }
+    // Handle<Geometry> GeometryBuilder::Circle(Renderer &renderer, float radius, uint32_t sides)
+    // {
+    //      return GeometryBuilder::Circle(renderer.getResourceManager(), radius, sides);
+    // }
 
     Handle<Geometry> GeometryBuilder::Cylinder(GPUResourceManager &manager, float radius, float height, float heightSegments, uint32_t sides)
     {
@@ -204,10 +204,10 @@ namespace boitatah{
         return geo;
     }
 
-    Handle<Geometry> GeometryBuilder::Cylinder(Renderer &renderer, float radius, float height, float heightSegments, uint32_t sides)
-    {
-         return GeometryBuilder::Cylinder(renderer.getResourceManager(), radius, height, heightSegments, sides);
-    }
+    // Handle<Geometry> GeometryBuilder::Cylinder(Renderer &renderer, float radius, float height, float heightSegments, uint32_t sides)
+    // {
+    //      return GeometryBuilder::Cylinder(renderer.getResourceManager(), radius, height, heightSegments, sides);
+    // }
 
     Handle<Geometry> GeometryBuilder::Pipe(GPUResourceManager &manager, float radius, float height, float heightSegments, uint32_t sides)
     {
@@ -216,15 +216,15 @@ namespace boitatah{
         return geo;
     }
 
-    Handle<Geometry> GeometryBuilder::Pipe(Renderer &renderer, float radius, float height, float heightSegments, uint32_t sides)
-    {
-        return GeometryBuilder::Pipe(renderer.getResourceManager(), radius, height, heightSegments, sides);
-    }
+    // Handle<Geometry> GeometryBuilder::Pipe(Renderer &renderer, float radius, float height, float heightSegments, uint32_t sides)
+    // {
+    //     return GeometryBuilder::Pipe(renderer.getResourceManager(), radius, height, heightSegments, sides);
+    // }
     
-    Handle<Geometry> GeometryBuilder::Quad(Renderer &renderer)
-    {
-        return GeometryBuilder::Quad(renderer.getResourceManager());
-    }
+    // Handle<Geometry> GeometryBuilder::Quad(Renderer &renderer)
+    // {
+    //     return GeometryBuilder::Quad(renderer.getResourceManager());
+    // }
 
 
     Handle<Geometry> GeometryBuilder::Icosahedron(
@@ -235,10 +235,10 @@ namespace boitatah{
         return geo;
     }
 
-    Handle<Geometry> GeometryBuilder::Icosahedron(Renderer& renderer)
-    {
-        return GeometryBuilder::Icosahedron(renderer.getResourceManager());
-    }
+    // Handle<Geometry> GeometryBuilder::Icosahedron(Renderer& renderer)
+    // {
+    //     return GeometryBuilder::Icosahedron(renderer.getResourceManager());
+    // }
 
 
 }

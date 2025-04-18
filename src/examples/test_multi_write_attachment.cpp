@@ -43,35 +43,35 @@ int main()
     Handle<Geometry> pipe =     GeometryBuilder::Pipe(r.getResourceManager(), 0.5, 2.0, 10, 32);
 
     std::cout << "creating scene node" << std::endl;
-    SceneNode triangleNode({
+    RenderScene triangleNode({
         .name = "triangle",
-        .geometry = triangle,
-        .material = material,
+        .content = {.geometry = triangle,
+                    .material = material},
         .position = glm::vec3(-3.0f, 0, 0),
     });
-    SceneNode quadNode({
+    RenderScene quadNode({
         .name = "quad",
-        .geometry = quad,
-        .material = material,
+        .content = {.geometry = quad,
+                    .material = material},
         .position = glm::vec3(-1.5f, 0, 0),
     });
 
-    SceneNode circleNode({
+    RenderScene circleNode({
         .name = "circle",
-        .geometry = circle,
-        .material = material,
+        .content = {.geometry = circle,
+                    .material = material},
         .position = glm::vec3(0.0f, 0, 0),
     });
 
-    SceneNode pipeNode({
+    RenderScene pipeNode({
         .name = "pipe",
-        .geometry = pipe,
-        .material = material,
+        .content = {.geometry = pipe,
+                    .material = material},
         .position = glm::vec3(1.5f, 0, 0),
     });
 
     // Scene Description.
-    SceneNode scene({.name = "root scene"});
+    RenderScene scene({.name = "root scene"});
     scene.add(&pipeNode);
     scene.add(&triangleNode);
     scene.add(&quadNode);

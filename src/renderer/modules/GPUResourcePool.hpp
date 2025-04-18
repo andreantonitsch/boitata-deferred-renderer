@@ -3,7 +3,7 @@
 #include <memory>
 #include <collections/Pool.hpp>
 #include <renderer/resources/GPUBuffer.hpp>
-#include <types/Geometry.hpp>
+#include <renderer/resources/Geometry.hpp>
 #include <types/Texture.hpp>
 #include <types/Lights.hpp>
 

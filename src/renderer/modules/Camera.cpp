@@ -11,7 +11,6 @@ namespace boitatah
         m_rotation = glm::quat(1.0, 0.0, 0.0, 0.0);
         m_direction = glm::vec3(0, 0, 1);
         m_up = glm::vec3(0, 1, 0);
-        //lookAt(desc.lookAtTarget);
     }
 
     CameraUniforms Camera::getCameraUniforms()
@@ -24,7 +23,6 @@ namespace boitatah
             .viewPos = m_position,
             .aspect = m_aspect,
         };
-
     }
 
     void Camera::translate(glm::vec3 direction)
@@ -54,7 +52,6 @@ namespace boitatah
     void Camera::rotate(glm::vec3 eulerAngles)
     {
         dirty_view();
-
         m_direction = glm::rotate(m_rotation, glm::length(eulerAngles), glm::normalize(eulerAngles)) * m_direction;
     }
 

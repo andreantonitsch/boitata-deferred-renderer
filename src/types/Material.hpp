@@ -2,7 +2,7 @@
 
 #include<vector>
 #include <collections/Pool.hpp>
-#include <types/Geometry.hpp>
+#include <renderer/resources/Geometry.hpp>
 #include <string>
 
 namespace boitatah{

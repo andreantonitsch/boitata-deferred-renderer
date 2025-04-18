@@ -2,7 +2,7 @@
 
 #include <glm/vec2.hpp>
 #include <vector>
-#include "BttEnums.hpp"
+#include <types/BttEnums.hpp>
 #include <types/Material.hpp>
 
 namespace boitatah{
