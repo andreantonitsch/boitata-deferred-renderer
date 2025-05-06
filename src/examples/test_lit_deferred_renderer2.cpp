@@ -20,7 +20,7 @@ int main()
 
     Renderer r({.windowDimensions = {windowWidth, windowHeight},
                 .appName = "Test Frame Buffer",
-                .debug = false,
+                .debug = true,
                 .swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB,
                 .backBufferDesc2 = BackBufferManager::BasicDeferredPipeline(windowWidth,
                                                                             windowHeight)
@@ -40,7 +40,6 @@ int main()
     Handle<Geometry> pipe =     GeometryBuilder::Icosahedron(r.getResourceManager());
 
     RenderScene scene({.name = "root scene"});
-    std::vector<RenderScene> nodes;
 
     RenderScene floor({
         .name = "pipe",
@@ -55,21 +54,27 @@ int main()
         .name = "pipe",
         .content = {.geometry = pipe,
         .material = material},
-        .position = glm::vec3(0, 0, 0),
+        .position = glm::vec3(0, -2, 0),
     });
 
-    std::srand(std::time({}));
-    nodes.reserve(125);
-    for(int k = 0; k < 5; k++)
-        for(int i = 0; i < k; i++)
-            for(int j = 0; j < k; j++){
-                nodes.push_back(ico);
-                nodes.back().translate(glm::vec3(std::sin(std::rand()) * 25, 
-                                                 -k,
-                                                 std::sin(std::rand()) * 25));
-                scene.add(&nodes.back());
-        }
+
     scene.add(&floor);
+    scene.add(&ico);
+    
+    int ico_ring_count = 10;
+    float ico_ring_dist = 8;
+    std::vector<RenderScene> nodes;
+    nodes.reserve(ico_ring_count);
+    for(float i = 0.0f; i < glm::two_pi<float>(); i+=glm::two_pi<float>()/ico_ring_count){
+        RenderScene ico_ring({
+        .name = "pipe",
+        .content = {.geometry = pipe,
+        .material = material},
+        .position = glm::vec3(glm::sin(i) * ico_ring_dist, -2, glm::cos(i) * ico_ring_dist),
+        });
+        nodes.push_back(ico_ring);
+        scene.add(&nodes.back());
+    }
 
     // Scene Description.
     std::cout << "creating deferred composer material" << std::endl;
@@ -79,13 +84,10 @@ int main()
     r.setLightArray(light_handle);
     auto& lights = r.getLightArray(light_handle);
 
-    auto light_count = 100;
-    auto light_count_over_two = light_count/2.0;
-    for(int i = 0; i < light_count; i++)
         lights.addLight({
-                        .position = glm::vec4(0, -(std::sin(std::rand())+2.0), 0, 0),
+                        .position = glm::vec4(1, -5, 0, 0),
                         .color = glm::vec4(1.0, 1.0, 1.0, 0),
-                        .intensity = 1,
+                        .intensity = 10,
                         });
     lights.update();
     
@@ -111,21 +113,20 @@ int main()
     
     uint32_t count = 0;
     float frame_TimeScale = 0.01;
-    float dist = 20;
+    float dist = 4;
     auto phi = glm::golden_ratio<float>();
     std::cout << " setup done" << std::endl;
     while (!r.isWindowClosed())
     {
         float t = count * frame_TimeScale;
         count++;
-        for(int i = -light_count_over_two; i < light_count-light_count_over_two; i++)
-            lights[i+light_count_over_two].position = glm::vec4(
-                                            dist * ((sin((t * i)/25+0.001) * i / 20)),
-                                            lights[i+light_count_over_two].position.y ,
-                                             dist * ((cos((t * i)/25+0.001) * i / 20)),
-                                            0);
+
+        lights[0].position = glm::vec4(dist * sin(t),
+                                        lights[0].position.y ,
+                                       dist * cos(t),
+                                        0);
         lights.update();
-        camera.setPosition(glm::float3(0,-25 * abs((sin(t/20))) -10, -5));
+        camera.setPosition(glm::float3(0,-10 * abs((sin(t/20))) -5, -5));
         camera.lookAt(glm::vec3(0));
 
         r.render_graph(scene, camera);

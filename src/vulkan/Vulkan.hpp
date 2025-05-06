@@ -82,42 +82,16 @@ namespace boitatah::vk
 
 
         //returns if frame was successfully presented;
-        bool presentFrame(Image &image,
-                          Image &swapchainImage,
+        bool presentFrame(Image &swapchainImage,
                           VkSwapchainKHR &swapchain,
                           uint32_t &scIndex,
                           const PresentCommandVk &command);
 
 #pragma region Commands
 
-
-        //std::shared_ptr<VkCommandBufferWriter> getCommandBufferWriter();
-        
-
         // Generic Commands
         CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
-        void beginCmdBuffer(const BeginCommandVk &command);
         void resetCmdBuffer(const VkCommandBuffer buffer);
-        void submitCmdBuffer(const SubmitCommandVk &command);
-
-        // Render Commands
-        //void beginBufferCommand(const BeginCommandVk &command);
-        void beginRenderpassCommand(const BeginRenderpassCommandVk &command);
-        void endRenderpassCommand(const EndRenderpassCommandVk &command);
-        void recordDrawCommand(const DrawCommandVk &command);
-        void submitDrawCmdBuffer(const SubmitDrawCommandVk &command);
-        void bindPipelineCommand(const BindPipelineCommandVk &command);
-        void bindDescriptorSet(const BindDescriptorSetCommandVk& command);
-
-        // Transfer Commands
-        void CmdCopyBufferToImage(const CopyBufferToImageCommandVk &command);
-        void CmdCopyImage(const CopyImageCommandVk &command);
-        void CmdCopyBuffer(const CopyBufferCommandVk &command) const;
-        void CmdTransitionLayout(const TransitionLayoutCmdVk &command);
-
-        void CmdBindVertexBuffers(const BindBuffersCommandVk &command);
-        void CmdBindIndexBuffer(const BindBuffersCommandVk &command);
-
 #pragma endregion Commands
 
 
@@ -125,6 +99,7 @@ namespace boitatah::vk
         void waitForFrame(RenderTargetSync &bufferData);
         void waitIdle();
         void waitForFence(const VkFence &fence) const;
+        void reset_fence(const VkFence &fence) const;
         bool checkFenceStatus(VkFence fence);
 
         // Destroy Objects
@@ -171,6 +146,11 @@ namespace boitatah::vk
                          const std::vector<VkSemaphore> &wait,
                          const VkSemaphore &signal,
                          const VkFence &fence);
+
+        // Deprecated. use commandbufferwriter instead
+        void CmdCopyImage(const CopyImageCommandVk &command);
+        // Deprecated. use commandbufferwriter instead
+        void CmdTransitionLayout(const TransitionLayoutCmdVk &command);
 
 #pragma region Vulkan Setup
 

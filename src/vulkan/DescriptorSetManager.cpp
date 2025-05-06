@@ -97,7 +97,6 @@ namespace boitatah::vk {
             writes.push_back(write);
         }
 
-        //TODO correct pointers.
 
         vkUpdateDescriptorSets(m_vk->getDevice(), writes.size(), writes.data(), 0, nullptr);
     }
@@ -105,8 +104,7 @@ namespace boitatah::vk {
     void DescriptorSetManager::bindSet(const CommandBuffer drawBuffer,
                                         const ShaderLayout &layout,
                                         const DescriptorSet &set, 
-                                        uint32_t set_index, 
-                                        uint32_t frame_index)
+                                        uint32_t set_index)
     {
         vkCmdBindDescriptorSets(drawBuffer.buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 layout.pipeline, set_index, 1, &set.descriptorSet, 0, nullptr);
@@ -121,7 +119,7 @@ namespace boitatah::vk {
 
     size_t DescriptorSetManager::createPool(const DescriptorSetLayout &request)
     {
-        DescriptorSetPool pool(maxSets, request.ratios, m_vk);
+        DescriptorSetPool<3> pool(maxSets, request.ratios, m_vk);
         m_pools.push_back(pool);
         return m_pools.size()-1;
     }
@@ -136,7 +134,7 @@ namespace boitatah::vk {
         return UINT32_MAX;
     }
     
-    DescriptorSetPool& DescriptorSetManager::findCreatePool(const DescriptorSetLayout &request, uint32_t frame_index)
+    DescriptorSetPool<3>& DescriptorSetManager::findCreatePool(const DescriptorSetLayout &request, uint32_t frame_index)
     {
         uint32_t pool_idx = findPool(request, frame_index);
 

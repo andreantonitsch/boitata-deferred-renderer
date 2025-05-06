@@ -5,7 +5,10 @@
 #include "Buffer.hpp"
 #include <vulkan/Vulkan.hpp>
 #include "../collections/Pool.hpp"
+
 #include <types/commands/CommandBuffer.hpp>
+#include <command_buffers/CommandBufferWriter.hpp>
+#include <command_buffers/CommandBufferWriterStructs.hpp>
 
 
 namespace boitatah::buffer
@@ -13,7 +16,7 @@ namespace boitatah::buffer
     using namespace boitatah::vk;
     using namespace boitatah::command_buffers;
     class Buffer;
-    class VkCommnadBufferWriter;
+    //class VkCommnadBufferWriter;
     class BufferManager : public std::enable_shared_from_this<BufferManager>
     {
         private:
@@ -44,18 +47,13 @@ namespace boitatah::buffer
             BufferAccessData getBufferAccessData(const Handle<BufferAddress> &handle);
             bool copyToBuffer(const BufferUploadDesc &desc);
             
-            bool queueCopy(const Handle<BufferAddress> src, const Handle<BufferAddress> dst);
+            //bool queueCopy(const Handle<BufferAddress> src, const Handle<BufferAddress> dst);
             
             template<class T>
             bool queueCopy( CommandBufferWriter<T>& writer, const Handle<BufferAddress> src, const Handle<BufferAddress> dst);
 
             //user is responsible for releasing the staged buffer
             void memoryCopy(uint32_t dataSize, const void* data, Handle<BufferAddress>& handle);
-
-            void queueingBufferUpdates(); //queues updates
-            void startBufferUpdates(); //setup queue buffer updates
-            void endBufferUpdates();    // ship queue buffer updates
-
 
             bool getAddressReservation(const Handle<BufferAddress> handle, BufferReservation& reservation);
             Handle<BufferReservation> getAddressReservation(const Handle<BufferAddress> handle);

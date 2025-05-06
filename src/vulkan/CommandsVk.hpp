@@ -8,18 +8,9 @@ namespace boitatah::vk
 {
     struct PresentCommandVk
     {
-        VkCommandBuffer commandBuffer;
+        //VkCommandBuffer commandBuffer;
         std::vector<VkSemaphore> waitSemaphores;
-        VkSemaphore signalSemaphore;
         VkFence fence;
-
-
-        //RenderTargetCmdBuffers bufferData;
-        //COMMAND_BUFFER_TYPE submitType;
-    };
-
-    struct BindDescriptorSetCommandVk{
-        
     };
 
 
@@ -142,20 +133,6 @@ namespace boitatah::vk
         uint32_t elementCount;
         void *map;
         void *data;
-    };
-
-    struct BindBuffersCommandVk{
-        VkCommandBuffer drawBuffer;
-        std::vector<VkBuffer> buffers;
-        std::vector<VkDeviceSize> offsets;
-    };
-
-    struct BindIndexBufferCommandVk{
-        
-    };
-
-    struct CopyBufferToImageCommandVk{
-
     };
 
 }

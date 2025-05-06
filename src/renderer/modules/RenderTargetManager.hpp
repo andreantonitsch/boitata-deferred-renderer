@@ -40,6 +40,7 @@ namespace boitatah{
             RenderTarget& get(const Handle<RenderTarget>& handle);
             RenderPass& get(const Handle<RenderPass>& handle);
             RenderTargetSync& get(const Handle<RenderTargetSync>& handle);
+            RenderTargetSync& get_sync_data(const Handle<RenderTarget>& handle);
 
 
     };

@@ -387,7 +387,7 @@ namespace boitatah{
         for(int i = 0; i < 12; i++){
             
             auto vert = ico.vertices[i];
-            auto u = glm::atan2<float, glm::highp>(vert.z, vert.x) * glm::one_over_two_pi<float>();
+            auto u = glm::atan2<float>(vert.z, vert.x) * glm::one_over_two_pi<float>();
             // auto u = glm::atan2<float>(glm::vec2(vert.z, vert.x)) / glm::two_pi<float>();
             auto v = asin(vert.y) / glm::pi<float>() + 0.5f;
             ico.uv.push_back({u,v});

@@ -42,10 +42,7 @@ namespace boitatah
     using namespace vk;
     using namespace buffer;
 
-    template class Pool<Shader>;
-    template class Pool<RenderTarget>;
-    template class Pool<RenderPass>;
-    template class Pool<Image>;
+
     class BackBufferManager;
     class Swapchain;
 
@@ -66,6 +63,7 @@ namespace boitatah
 
     typedef SceneNode<RenderObject>  RenderScene;
 
+    //transform into a template for backendcompatibility with CRTP
     class Renderer
     {
     public:
@@ -75,18 +73,18 @@ namespace boitatah
         ~Renderer(void);
 
         // Manangers
-        BufferManager& getBufferManager();
-        GPUResourceManager& getResourceManager();
-        MaterialManager& getMaterialManager();
-        DescriptorSetManager& getDescriptorManager();
-        Materials& getMaterials();
+        BufferManager&          getBufferManager();
+        GPUResourceManager&     getResourceManager();
+        MaterialManager&        getMaterialManager();
+        DescriptorSetManager&   getDescriptorManager();
+        Materials&              getMaterials();
         
         BufferedCamera createCamera(const CameraDesc& desc);
 
         // TODO temp light stuff
-        void setLightArray(const Handle<LightArray>& array);
-        Handle<LightArray> createLightArray(uint32_t size);
-        LightArray& getLightArray(Handle<LightArray> handle);
+        void                setLightArray(const Handle<LightArray>& array);
+        Handle<LightArray>  createLightArray(uint32_t size);
+        LightArray&         getLightArray(Handle<LightArray> handle);
         
         // Window methods
         bool isWindowClosed();
@@ -95,57 +93,41 @@ namespace boitatah
         void waitIdle();
 
         // Render Methods
-        void write_draw_command(RenderScene &scene, const Handle<RenderTarget> &rendertarget, uint32_t frameIndex);
-        void render_graph(RenderScene &scene, BufferedCamera &camera);
-        VkSemaphore render_graph_stage(RenderScene                  &scene, 
-                                        BufferedCamera              &camera, 
-                                        Handle<RenderStage>         stage,
-                                        VkSemaphore                 wait_for_last_stage);
-        void present_graph(RenderScene              &scene,
-                           Camera                   &camera);
+        template<typename T>
+        void write_draw_command(CommandBufferWriter<T>      &writer,
+                                RenderScene                 &scene,
+                                const Handle<RenderTarget>  &rendertarget,
+                                uint32_t                    frameIndex);
+        void render_graph(RenderScene       &scene,
+                          BufferedCamera    &camera);
+        VkSemaphore render_graph_stage(RenderScene          &scene, 
+                                        BufferedCamera      &camera, 
+                                        Handle<RenderStage> stage,
+                                        VkSemaphore         wait_for_last_stage);
+        void present_graph(RenderScene  &scene,
+                           Camera       &camera);
         void presentRenderTargetNow(Handle<RenderTarget>    &rendertarget,
                                     VkSemaphore             stage_wait,
                                     uint32_t                attachment_index);
-        void schedulePresentRenderTarget(Handle<RenderTarget> &rendertarget, uint32_t attachment_index = 0);
+        //void schedulePresentRenderTarget(Handle<RenderTarget> &rendertarget, uint32_t attachment_index = 0);
     
-        // Object Creation
-        // Creates PSO object, shader + pipeline.
-        // Needs a Framebuffer for compatibility.
-        Handle<Shader> createShader(const MakeShaderDesc &data);
-        // Creates a framebuffer with a renderpass.
-        Handle<RenderTarget> createRenderTarget(const RenderTargetDesc &data);
-        Handle<RenderPass> createRenderPass(const RenderPassDesc &data);
-        Handle<Image> createImage(const ImageDesc &desc);
-        Handle<ShaderLayout> createShaderLayout(const ShaderLayoutDesc &desc);
-        //Handle<DescriptorSetLayout> createDescriptorLayout(const DescriptorSetLayoutDesc &desc);
-        Handle<Material> createMaterial(const MaterialCreate& description);
-        
-        // Command Buffers
-        CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
-        void clearCommandBuffer(const CommandBuffer &buffer);
 
-        void beginRenderpass(const BeginRenderpassCommand &command);
+        void bindVertexBuffers( uint32_t            frame_index, 
+                                Handle<Geometry>    geometry, 
+                                bool                indexed, 
+                                std::vector<VERTEX_BUFFER_TYPE> vertex_buffers,
+                                VkCommandBufferWriter           &writer);
 
-
-        // Constructs a transfer queue for uniform updating on the beginning of the frame.
-        void transferImage(const TransferImageCommand &command);
-        void copyBuffer(const CopyBufferCommand &command);
-        void drawCommand(const DrawCommand &command);
-
-        void bindVertexBuffers(const BindVertexBuffersCommand& command);
+        //void bindVertexBuffers(  CommandBufferWriter<BackEndType>& writer);
         
         void pushPushConstants(const PushConstantsCommand& command);
 
-        Handle<RenderPass> getBackBufferRenderPass();
-
-        Handle<RenderTargetSync> createRenderTargetCmdData();
-
-        void destroyShader(Handle<Shader>& shader);
-        void destroyRenderTarget(Handle<RenderTarget>& buffer);
-        void destroyRenderPass(Handle<RenderPass>& pass);
-        void destroyLayout(Handle<ShaderLayout>& layout);
+        //Handle<RenderTargetSync> createRenderTargetCmdData();
 
     private:
+        // Options Members
+        RendererOptions m_options;
+
         // Base objects
         std::shared_ptr<BufferManager> m_bufferManager;
         std::shared_ptr<VkCommandBufferWriter> m_buffer_writer;
@@ -168,11 +150,12 @@ namespace boitatah
         void handleWindowResize();
         void createSwapchain();
 
+        // Command Buffers
+        CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
+
         std::vector<std::shared_ptr<RenderScene>> 
         orderSceneNodes(const std::vector<std::shared_ptr<RenderScene>> &nodes) const;
 
-        // Options Members
-        RendererOptions m_options;
 
         // Vulkan Instance
         void createVulkan();

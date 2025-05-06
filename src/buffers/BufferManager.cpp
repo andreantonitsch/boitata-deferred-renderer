@@ -163,39 +163,7 @@ namespace boitatah::buffer
         std::cout << "finished copy to buffer" << std::endl;
         return true;
     }
-
-    bool BufferManager::queueCopy(const Handle<BufferAddress> src, const Handle<BufferAddress> dst)
-    {
-        Buffer* dstBuffer;
-        if(getAddressBuffer(dst, dstBuffer)){
-
-            Buffer* srcBuffer;
-
-            BufferReservation srcReservation;
-            BufferReservation dstReservation;
-
-            if(!getAddressBuffer(src, srcBuffer))
-                std::runtime_error("buffer transfer failed, invalid staging buffer");
-            
-            if(!getAddressReservation(src, srcReservation))
-                std::runtime_error("buffer transfer failed, invalid staging reservation");
-
-            if(!getAddressReservation(dst, dstReservation))
-                std::runtime_error("buffer transfer failed, invalid staging reservation");
-
-            m_vk->CmdCopyBuffer({
-                .commandBuffer = getTransferBuffer().buffer,
-                .srcBuffer = srcBuffer->getBuffer(),
-                .srcOffset = srcReservation.offset,
-                .dstBuffer = dstBuffer->getBuffer(),
-                .dstOffset = dstReservation.offset,
-                .size = dstReservation.requestSize,
-            });
-            return true;
-        }
-        return false;
-    }
-
+    
     void BufferManager::memoryCopy(uint32_t dataSize, const void *data, Handle<BufferAddress> &handle)
     {
         //TODO handle except
@@ -212,27 +180,6 @@ namespace boitatah::buffer
         
     }
 
-    void BufferManager::queueingBufferUpdates()
-    {
-        
-    }
-
-    void BufferManager::startBufferUpdates()
-    {
-        m_vk->resetCmdBuffer(m_transferBuffer.buffer);
-        m_vk->beginCmdBuffer({.commandBuffer = m_transferBuffer.buffer});
-    }
-
-    void BufferManager::endBufferUpdates()
-    {
-        m_vk->submitCmdBuffer(
-            {
-                .commandBuffer = m_transferBuffer.buffer,
-                .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
-                .fence = m_transferFence
-            }
-        );
-    }
 
     bool BufferManager::getAddressReservation(const Handle<BufferAddress> handle, BufferReservation& reservation)
     {
@@ -310,7 +257,7 @@ namespace boitatah::buffer
            getAddressReservation(dst, dstReservation) &&
            getAddressReservation(src, srcReservation)){
 
-            writer.copyBuffer({
+            writer.copy_buffer({
                 .srcBuffer = srcBuffer->getBuffer(),
                 .srcOffset = srcReservation.offset,
                 .dstBuffer = dstBuffer->getBuffer(),

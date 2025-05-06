@@ -167,5 +167,9 @@ namespace boitatah{
     };
     RenderTargetSync &RenderTargetManager::get(const Handle<RenderTargetSync> &handle) {
         return m_buffersPool->get(handle);
+    }
+    RenderTargetSync &RenderTargetManager::get_sync_data(const Handle<RenderTarget> &handle) {
+        auto& target = get(handle);
+        return get(target.sync);
     };
 };

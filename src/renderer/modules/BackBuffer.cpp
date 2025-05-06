@@ -134,9 +134,11 @@ namespace boitatah
     BackBufferManager::BackBufferManager(std::shared_ptr<RenderTargetManager> target_manager,
                                          std::shared_ptr<ImageManager> image_manager,
                                          std::shared_ptr<MaterialManager> material_manager,
-                                         std::shared_ptr<GPUResourceManager>  resource_manager)
+                                         std::shared_ptr<GPUResourceManager>  resource_manager,
+                                         std::shared_ptr<Vulkan> vulkan_instance)
         : m_renderTargetManager(target_manager), m_imageManager(image_manager), 
-          m_material_manager(material_manager), m_resource_mngr(resource_manager) {}
+          m_material_manager(material_manager), m_resource_mngr(resource_manager),
+          m_vulkan(vulkan_instance) {}
 
     BackBufferManager::~BackBufferManager(void){
         clearBackBuffer();
@@ -167,6 +169,10 @@ namespace boitatah
             }
         present_link = desc.present_link;
         stage_count = desc.render_stages.size();
+        // frame_fences.resize(m_graphs.size());
+        // for(int i = 0; i < frame_fences.size(); i ++)
+        //     frame_fences[i] = m_vulkan->createFence(true);
+        
         std::cout << "backbuffer setup2 finished" << std::endl;
 
     };
@@ -177,6 +183,13 @@ namespace boitatah
 
     std::vector<Handle<RenderStage>>& BackBufferManager::getNext_Graph(){
         current = (current + 1) % m_graphs.size();
+
+        auto present_handle = getPresentTarget();
+        auto& present_fence = m_renderTargetManager
+                                    ->get_sync_data(present_handle)
+                                    .in_flight_fence;
+        m_vulkan->waitForFence(present_fence);
+        m_vulkan->reset_fence(present_fence);
         return m_graphs[current];
     }
 

@@ -22,20 +22,20 @@ namespace boitatah
 
     SwapchainImage Swapchain::getNext(VkSemaphore &semaphore)
     {
-        uint32_t index;
+        uint32_t index = UINT32_MAX;
 
         VkResult result = vkAcquireNextImageKHR(vulkan->getDevice(),
                                                 swapchain, UINT64_MAX,
                                                 semaphore, VK_NULL_HANDLE,
                                                 &index);
-
+        //std::cout << static_cast<int>(result) << std::endl;;
         if(result == VK_ERROR_OUT_OF_DATE_KHR){
             //createSwapchain();
-            return { .index = UINT32_MAX, .sc = swapchain};
+            return { .index = index, .sc = swapchain};
         }
         
         if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-            throw std::runtime_error("Failed to acquire swapchain image");
+            return { .index = index -1u, .sc = swapchain};
 
         currentIndex = index;
         return {.image = getSwapchainImages()[index],

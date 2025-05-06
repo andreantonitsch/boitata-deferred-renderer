@@ -23,8 +23,8 @@ namespace boitatah{
     //Render Target Command Buffers
     struct RenderTargetSync{
 
-        CommandBuffer drawBuffer;
-        CommandBuffer transferBuffer;
+        CommandBuffer draw_buffer;
+        CommandBuffer present_buffer;
 
         VkSemaphore draw_semaphore;
         VkSemaphore sc_aquired_semaphore;

@@ -255,6 +255,11 @@ void boitatah::vk::Vulkan::waitIdle()
     vkDeviceWaitIdle(device);
 }
 
+void boitatah::vk::Vulkan::reset_fence(const VkFence &fence) const
+{
+    vkResetFences(device, 1, &fence);
+}
+
 
 void boitatah::vk::Vulkan::waitForFence(const VkFence &fence) const
 {
@@ -263,7 +268,7 @@ void boitatah::vk::Vulkan::waitForFence(const VkFence &fence) const
     if (result != VK_SUCCESS)
         std::cout << "wait for fence failed " << result << std::endl;
     //std::cout << " waited for fence " << std::endl;
-    vkResetFences(device, 1, &fence);
+    //vkResetFences(device, 1, &fence);
 }
 
 bool boitatah::vk::Vulkan::checkFenceStatus(VkFence fence)
@@ -475,208 +480,22 @@ boitatah::CommandBuffer boitatah::vk::Vulkan::allocateCommandBuffer(const Comman
     return CommandBuffer{.buffer = buffer, .type = desc.type};
 }
 
-void boitatah::vk::Vulkan::beginCmdBuffer(const BeginCommandVk &command)
-{
-    VkCommandBufferBeginInfo beginInfo{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        .pInheritanceInfo = nullptr};
-    if (vkBeginCommandBuffer(command.commandBuffer, &beginInfo) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to initialize buffer");
-    }
-}
-
-void boitatah::vk::Vulkan::beginRenderpassCommand(const BeginRenderpassCommandVk &command)
-{
-
-    std::vector<VkClearValue> clear_colors;
-    for(auto& clear_color : command.clearColors){
-        VkClearValue cc;
-        cc.color = {{clear_color.x,
-                    clear_color.y,
-                    clear_color.z,
-                    clear_color.w}};
-        clear_colors.push_back(cc);
-    }
-
-    VkRect2D scissor = {
-        .offset = {command.scissorOffset.x, command.scissorOffset.y},
-        .extent = {.width = static_cast<uint32_t>(command.scissorDims.x),
-                   .height = static_cast<uint32_t>(command.scissorDims.y)},
-    };
-    VkViewport viewport{
-        .x = 0.0f,
-        .y = 0.0f,
-        .width = static_cast<float>(scissor.extent.width),
-        .height = static_cast<float>(scissor.extent.height),
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f,
-    };
-    vkCmdSetViewport(command.commandBuffer, 0, 1, &viewport);
-    vkCmdSetScissor(command.commandBuffer, 0, 1, &scissor);
-
-    VkRenderPassBeginInfo passInfo{
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .renderPass = command.pass,
-        .framebuffer = command.frameBuffer,
-        .renderArea = scissor,
-        .clearValueCount = static_cast<uint32_t>(clear_colors.size()),
-        .pClearValues = clear_colors.data(),
-    };
-    vkCmdBeginRenderPass(command.commandBuffer, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-}
-
-void boitatah::vk::Vulkan::endRenderpassCommand(const EndRenderpassCommandVk &command)
-{
-    vkCmdEndRenderPass(command.commandBuffer);
-}
-
-void boitatah::vk::Vulkan::CmdBindVertexBuffers(const BindBuffersCommandVk &command){
-        vkCmdBindVertexBuffers(command.drawBuffer, 
-                               0, 
-                               static_cast<uint32_t>(command.buffers.size()), 
-                               command.buffers.data(), 
-                               command.offsets.data());
-}
-void boitatah::vk::Vulkan::CmdBindIndexBuffer(const BindBuffersCommandVk &command) {
-        vkCmdBindIndexBuffer(command.drawBuffer, command.buffers[0], command.offsets[0],VK_INDEX_TYPE_UINT32);
-};
-
-void boitatah::vk::Vulkan::recordDrawCommand(const DrawCommandVk &command)
-{
-    
-    if(command.indexed){
-        vkCmdDrawIndexed(command.drawBuffer, command.indexCount,
-                command.instaceCount, command.firstVertex, 
-                0 //command.vertexBufferOffset <-- for instanced drawing. not for suballocated buffers.
-                ,command.firstInstance);
-    }else{
-
-        vkCmdDraw(command.drawBuffer, command.vertexCount, command.instaceCount,
-                command.firstVertex, command.firstInstance);
-    }
-
-}
 
 void boitatah::vk::Vulkan::resetCmdBuffer(const VkCommandBuffer buffer)
 {
     vkResetCommandBuffer(buffer, 0);
 }
 
-void boitatah::vk::Vulkan::submitDrawCmdBuffer(const SubmitDrawCommandVk &command)
-{
-    vkResetFences(device, 1, &(command.fence));
-    vkEndCommandBuffer(command.commandBuffer);
-    // TODO buffer available.
-    // std::vector<VkSemaphore> semaphores{SemImageAvailable};
-    std::vector<VkPipelineStageFlags> stageFlags{};
-    // std::vector<VkSemaphore> signals{SemRenderFinished};
-    VkSubmitInfo submitInfo{
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .commandBufferCount = 1,
-        .pCommandBuffers = &command.commandBuffer,
-
-    };
-    submitInfo.pWaitDstStageMask = nullptr;
-    submitInfo.pWaitSemaphores = nullptr;
-
-    if( command.wait_semaphores.size() > 0){
-        ///std::cout << "waiting for semaphore " << command.wait_semaphore << std::endl;
-        submitInfo.waitSemaphoreCount = command.wait_semaphores.size();
-        submitInfo.pWaitSemaphores = command.wait_semaphores.data();
-
-        for(int i = 0; i < command.wait_semaphores.size(); i++){
-            stageFlags.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-        }
-        submitInfo.pWaitDstStageMask = stageFlags.data();
-    }
-
-    if( command.signal_semaphore != nullptr){
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = command.signal_semaphore;
-    }
-
-    if (vkQueueSubmit(queues.graphicsQueue, 1, &submitInfo, command.fence) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to submit graphics queue");
-    }
-}
-
-void boitatah::vk::Vulkan::bindPipelineCommand(const BindPipelineCommandVk &command)
-{
-    vkCmdBindPipeline(command.drawBuffer,
-                      VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      command.pipeline);
-}
-
-
-void boitatah::vk::Vulkan::submitCmdBuffer(const SubmitCommandVk &command)
-{
-    vkResetFences(device, 1, &(command.fence));
-    vkEndCommandBuffer(command.commandBuffer);
-
-    VkSubmitInfo submit{
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .commandBufferCount = 1,
-        .pCommandBuffers = &command.commandBuffer,
-    };
-
-    if (command.signal != VK_NULL_HANDLE)
-    {
-        submit.signalSemaphoreCount = 1;
-        submit.pSignalSemaphores = &command.signal;
-    }
-
-    std::vector<VkPipelineStageFlags> stages{};
-    VkQueue queue;
-    if (command.submitType == COMMAND_BUFFER_TYPE::TRANSFER)
-    {
-        stages.push_back(VK_PIPELINE_STAGE_TRANSFER_BIT);
-        queue = queues.transferQueue;
-        submit.pWaitDstStageMask = stages.data();
-    }
-
-    if (command.wait != VK_NULL_HANDLE)
-    {
-        submit.waitSemaphoreCount = 1;
-        submit.pWaitSemaphores = &command.wait;
-    }
-
-    vkQueueSubmit(queue, 1, &submit, command.fence);
-}
-
-bool boitatah::vk::Vulkan::presentFrame(Image &image,
-                                        Image &swapchainImage,
+bool boitatah::vk::Vulkan::presentFrame(Image &swapchainImage,
                                         VkSwapchainKHR &swapchain,
                                         uint32_t &scIndex,
                                         const PresentCommandVk &command)
 {
-    auto transfer_buffer = command.commandBuffer;
-
-    // // Finished Transfer
-    beginCommands(transfer_buffer);
-    CmdCopyImage({
-        .buffer = transfer_buffer,
-        .srcImage = image.image,
-        .srcImgLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        .dstImage = swapchainImage.image,
-        .dstImgLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-        .extent = image.dimensions,
-    });
-
-    endTransferCommands(transfer_buffer,
-                queues.transferQueue,
-                command.waitSemaphores,
-                command.signalSemaphore,
-                command.fence);
-
     //  Present
     VkPresentInfoKHR presentInfo{
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &command.signalSemaphore,
+        .waitSemaphoreCount = static_cast<uint32_t>(command.waitSemaphores.size()),
+        .pWaitSemaphores = command.waitSemaphores.data(),
         .swapchainCount = 1,
         .pSwapchains = &swapchain,
         .pImageIndices = &scIndex,
@@ -777,23 +596,23 @@ void boitatah::vk::Vulkan::CmdCopyImage(const CopyImageCommandVk &command)
     });
 }
 
-void boitatah::vk::Vulkan::CmdCopyBuffer(const CopyBufferCommandVk &command) const
-{
-    VkBufferCopy copy{
-        .srcOffset = command.srcOffset,
-        .dstOffset = command.dstOffset,
-        .size = command.size};
-    vkCmdCopyBuffer(command.commandBuffer,
-                    command.srcBuffer,
-                    command.dstBuffer,
-                    1,
-                    &copy);
-}
+// void boitatah::vk::Vulkan::CmdCopyBuffer(const CopyBufferCommandVk &command) const
+// {
+//     VkBufferCopy copy{
+//         .srcOffset = command.srcOffset,
+//         .dstOffset = command.dstOffset,
+//         .size = command.size};
+//     vkCmdCopyBuffer(command.commandBuffer,
+//                     command.srcBuffer,
+//                     command.dstBuffer,
+//                     1,
+//                     &copy);
+// }
 
 
 void boitatah::vk::Vulkan::beginCommands(const VkCommandBuffer &buffer)
 {
-    vkResetCommandBuffer(buffer, 0);
+    resetCmdBuffer(buffer);
 
     VkCommandBufferBeginInfo beginInfo{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -1126,10 +945,10 @@ boitatah::vk::BufferVkData boitatah::vk::Vulkan::getBufferAlignmentMemoryType(co
 boitatah::RenderTargetSync boitatah::vk::Vulkan::allocateBufferSync()
 {
     RenderTargetSync sync{
-            .drawBuffer = allocateCommandBuffer({.count = 1,
+            .draw_buffer = allocateCommandBuffer({.count = 1,
                                                  .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                                                  .type = COMMAND_BUFFER_TYPE::GRAPHICS}),
-            .transferBuffer = allocateCommandBuffer({.count = 1,
+            .present_buffer = allocateCommandBuffer({.count = 1,
                                                      .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                                                      .type = COMMAND_BUFFER_TYPE::TRANSFER}),
             .draw_semaphore = createSemaphore(),
@@ -1372,8 +1191,8 @@ void boitatah::vk::Vulkan::destroyPipelineLayout(ShaderLayout &layout)
 
 void boitatah::vk::Vulkan::destroyRenderTargetCmdData(const RenderTargetSync &sync)
 {
-    vkFreeCommandBuffers(device, commandPools.graphicsPool, 1, &(sync.drawBuffer.buffer));
-    vkFreeCommandBuffers(device, commandPools.transferPool, 1, &(sync.transferBuffer.buffer));
+    vkFreeCommandBuffers(device, commandPools.graphicsPool, 1, &(sync.draw_buffer.buffer));
+    vkFreeCommandBuffers(device, commandPools.transferPool, 1, &(sync.present_buffer.buffer));
 
     vkDestroyFence(device, sync.in_flight_fence, nullptr);
     vkDestroySemaphore(device, sync.sc_aquired_semaphore, nullptr);

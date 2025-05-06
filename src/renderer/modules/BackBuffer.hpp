@@ -13,6 +13,7 @@
 #include <types/Descriptors.hpp>
 namespace boitatah{
 
+    
     class BackBufferManager{
         public:
 
@@ -31,7 +32,8 @@ namespace boitatah{
         BackBufferManager(std::shared_ptr<RenderTargetManager>  target_manager,
                            std::shared_ptr<ImageManager>        image_manager,
                            std::shared_ptr<MaterialManager>     material_manager,
-                           std::shared_ptr<GPUResourceManager>  resource_manager);
+                           std::shared_ptr<GPUResourceManager>  resource_manager,
+                           std::shared_ptr<Vulkan>              vulkan_instance);
         ~BackBufferManager(void);
 
         void setup2(BackBufferDesc2 &desc);
@@ -66,10 +68,13 @@ namespace boitatah{
             std::shared_ptr<RenderTargetManager>    m_renderTargetManager;
             std::shared_ptr<MaterialManager>        m_material_manager;
             std::shared_ptr<GPUResourceManager>     m_resource_mngr;
+            
+            std::shared_ptr<Vulkan>                 m_vulkan;
+            //std::vector<VkFence> frame_fences;
 
             Handle<Sampler> sampler;
             
-            std::array<std::vector<Handle<RenderStage>>, 2> m_graphs;
+            std::array<std::vector<Handle<RenderStage>>, 3> m_graphs;
             std::vector<std::vector<Handle<RenderTexture>>> m_stage_textures;
             std::vector<Handle<MaterialBinding>>            m_stage_bindings;
             std::vector<Handle<RenderTarget>>               m_buffers;

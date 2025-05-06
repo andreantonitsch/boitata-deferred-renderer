@@ -74,7 +74,7 @@ namespace boitatah{
         auto& staging_image = m_manager->getImageManager().getImage(m_staging_image);
 
         if(m_staging_layout != IMAGE_LAYOUT::WRITE)
-            m_manager->getCurrentBufferWriter().transitionImage(
+            m_manager->getCurrentBufferWriter().transition_image(
                                                 {
                                                  .src = castEnum<VkImageLayout>(m_staging_layout),
                                                  .dst = castEnum<VkImageLayout>(IMAGE_LAYOUT::WRITE),
@@ -82,7 +82,7 @@ namespace boitatah{
                                                  .srcStage = castEnum<VkPipelineStageFlags>(PIPELINE_STAGE::TOP),
                                                  .dstStage = castEnum<VkPipelineStageFlags>(PIPELINE_STAGE::TRANSFER),
                                                  });
-        m_manager->getCurrentBufferWriter().transitionImage(
+        m_manager->getCurrentBufferWriter().transition_image(
                                     {
                                         .src = castEnum<VkImageLayout>(src_layout),
                                         .dst = castEnum<VkImageLayout>(IMAGE_LAYOUT::TRANSFER_READ),
@@ -91,7 +91,7 @@ namespace boitatah{
                                         .dstStage = castEnum<VkPipelineStageFlags>(PIPELINE_STAGE::TRANSFER),
                                         });
         m_staging_layout = IMAGE_LAYOUT::WRITE;
-        m_manager->getCurrentBufferWriter().copyImage({
+        m_manager->getCurrentBufferWriter().copy_image({
             .srcLayout = castEnum<VkImageLayout>(IMAGE_LAYOUT::TRANSFER_READ),
             .dstLayout = castEnum<VkImageLayout>(m_staging_layout),
             .extent = glm::vec2(texProps.width, texProps.height),
@@ -99,7 +99,7 @@ namespace boitatah{
             .dstImage = staging_image.image,
         });
 
-        m_manager->getCurrentBufferWriter().transitionImage(
+        m_manager->getCurrentBufferWriter().transition_image(
                                                 {
                                                  .src = castEnum<VkImageLayout>(m_staging_layout),
                                                  .dst = castEnum<VkImageLayout>(IMAGE_LAYOUT::TRANSFER_READ),
@@ -107,7 +107,7 @@ namespace boitatah{
                                                  .srcStage = castEnum<VkPipelineStageFlags>(PIPELINE_STAGE::TRANSFER),
                                                  .dstStage = castEnum<VkPipelineStageFlags>(PIPELINE_STAGE::BOTTOM),
                                                  });
-        m_manager->getCurrentBufferWriter().transitionImage(
+        m_manager->getCurrentBufferWriter().transition_image(
                                                 {
                                                  .src = castEnum<VkImageLayout>(IMAGE_LAYOUT::TRANSFER_READ),
                                                  .dst = castEnum<VkImageLayout>(src_layout),
@@ -191,7 +191,7 @@ namespace boitatah{
         //copy from buffer
         if( update_from == TextureUpdateFrom::STAGING_BUFFER){
             auto buffer = m_manager->getResourceAccessData(m_stagingBuffer, 0);
-            writer.copyBufferToImage({
+            writer.copy_buffer_to_image({
                 .buffer = buffer.buffer->getBuffer(),
                 .image = m_manager->getImageManager().getImage(data.image).image,
                 .buffOffset = buffer.offset,
@@ -206,7 +206,7 @@ namespace boitatah{
         //copy from image
         if( update_from == TextureUpdateFrom::STAGING_IMAGE){
             auto& staging_image  = m_manager->getImageManager().getImage( m_staging_image);
-            writer.copyImage({
+            writer.copy_image({
                 .srcLayout = castEnum<VkImageLayout>(IMAGE_LAYOUT::TRANSFER_READ),
                 .dstLayout = castEnum<VkImageLayout>(m_desiredLayout),
                 .extent = {texProps.width, texProps.height},

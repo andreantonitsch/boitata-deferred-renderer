@@ -17,7 +17,7 @@ namespace boitatah{
         for(int i = 0; i < buffer_writer_count; i++)
         {
             auto buffer_writer = std::make_shared<VkCommandBufferWriter>(m_vulkan);
-            buffer_writer->setCommandBuffer(m_vulkan->allocateCommandBuffer({.count = 1,
+            buffer_writer->set_commandbuffer(m_vulkan->allocateCommandBuffer({.count = 1,
                                                         .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                                                         .type = COMMAND_BUFFER_TYPE::TRANSFER}).buffer);
             buffer_writer->setFence(m_vulkan->createFence(true));
@@ -31,22 +31,20 @@ namespace boitatah{
     {
         
         recording = true;
-        m_current_writer = (m_current_writer+1) % m_buffer_writers.size();
-        auto& buffer_writer = m_buffer_writers[m_current_writer];
+        m_current_writer = (m_current_writer+1u) % m_buffer_writers.size();
 
-        //buffer_writer->waitForTransfers();
+        auto& buffer_writer = m_buffer_writers[m_current_writer];
+        
+        buffer_writer->waitForTransfers();
         buffer_writer->reset({});
         buffer_writer->begin({});
-
-        //m_commandBufferWriter->waitForTransfers();
-        //m_commandBufferWriter->reset({});
-        //m_commandBufferWriter->begin({});
+        
     }
-
+    
     void GPUResourceManager::submitCommitCommands()
     {
         auto& buffer_writer = m_buffer_writers[m_current_writer];
-
+        
         buffer_writer->submit({
             .submitType = COMMAND_BUFFER_TYPE::TRANSFER,
             .signal = true
