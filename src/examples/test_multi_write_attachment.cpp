@@ -43,27 +43,27 @@ int main()
     Handle<Geometry> pipe =     GeometryBuilder::Pipe(r.getResourceManager(), 0.5, 2.0, 10, 32);
 
     std::cout << "creating scene node" << std::endl;
-    RenderScene triangleNode({
+    auto triangleNode = RenderScene::create_node({
         .name = "triangle",
         .content = {.geometry = triangle,
                     .material = material},
         .position = glm::vec3(-3.0f, 0, 0),
     });
-    RenderScene quadNode({
+    auto quadNode = RenderScene::create_node({
         .name = "quad",
         .content = {.geometry = quad,
                     .material = material},
         .position = glm::vec3(-1.5f, 0, 0),
     });
 
-    RenderScene circleNode({
+    auto circleNode = RenderScene::create_node({
         .name = "circle",
         .content = {.geometry = circle,
                     .material = material},
         .position = glm::vec3(0.0f, 0, 0),
     });
 
-    RenderScene pipeNode({
+    auto pipeNode = RenderScene::create_node({
         .name = "pipe",
         .content = {.geometry = pipe,
                     .material = material},
@@ -71,11 +71,11 @@ int main()
     });
 
     // Scene Description.
-    RenderScene scene({.name = "root scene"});
-    scene.add(&pipeNode);
-    scene.add(&triangleNode);
-    scene.add(&quadNode);
-    scene.add(&circleNode);
+    std::shared_ptr<RenderScene> scene = RenderScene::create_node({.name = "root scene"});
+    scene->add(pipeNode);
+    scene->add(triangleNode);
+    scene->add(quadNode);
+    scene->add(circleNode);
 
     BufferedCamera camera = r.createCamera({
                    .position = glm::float3(0,-2,-5),

@@ -23,6 +23,7 @@ namespace boitatah{
             void updateSampler(Sampler& sampler);
 
             Handle<Image> createImage(const ImageDesc &description);
+            bool check_image(const Handle<Image> &handle);
             bool contains (Handle<Image>& handle);
             void destroyImage(const Handle<Image>& handle);
             Image& getImage(Handle<Image> &handle);

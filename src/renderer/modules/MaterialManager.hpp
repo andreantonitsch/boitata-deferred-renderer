@@ -87,18 +87,19 @@ namespace boitatah{
             Handle<Material> copyMaterial(const Handle<Material>& handle);
             Material& getMaterialContent(const Handle<Material>& handle);
             void destroyMaterial(const Handle<Material>& handle);
-
             //void setBaseMaterial(const Handle<Material>& handle);
-
+            
             MaterialBinding& getBinding(Handle<MaterialBinding>& handle);
             Handle<MaterialBinding> createBinding(
-                                    const Handle<DescriptorSetLayout> &description);
-            Handle<MaterialBinding> createBinding(
-                                    const std::vector<MaterialBindingAtt>& bindings);
-            
+                const Handle<DescriptorSetLayout> &description);
+                Handle<MaterialBinding> createBinding(
+                    const std::vector<MaterialBindingAtt>& bindings);
+
+                    
             std::vector<Handle<MaterialBinding>> createBindings(
-                                                 const Handle<ShaderLayout> &description);   
-            Handle<DescriptorSetLayout> createBindingsSetLayout(Handle<MaterialBinding>& binding);
+                const Handle<ShaderLayout> &description);   
+                Handle<DescriptorSetLayout> createBindingsSetLayout(Handle<MaterialBinding>& binding);
+
 
             // Creates bindings same as createBindings about. 
             // But overrides the first overrides.size() bindings with the bindings in overrides
@@ -123,6 +124,13 @@ namespace boitatah{
                                              const Handle<Sampler>                      &sampler,
                                              const uint32_t                             set, 
                                              const uint32_t                             binding);
+
+                        
+            void destroy_binding(const Handle<MaterialBinding> &handle);
+            void destroy_bindings(const std::vector<Handle<MaterialBinding>> &handles);
+            
+
+
 
             //std::vector<Handle<MaterialBinding>> createUnlitMaterialBindings();
             
@@ -252,7 +260,6 @@ namespace boitatah{
             
             void resetBindings();
 
-            //void setupBaseMaterials(Handle<RenderPass> renderpass);
             void clearBaseMaterials();
 
         private:
@@ -271,13 +278,6 @@ namespace boitatah{
 
             std::vector<Handle<MaterialBinding>> m_currentBindings;
             Handle<Shader> m_currentPipeline;
-
-            //std::pair<Handle<Shader>, Handle<ShaderLayout>> unlit_shader;
-
-            //Handle<Material> m_baseMaterial;
-
-
-            //void setupUnlitMaterial(Handle<RenderPass> renderpass);
 
     };
 };

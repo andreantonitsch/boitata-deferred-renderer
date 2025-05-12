@@ -126,13 +126,14 @@ namespace boitatah{
     }
     void RenderTargetManager::destroyRenderTarget(Handle<RenderTarget> &handle) {
         if(!m_targetPool->contains(handle)){
-            //std::cout << "failed deleting RenderTarget" << std::endl;
             return;
         }
 
         RenderTarget& target = m_targetPool->get(handle);
         for (auto &imagehandle : target.attachments)
         {
+            if(!m_imageManager->check_image(imagehandle))
+                continue;
             Image image = m_imageManager->getImage(imagehandle);
             if(!image.swapchain)
                 m_imageManager->destroyImage(imagehandle);
@@ -140,10 +141,9 @@ namespace boitatah{
 
         //destroyRenderPass(target.renderpass); 
         RenderTargetSync data;
-            if (m_buffersPool->clear(target.sync, data))
-                m_vk->destroyRenderTargetCmdData(data);
+        if (m_buffersPool->clear(target.sync, data))
+            m_vk->destroyRenderTargetCmdData(data);
 
-        target.attachments.clear();
         m_vk->destroyFramebuffer(target);
         m_targetPool->clear(handle);
     }

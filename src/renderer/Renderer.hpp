@@ -98,13 +98,13 @@ namespace boitatah
                                 RenderScene                 &scene,
                                 const Handle<RenderTarget>  &rendertarget,
                                 uint32_t                    frameIndex);
-        void render_graph(RenderScene       &scene,
-                          BufferedCamera    &camera);
-        VkSemaphore render_graph_stage(RenderScene          &scene, 
-                                        BufferedCamera      &camera, 
-                                        Handle<RenderStage> stage,
-                                        VkSemaphore         wait_for_last_stage);
-        void present_graph(RenderScene  &scene,
+        void render_graph(std::shared_ptr<RenderScene>      scene,
+                                          BufferedCamera    &camera);
+        VkSemaphore render_graph_stage(std::shared_ptr<RenderScene>     scene, 
+                                                    BufferedCamera      &camera, 
+                                                    Handle<RenderStage> stage,
+                                                    VkSemaphore         wait_for_last_stage);
+        void present_graph(std::shared_ptr<RenderScene> scene,
                            Camera       &camera);
         void presentRenderTargetNow(Handle<RenderTarget>    &rendertarget,
                                     VkSemaphore             stage_wait,

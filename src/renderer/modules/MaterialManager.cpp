@@ -300,135 +300,22 @@ namespace boitatah{
         return true;
     }
 
+    void MaterialManager::destroy_binding(const Handle<MaterialBinding> &handle)
+    {
+        if(m_bindingsPool->contains(handle))
+            m_bindingsPool->clear(handle);
+    }
+
+    void MaterialManager::destroy_bindings(const std::vector<Handle<MaterialBinding>> &handles)
+    {
+        for(auto& bind : handles)
+            destroy_binding(bind);
+    }
+
     MaterialBinding &MaterialManager::getBinding(Handle<MaterialBinding> &handle)
     {
         return m_bindingsPool->get(handle);
     }
-
-    // template<typename BufferWriterType>
-    // bool MaterialManager::BindMaterial(CommandBufferWriter<BufferWriterType> &writer,
-    //                                   Handle<Material>  &handle, 
-    //                                    uint32_t         frame_index)
-    // {
-    //     auto& material = m_materialPool->get(handle);
-    //     auto& shader = m_shaderManager->get(material.shader);
-
-    //     m_currentBindings.resize(material.bindings.size());
-
-    //     bool success = true;
-    //     if(material.shader && m_currentPipeline != material.shader){
-    //         success &= BindPipeline(material.shader, writer);
-    //     }else{
-    //         std::runtime_error("failed to bind pipeline");
-    //     }
- 
-    //     for(uint32_t i = 0; i < material.bindings.size(); i++){
-    //         success &= BindBinding( material.bindings[i],
-    //                                 shader.layout,
-    //                                 shader.layout.descriptorSets[i],
-    //                                 i,
-    //                                 frame_index,
-    //                                 writer);
-    //     }
-    //     return success;
-    // }
-
-    // template<typename BufferWriterType>
-    // bool MaterialManager::BindPipeline(CommandBufferWriter<BufferWriterType> &writer,
-    //                                    Handle<Shader> &handle)
-    // {
-    //     if(!handle)
-    //         return false;
-
-    //     if(!m_shaderManager->isValid(handle))
-    //         return false;
-
-    //     if(m_currentPipeline == handle)
-    //         return true;
-
-    //     m_currentPipeline = handle;
-
-    //     auto pipeline = m_shaderManager->get(m_currentPipeline).pipeline;
-    //     writer.bindPipelineCommand({.pipeline = pipeline,});
-    //     return true;
-    // }
-
-    //template<typename BufferWriterType>
-    // bool MaterialManager::BindBinding(CommandBufferWriter<BufferWriterType> &writer,
-    //                                 Handle<MaterialBinding>         &handle,
-    //                                 ShaderLayout                    &shaderLayout,
-    //                                 Handle<DescriptorSetLayout>     setLayout,
-    //                                 uint32_t                        set_index,
-    //                                 uint32_t                        frame_index)
-    // {
-    //     //invalid binding
-    //     if(!m_bindingsPool->contains(handle)){
-    //         //std::cout << " skipped binding " << set_index << " invalid handle." << std::endl;
-    //         return false;
-    //     }
-        
-    //     //already bound
-    //     if(m_currentBindings[set_index] == handle){
-    //         //std::cout << " skipped binding " << set_index << " already bound." << std::endl;
-    //         return true;
-    //     }
-
-    //     m_currentBindings[set_index] = handle;
-    //     auto& binding = getBinding(handle);
-
-
-    //     auto& layoutContent = m_descriptorManager->getLayoutContent(setLayout);
-    //     auto set = m_descriptorManager->getSet(layoutContent, frame_index);
-        
-    //     std::vector<BindBindingDesc> bindings;
-    //     for(int i = 0; i < binding.bindings.size(); i++){
-    //         BindBindingDesc desc;
-    //         desc.binding = i;
-    //         desc.type = binding.bindings[i].type;
-    //         switch(desc.type){
-    //             case DESCRIPTOR_TYPE::UNIFORM_BUFFER:
-    //                 desc.access.bufferData = m_resourceManager->
-    //                                                 getCommitResourceAccessData(
-    //                                                     binding.bindings[i].binding_handle.buffer,
-    //                                                     frame_index);
-    //                 break;
-                    
-    //             case DESCRIPTOR_TYPE::COMBINED_IMAGE_SAMPLER:
-    //                 desc.access.textureData = m_resourceManager->
-    //                                                 getCommitResourceAccessData(
-    //                                                     binding.bindings[i].binding_handle.renderTex,
-    //                                                 frame_index);
-    //                 break;
-
-    //             case DESCRIPTOR_TYPE::IMAGE:{
-    //                 auto& image = m_resourceManager->getImageManager().
-    //                                                 getImage(
-    //                                                     binding.bindings[i].binding_handle.image);
-    //                 desc.access.imageData = {.view = image.view};
-    //                 break;} 
-
-    //             case DESCRIPTOR_TYPE::SAMPLER:{
-    //                 auto& sampler = m_resourceManager->getImageManager().
-    //                                     getSampler(binding.bindings[i].binding_handle.sampler);
-    //                 desc.access.samplerData = {.sampler = sampler.sampler};
-    //                 break; }
-
-    //         }
-
-    //         bindings.push_back(desc);
-    //     }
-    //     m_descriptorManager->writeSet(bindings,    
-    //                                   set, 
-    //                                   frame_index);
-
-    //     writer.bindSet({ shaderLayout,
-    //                        set,
-    //                        set_index});
-
-
-    //     return true;
-    // }
-
 
     void MaterialManager::resetBindings()
     {

@@ -34,10 +34,21 @@ namespace boitatah
     };
 
     template<typename T>
-    struct SceneNode
+    struct SceneNode : std::enable_shared_from_this<SceneNode<T>>
     {
         private:
-            bool m_dirtyMatrix = true;
+        bool m_dirtyMatrix = true;
+        protected:
+            SceneNode(const SceneNodeDesc<T> &desc) : content(desc.content),
+                                                   name(desc.name),
+                                                   parentNode(desc.parentNode),
+                                                   children(desc.children)
+            {
+                m_localTransform = glm::mat4(1.0f);
+                scale(desc.scale);
+                rotate(desc.rotation);
+                translate(desc.position);
+            }
 
         public:
             std::string name = "node";
@@ -51,15 +62,8 @@ namespace boitatah
             T content;
 
             // Constructor
-            SceneNode(const SceneNodeDesc<T> &desc) : content(desc.content),
-                                                   name(desc.name),
-                                                   parentNode(desc.parentNode),
-                                                   children(desc.children)
-            {
-                m_localTransform = glm::mat4(1.0f);
-                scale(desc.scale);
-                rotate(desc.rotation);
-                translate(desc.position);
+            static std::shared_ptr<SceneNode<T>> create_node(const SceneNodeDesc<T> &desc){
+                return std::shared_ptr<SceneNode<T>>(new SceneNode<T>(desc));
             }
 
             void sceneAsList(std::vector<std::weak_ptr<SceneNode<T>>> &sceneList) const
@@ -144,13 +148,13 @@ namespace boitatah
             void add(SceneNode<T>* node){
                 children.push_back(std::shared_ptr<SceneNode<T>>(node));
                 node->dirty();
-                node->parentNode = std::shared_ptr<SceneNode<T>>(this);
+                node->parentNode = std::shared_ptr<SceneNode<T>>(this->shared_from_this());
             }
 
             void add(std::shared_ptr<SceneNode<T>> node){
-                children.push_back(std::weak_ptr<SceneNode<T>>(node));
+                children.push_back(std::shared_ptr<SceneNode<T>>(node));
                 node->dirty();
-                node->parentNode = std::shared_ptr<SceneNode<T>>(this);
+                node->parentNode = std::shared_ptr<SceneNode<T>>(this->shared_from_this());
             }
     };
 }

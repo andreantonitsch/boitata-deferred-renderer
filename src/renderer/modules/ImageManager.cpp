@@ -46,6 +46,10 @@ Handle<Image> ImageManager::createImage(const ImageDesc &description)
 
     return m_imagePool->set(image);
 }
+bool ImageManager::check_image(const Handle<Image> &handle)
+{
+    return m_imagePool->contains(handle);
+}
 bool ImageManager::contains(Handle<Image> &handle)
 {
     return m_imagePool->contains(handle);

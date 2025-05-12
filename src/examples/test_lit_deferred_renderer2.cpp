@@ -40,9 +40,9 @@ int main()
     //Handle<Geometry> pipe =     GeometryBuilder::Icosahedron(r.getResourceManager());
     Handle<Geometry> pipe =     GeometryBuilder::Sphere(r.getResourceManager(), 2.0f, 20);
 
-    RenderScene scene({.name = "root scene"});
+    auto scene = RenderScene::create_node({.name = "root scene"});
 
-    RenderScene floor({
+    auto floor= RenderScene::create_node({
         .name = "pipe",
         .content = {.geometry = quad,
         .material = material},
@@ -51,7 +51,7 @@ int main()
         .scale = glm::vec3(100, 1.0, 100.0)
     });
 
-    RenderScene ico({
+    auto ico= RenderScene::create_node({
         .name = "pipe",
         .content = {.geometry = pipe,
         .material = material},
@@ -59,22 +59,20 @@ int main()
     });
 
 
-    scene.add(&floor);
-    scene.add(&ico);
+    scene->add(floor);
+    scene->add(ico);
     
     int ico_ring_count = 10;
     float ico_ring_dist = 8;
-    std::vector<RenderScene> nodes;
-    nodes.reserve(ico_ring_count);
+    std::vector<std::shared_ptr<RenderScene>> nodes(ico_ring_count);
     for(float i = 0.0f; i < glm::two_pi<float>(); i+=glm::two_pi<float>()/ico_ring_count){
-        RenderScene ico_ring({
+        nodes.push_back(RenderScene::create_node({
         .name = "pipe",
         .content = {.geometry = pipe,
         .material = material},
         .position = glm::vec3(glm::sin(i) * ico_ring_dist, -2, glm::cos(i) * ico_ring_dist),
-        });
-        nodes.push_back(ico_ring);
-        scene.add(&nodes.back());
+        }));
+        scene->add(nodes.back());
     }
 
     // Scene Description.
@@ -97,12 +95,12 @@ int main()
     
     r.getMaterialManager().printMaterial(composer_material);
     
-    RenderScene composerNode({
+    auto composerNode = RenderScene::create_node({
         .name = "composer",
         .content = {.geometry = quad,
         .material = composer_material},
     });
-    scene.add(&composerNode);
+    scene->add(composerNode);
 
     BufferedCamera camera = r.createCamera({
                    .position = glm::float3(0,-50, -5),

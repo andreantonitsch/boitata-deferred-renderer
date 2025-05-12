@@ -26,8 +26,6 @@ namespace boitatah
 
             attachDesc.index =  index;
 
-            // un-chained attachments dont need to be 
-            // layout initialized
             attachDesc.initialLayout = IMAGE_LAYOUT::UNDEFINED;
             attachDesc.clear = clear;
             imageDesc.dimensions = dimensions;
@@ -237,9 +235,6 @@ namespace boitatah
     {
         for(std::size_t stage_index = 0; stage_index < getStageCount(); stage_index++){
             uint32_t m = 1u << stage_index;
-            std::cout << "testing compatible stage for " << stage_mask <<
-                         " with mask " << m << 
-                         "for stage index " << stage_index << std::endl;
             if((m & stage_mask)){
                 return m_graphs[getCurrentIndex()][stage_index];
             }
@@ -298,8 +293,6 @@ namespace boitatah
         std::vector<bool> set_attachments(desc.attachments.size());
         std::fill(set_attachments.begin(), set_attachments.end(), false);
 
-        std::cout << "new render stage data structures setup done" << std::endl;
-
         //no need to create a new render target
         if (desc.links.targetLink.prev_target_idx != UINT32_MAX) {
             auto prev_stage_handle = graph[desc.links.targetLink.prev_target_idx];
@@ -324,12 +317,11 @@ namespace boitatah
                     if(prev_stage.description.attachments[attachment_index] == 
                        ATTACHMENT_TYPE::DEPTH_STENCIL){
                             target_desc.attachments[attachment_index] = 
-                                prev_pass.description.depth_attachment;
-                       }
+                                prev_pass.description.depth_attachment;}
                     else {
                         target_desc.attachments[attachment_index]
-                            = prev_pass.description.color_attachments[previous_attach_idx];
-                    }
+                            = prev_pass.description.color_attachments[previous_attach_idx];}
+
                     // set it to not clear the attachment 
                     target_desc.attachments[attachment_index].clear = false;
                     set_attachments[attachment_index] = true;
@@ -380,8 +372,7 @@ namespace boitatah
                     tex_desc.format             = attachment.format;
                     tex_desc.samplerInfo        = m_imageManager->getSampler(sampler).data;
                     auto new_attach_copy_tex    = m_resource_mngr->create(tex_desc);
-                    std::cout << "adding stage texture " << newStage.stage_index << 
-                                " attach " << m_stage_textures[newStage.stage_index].size() <<std::endl;
+
                     m_stage_textures[newStage.stage_index].push_back(new_attach_copy_tex);
                 }
 
@@ -389,8 +380,6 @@ namespace boitatah
                 if(desc.links.attachToTexture.size() > 0){
                     std::vector<MaterialBindingAtt> bindings;
                     for(auto& link :desc.links.attachToTexture){
-                        std::cout << "adding attachment to texture link " <<link.prev_stage_idx 
-                         << " "  << link.prev_attach_idx<< std::endl;
                         MaterialBindingAtt binding_att{
                             .type = DESCRIPTOR_TYPE::COMBINED_IMAGE_SAMPLER,
                         };
@@ -407,8 +396,6 @@ namespace boitatah
             newStage.target = m_renderTargetManager->createRenderTarget(target_desc);
         }
 
-
-
         //TODO make this less contrived
         if(newStage.stage_index> 0)
         {
@@ -418,7 +405,6 @@ namespace boitatah
             newStage.wait_list.push_back(prev_target.sync);
         }
 
-        
         newStage.description = desc;
         return newStage;
 
@@ -431,12 +417,21 @@ namespace boitatah
             return;
 
         m_renderTargetManager->destroyRenderTarget(stage.target);
-
-
     }
 
     void BackBufferManager::clearBackBuffer()
-    {
+    {   
+        for(auto graph : m_graphs)
+            for(auto stage : graph)
+                destroy_renderstage(stage);
 
+        m_imageManager->destroySampler(sampler);
+
+        for(auto& stage_textures : m_stage_textures)
+            for(auto& tex : stage_textures)
+                m_resource_mngr->destroy(tex);
+                
+        for(auto& bind : m_stage_bindings)
+                m_material_manager->destroy_binding(bind);
     }
 }

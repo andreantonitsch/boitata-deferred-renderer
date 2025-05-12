@@ -353,7 +353,7 @@ namespace boitatah
         }
     }
 
-    void Renderer::render_graph(RenderScene &scene, BufferedCamera &camera)
+    void Renderer::render_graph(std::shared_ptr<RenderScene> scene, BufferedCamera &camera)
     {
         auto& backbuffer = m_backBufferManager->getNext_Graph();
         m_descriptorManager->resetPools(m_backBufferManager->getCurrentIndex());
@@ -369,14 +369,14 @@ namespace boitatah
         presentRenderTargetNow(present_target, last_stage_wait, present_target_index);
     }
 
-    VkSemaphore Renderer::render_graph_stage(RenderScene &scene, 
-                                      BufferedCamera &camera, 
-                                      Handle<RenderStage> stage_handle,
-                                      VkSemaphore wait_for_last_stage)
+    VkSemaphore Renderer::render_graph_stage(std::shared_ptr<RenderScene> scene, 
+                                            BufferedCamera &camera, 
+                                            Handle<RenderStage> stage_handle,
+                                            VkSemaphore wait_for_last_stage)
     {
 
         std::vector<std::weak_ptr<RenderScene>> nodes;
-        scene.sceneAsList(nodes);
+        scene->sceneAsList(nodes);
 
         // TODO cullings and whatever
         // ETC

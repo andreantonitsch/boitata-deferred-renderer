@@ -84,7 +84,6 @@ namespace boitatah{
             std::vector<Handle<MaterialBinding>>            m_stage_bindings;
 
             PresentLink         present_link;
-            Handle<RenderPass>  renderpass;
             uint32_t            current = 0U;
             uint32_t            stage_count = 0U;
     };

@@ -101,18 +101,9 @@ bvk::Vulkan::Vulkan(VulkanOptions opts)
 
 }
 
-
-
-
-// void bvk::Vulkan::createCommandBufferWriter()
-// {
-//     m_commandBufferWriter =  std::make_shared<VkCommandBufferWriter>(shared_from_this());;
-// }
-
 std::shared_ptr<bvk::Vulkan> boitatah::vk::Vulkan::create(VulkanOptions opts)
 {
     std::shared_ptr<Vulkan> new_vulkan = std::make_shared<Vulkan>(opts);
-    //new_vulkan->createCommandBufferWriter();
     return new_vulkan;
 }
 

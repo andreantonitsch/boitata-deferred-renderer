@@ -11,6 +11,7 @@ namespace boitatah{
         CAMERA      = 0, //renders a SceneNode list
         SCREEN_QUAD = 1  //renders a screenquad (for compositing/post-processing)
     };
+
     struct PresentLink{
         //TargetLinkType type;
         uint32_t target_idx;
@@ -61,7 +62,7 @@ namespace boitatah{
 
     struct RenderStageDesc{
         StageType type = StageType::CAMERA;
-        //depth_stencil attachments currently have to be the last in the list.
+        //TODO depth_stencil attachments currently have to be the last in the list.
         std::vector<ATTACHMENT_TYPE> attachments = {ATTACHMENT_TYPE::COLOR,
                                                     ATTACHMENT_TYPE::DEPTH_STENCIL};
         std::vector<IMAGE_FORMAT> attachmentFormats = {
@@ -70,7 +71,6 @@ namespace boitatah{
             };
         bool clear = true;
         SAMPLES samples = SAMPLES::SAMPLES_1;
-        //SamplerData sampler_desc = SamplerData{};
         BindingLinks links;
     };
 
@@ -79,8 +79,6 @@ namespace boitatah{
         StageType type = StageType::CAMERA;
         bool clear = true;
         Handle<RenderTarget> target;
-        //std::vector<Handle<RenderTexture>> attachment_copy_tex;
-        //Handle<MaterialBinding> materialBinding;
         std::vector<Handle<RenderTargetSync>> wait_list;
         RenderStageDesc description;
     

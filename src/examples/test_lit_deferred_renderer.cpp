@@ -39,10 +39,10 @@ int main()
     //Handle<Geometry> pipe =     GeometryBuilder::Cylinder(r.getResourceManager(), 0.5, 2.0, 10, 32);
     Handle<Geometry> pipe =     GeometryBuilder::Icosahedron(r.getResourceManager());
 
-    RenderScene scene({.name = "root scene"});
-    std::vector<RenderScene> nodes;
+    auto scene = RenderScene::create_node({.name = "root scene"});
+    std::vector<std::shared_ptr<RenderScene>> nodes;
 
-    RenderScene floor({
+    auto floor = RenderScene::create_node({
         .name = "pipe",
         .content = {.geometry = quad,
         .material = material},
@@ -51,7 +51,7 @@ int main()
         .scale = glm::vec3(100, 1.0, 100.0)
     });
 
-    RenderScene ico({
+    auto ico = RenderScene::create_node({
         .name = "pipe",
         .content = {.geometry = pipe,
         .material = material},
@@ -64,12 +64,12 @@ int main()
         for(int i = 0; i < k; i++)
             for(int j = 0; j < k; j++){
                 nodes.push_back(ico);
-                nodes.back().translate(glm::vec3(std::sin(std::rand()) * 25, 
+                nodes.back()->translate(glm::vec3(std::sin(std::rand()) * 25, 
                                                  -k,
                                                  std::sin(std::rand()) * 25));
-                scene.add(&nodes.back());
+                scene->add(nodes.back());
         }
-    scene.add(&floor);
+    scene->add(floor);
 
     // Scene Description.
     std::cout << "creating deferred composer material" << std::endl;
@@ -94,12 +94,12 @@ int main()
     
     r.getMaterialManager().printMaterial(composer_material);
     
-    RenderScene composerNode({
+    auto composerNode = RenderScene::create_node({
         .name = "composer",
         .content = {.geometry = quad,
         .material = composer_material},
     });
-    scene.add(&composerNode);
+    scene->add(composerNode);
 
     BufferedCamera camera = r.createCamera({
                    .position = glm::float3(0,-50, -5),
