@@ -8,7 +8,6 @@
 namespace boitatah{
 
     class GPUBuffer;
-    class FixedTexture;
     class RenderTexture;
 
 
@@ -16,7 +15,6 @@ namespace boitatah{
         DESCRIPTOR_TYPE type;
         union {
             Handle<GPUBuffer> buffer;
-            Handle<FixedTexture> fixedTex;
             Handle<RenderTexture> renderTex;
             Handle<Image> image;
             Handle<Sampler> sampler;

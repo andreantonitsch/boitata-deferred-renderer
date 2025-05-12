@@ -91,6 +91,11 @@ namespace boitatah{
             return *this;
         }
 
+        // moves all indices from src to dst, then deletes dest and fixes indices.
+        GeometryBuildData& merge_vertex(uint32_t dest, uint32_t src){
+            return *this;
+        }
+
     };
 
 
@@ -298,7 +303,7 @@ namespace boitatah{
         .indices = indices};
     };
 
-    //pre condition: sides <= 3
+    //pre condition: sides >= 3
     static constexpr GeometryBuildData cylinder(const float         radius, 
                                                 const float         height,
                                                 const uint32_t      heightSegments, 
@@ -327,33 +332,28 @@ namespace boitatah{
         return cyl;
     };
 
-    //pre condition: sides <= 3
+    //pre condition: longitude_segments >= 3
+    //pre condition: latitude_segments >= 3
     static constexpr GeometryBuildData uv_sphere(const float         radius, 
-                                                 const float         height,
-                                                 const uint32_t      heightSegments, 
-                                                 const uint32_t      sides){
-
-        auto cyl = pipe(radius, height, heightSegments, sides);
-
-        float half_height = height / 2;
-
-        auto c = circle(radius, sides);
-        glm::mat4 m_transform = glm::mat4(1.0f);
-        m_transform = glm::eulerAngleXYZ(glm::radians(90.0f), 0.0f, 0.0f) * m_transform;
-        m_transform = glm::translate(m_transform, glm::vec3(0.0f, 0.0f, half_height));
-        c.transform(m_transform);
-
-        cyl += c;
+                                                 const uint32_t      longitude_segments,
+                                                 const uint32_t      latitude_segments){
         
-        c = circle(radius, sides);
-        m_transform = glm::mat4(1.0f);
-        m_transform = glm::eulerAngleXYZ(glm::radians(-90.0f), 0.0f, 0.0f) * m_transform;
-        m_transform = glm::translate(m_transform, glm::vec3(0.0f, 0.0f, -half_height));
-        c.transform(m_transform);
+        auto sphere = planeVertices(1.0f, 1.0f, longitude_segments, latitude_segments);
 
-        cyl += c;
+        for(uint32_t i = 0; i < sphere.vertices.size(); i++){
 
-        return cyl;
+            auto uv = sphere.uv[i];
+            auto lat = uv.y * glm::pi<float>() - glm::half_pi<float>();
+            auto lon = uv.x * glm::two_pi<float>();
+            sphere.vertices[i] = {glm::cos(lon) * glm::cos(lat),
+                                  glm::sin(lat),
+                                  glm::sin(lon)* glm::cos(lat)};
+            sphere.normal[i] = glm::normalize(sphere.vertices[i]);
+        }
+
+        //TODO remove extra vertices
+
+        return sphere;
     };
 
     static constexpr GeometryBuildData icosahedron(){

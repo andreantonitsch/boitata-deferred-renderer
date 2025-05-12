@@ -57,10 +57,10 @@ namespace boitatah
             return {imageDesc, attachDesc};        
     }
 
-    BackBufferDesc2 BackBufferManager::BasicDeferredPipeline(uint32_t windowWidth, 
+    BackBufferDesc BackBufferManager::BasicDeferredPipeline(uint32_t windowWidth, 
                                                              uint32_t windowHeight)
     {
-        return BackBufferDesc2{
+        return BackBufferDesc{
                                 .dimensions = {windowWidth, windowHeight},
                                 .render_stages = {
                                     RenderStageDesc{
@@ -90,9 +90,9 @@ namespace boitatah
                                 .present_link = {1, 0},
                                 };
     }
-    BackBufferDesc2 BackBufferManager::BasicForwardPipeline(uint32_t windowWidth, uint32_t windowHeight)
+    BackBufferDesc BackBufferManager::BasicForwardPipeline(uint32_t windowWidth, uint32_t windowHeight)
     {
-        return BackBufferDesc2{
+        return BackBufferDesc{
                                    .dimensions = {windowWidth, windowHeight},
                                    .render_stages = {
                                         RenderStageDesc{
@@ -108,10 +108,10 @@ namespace boitatah
                                    };
     };
 
-    BackBufferDesc2 BackBufferManager::BasicMultiWriteForwardPipeline(uint32_t windowWidth,
+    BackBufferDesc BackBufferManager::BasicMultiWriteForwardPipeline(uint32_t windowWidth,
                                                                       uint32_t windowHeight,
                                                                       uint32_t present_index){
-        return BackBufferDesc2{
+        return BackBufferDesc{
                                    .dimensions = {windowWidth, windowHeight},
                                    .render_stages = {
                                         RenderStageDesc{
@@ -145,8 +145,7 @@ namespace boitatah
     };
 
 
-    void BackBufferManager::setup2(BackBufferDesc2 &desc){
-        clearBackBuffer();
+    void BackBufferManager::setup(BackBufferDesc &desc){
         m_stagePool = std::make_unique<Pool<RenderStage>>(PoolOptions{
             .size = 10, .dynamic = true, .name = "Render Stage Pool" });
         sampler = m_imageManager->createSampler({});
@@ -156,25 +155,21 @@ namespace boitatah
         m_stage_bindings.clear();
         m_stage_bindings.resize(desc.render_stages.size());
 
-        std::cout << "Starting Graph construction" << std::endl;
         for (int i = 0; i < desc.render_stages.size(); ++i)
             for (int j = 0; j < m_graphs.size(); ++j){
-                auto new_stage = addRenderStageToGraph(
+                auto new_stage = create_renderstage(
                     desc.render_stages[i],
                     desc.dimensions,
                     m_graphs[j]);
                 auto new_stage_handle = m_stagePool->set(new_stage);
                 m_graphs[j].push_back(new_stage_handle);
-                std::cout << "Added new stage" << std::endl;
             }
         present_link = desc.present_link;
         stage_count = desc.render_stages.size();
-        // frame_fences.resize(m_graphs.size());
-        // for(int i = 0; i < frame_fences.size(); i ++)
-        //     frame_fences[i] = m_vulkan->createFence(true);
-        
-        std::cout << "backbuffer setup2 finished" << std::endl;
 
+    }
+    void BackBufferManager::regenerate_backbuffer(BackBufferDesc &desc) {
+        
     };
 
     uint32_t BackBufferManager::getCurrentIndex(){
@@ -285,7 +280,7 @@ namespace boitatah
     };
 
 
-    RenderStage BackBufferManager::addRenderStageToGraph(
+    RenderStage BackBufferManager::create_renderstage(
                                         RenderStageDesc                    &desc,
                                         glm::vec2                          dimensions,
                                         std::vector<Handle<RenderStage>>   &graph)
@@ -429,13 +424,19 @@ namespace boitatah
 
     }
 
+    void BackBufferManager::destroy_renderstage(Handle<RenderStage> &handle)
+    {
+        RenderStage stage;
+        if(!m_stagePool->tryGet(handle, stage))
+            return;
+
+        m_renderTargetManager->destroyRenderTarget(stage.target);
+
+
+    }
+
     void BackBufferManager::clearBackBuffer()
     {
-        for (auto &attach : m_buffers)
-        {
-            m_renderTargetManager->destroyRenderTarget(attach);
-        }
-        m_renderTargetManager->destroyRenderPass(renderpass);
-        m_buffers.clear();
+
     }
 }

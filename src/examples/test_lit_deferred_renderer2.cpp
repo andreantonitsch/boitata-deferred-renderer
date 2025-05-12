@@ -37,7 +37,8 @@ int main()
 
     Handle<Geometry> quad =     GeometryBuilder::Quad(r.getResourceManager());
     //Handle<Geometry> pipe =     GeometryBuilder::Cylinder(r.getResourceManager(), 0.5, 2.0, 10, 32);
-    Handle<Geometry> pipe =     GeometryBuilder::Icosahedron(r.getResourceManager());
+    //Handle<Geometry> pipe =     GeometryBuilder::Icosahedron(r.getResourceManager());
+    Handle<Geometry> pipe =     GeometryBuilder::Sphere(r.getResourceManager(), 2.0f, 20);
 
     RenderScene scene({.name = "root scene"});
 
@@ -84,11 +85,11 @@ int main()
     r.setLightArray(light_handle);
     auto& lights = r.getLightArray(light_handle);
 
-        lights.addLight({
-                        .position = glm::vec4(1, -5, 0, 0),
-                        .color = glm::vec4(1.0, 1.0, 1.0, 0),
-                        .intensity = 10,
-                        });
+    lights.addLight({
+                    .position = glm::vec4(1, -5, 0, 0),
+                    .color = glm::vec4(1.0, 1.0, 1.0, 0),
+                    .intensity = 10,
+                    });
     lights.update();
     
     r.getMaterialManager().setBufferBindingAttribute(composer_material, lights.metadata(), 1, 0);
@@ -120,20 +121,23 @@ int main()
     {
         float t = count * frame_TimeScale;
         count++;
-
+        
         lights[0].position = glm::vec4(dist * sin(t),
                                         lights[0].position.y ,
                                        dist * cos(t),
                                         0);
+        lights[0].intensity = 8 * (sin(t / 2) * 0.5f + 0.5f) + 2;
         lights.update();
-        camera.setPosition(glm::float3(0,-10 * abs((sin(t/20))) -5, -5));
+        camera.setPosition(glm::float3(0,-10 * ((sin(t/20))*0.5f + 1.0f) -5, -5));
         camera.lookAt(glm::vec3(0));
 
         r.render_graph(scene, camera);
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
     }
     r.waitIdle();
-
+    r.getResourceManager().destroy(texture);
+    r.getResourceManager().destroy(quad);
+    r.getResourceManager().destroy(pipe);
 
     return EXIT_SUCCESS;
 }

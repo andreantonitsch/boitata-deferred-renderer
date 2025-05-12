@@ -10,7 +10,7 @@
 namespace boitatah{
 
     class GPUResourceManager;
-    template<template <typename > class DerivedResource, typename Resource>
+    template<typename Resource, int Copies>
     class GPUResource //gpu data + metadata object
     {
         friend GPUResourceManager;
@@ -23,27 +23,35 @@ namespace boitatah{
             uint8_t dirty = 255u;
             uint8_t commited = 255u;
             uint32_t last_updated_frame = 0U;
-            DerivedResource<Resource>& self(){return *static_cast<DerivedResource<Resource> *>(this);};
+
+            std::array<typename ResourceTraits<Resource>::ContentType, Copies> replicated_content;
+
+
+            Resource& self(){return *static_cast<Resource*>(this);};
 
             GPUResource() = default;
             GPUResource(const ResourceDescriptor &descriptor, std::shared_ptr<GPUResourceManager> manager)
                 : m_manager(manager),
                   m_descriptor(descriptor)
             {
+                for(int i = 0; i < Copies; i++)
+                    replicated_content[i] = self().CreateGPUData();
             };
              
             void set_descriptor(const ResourceDescriptor &descriptor){
                 this->m_descriptor = descriptor;
             }
 
-            void clean_dirt(int frameIndex = 0) 
-            { dirty = dirty & ~(static_cast<uint8_t>(1u) << (frameIndex%2)); };
+            void clean_dirt(int frame_index = 0) 
+            { dirty = dirty & ~(static_cast<uint8_t>(1u) << (frame_index%2)); };
 
-            void clean_commit(int frameIndex = 0) 
+            void clean_commit(int frame_index = 0) 
             { commited = 255u;};
 
             void release(){
-                self().__impl_release();
+                for(int i = 0; i < Copies; i++)
+                    self().ReleaseData(replicated_content[i]);
+                self().Release();
             };
 
             /// @brief commits to update this resource next time resources are updated
@@ -54,39 +62,36 @@ namespace boitatah{
                 last_updated_frame = frame_index;
                 set_commited(frame_index);
                 clean_dirt(frame_index);
-                self().__impl_commit(frame_index, writer);
+                self().WriteTransfer(replicated_content[frame_index % Copies], writer.self());
             };
-            void ready_content( uint32_t                                      frameIndex, 
+            void ready_content( uint32_t                                      frame_index, 
                                ResourceTraits<Resource>::CommandBufferWriter   &writer){
-                if((!check_content_ready(frameIndex)||
-                     check_dirt(frameIndex) ))
-                        commit(frameIndex, writer);
+                if((!ready_for_use(frame_index)||
+                     check_dirt(frame_index) ))
+                        commit(frame_index, writer);
             }
             // can only be used when writting a transfer buffer.
             ResourceTraits<Resource>::ContentType& get_content_commit_update(
-                            uint32_t                                        frameIndex, 
+                            uint32_t                                        frame_index, 
                             ResourceTraits<Resource>::CommandBufferWriter   &writer)
             {
-                ready_content(frameIndex, writer);
-                return get_content(frameIndex);
+                ready_content(frame_index, writer);
+                return get_content(frame_index);
             };
             
 
             // can only be used when writting a transfer buffer.
             ResourceTraits<Resource>::RenderData get_render_data_commit_update(
-                            uint32_t                                        frameIndex, 
+                            uint32_t                                        frame_index, 
                             ResourceTraits<Resource>::CommandBufferWriter   &writer)
             {
                 //data is not commited, and not ready // dirty
-                ready_content(frameIndex, writer);
-                return get_render_data(frameIndex);
-            };
-            bool check_content_ready(int frameIndex){
-                return self().__impl_ready_for_use(frameIndex);
+                ready_content(frame_index, writer);
+                return get_render_data(frame_index);
             };
 
-            bool check_dirt(uint32_t frameIndex) 
-            { return 0u < (dirty & (1u << (frameIndex%2))); };
+            bool check_dirt(uint32_t frame_index) 
+            { return 0u < (dirty & (1u << (frame_index%2))); };
 
             void set_dirty(){dirty = 255u; commited = 255u;};
 
@@ -95,17 +100,17 @@ namespace boitatah{
 
             public:
 
-                bool ready_for_use(uint32_t frameIndex) { return self().__impl_ready_for_use(frameIndex);};
-                bool check_commited(uint32_t frameIndex) { return 0u == ((commited << (frameIndex%2))); };
+                bool ready_for_use(uint32_t frame_index) { return self().ReadyForUse(replicated_content[frame_index % Copies]);};
+                bool check_commited(uint32_t frame_index) { return 0u == ((commited << (frame_index % Copies))); };
             
-                ResourceTraits<Resource>::RenderData get_render_data(uint32_t frameIndex)
+                ResourceTraits<Resource>::RenderData get_render_data(uint32_t frame_index)
                 {
-                    return self().__impl_get_render_data(frameIndex);
+                    return self().GetRenderData(frame_index);
                 };
                 
-                ResourceTraits<Resource>::ContentType& get_content(uint32_t frameIndex)
+                ResourceTraits<Resource>::ContentType& get_content(uint32_t frame_index)
                 {
-                    return self().__impl_get_resource_content(frameIndex);
+                    return replicated_content[frame_index % Copies];
                 };
 
                 uint32_t get_data(void* const dstPtr, uint32_t frame_index) const {
@@ -117,115 +122,9 @@ namespace boitatah{
 
                     return self().__impl_get_data(dstPtr, frame_index);
                 };
-
-    };
-
-    template<typename Resource>
-    class  MutableGPUResource : public GPUResource<MutableGPUResource, Resource>// gpu data + metadata object
-    {
-        friend class GPUResource<MutableGPUResource, Resource>;
-
-        protected :
-            std::array<typename ResourceTraits<Resource>::ContentType, 2> replicated_content; //<< clear up on release
-
-            MutableGPUResource() = default;
-            MutableGPUResource(const ResourceDescriptor &descriptor, std::shared_ptr<GPUResourceManager> manager) 
-                              : GPUResource<MutableGPUResource, Resource>(descriptor, manager){
-
-                replicated_content[0] = resource().CreateGPUData();
-                replicated_content[1] = resource().CreateGPUData();
-            }; //Constructor
-
-        public :
-            using GPUResource<MutableGPUResource, Resource>::get_content;
-            using GPUResource<MutableGPUResource, Resource>::self;
-            using GPUResource<MutableGPUResource, Resource>::commit;
-            using GPUResource<MutableGPUResource, Resource>::get_render_data;
-
-            Resource& resource(){return *static_cast<Resource *>(this); };
-
-            bool __impl_ready_for_use(uint32_t frame_index){
-                return resource().ReadyForUse(replicated_content[frame_index%2]);
-            }
-
-            ResourceTraits<Resource>::ContentType& __impl_get_resource_content(uint32_t frame_index){
-                return replicated_content[frame_index % 2];
-            };
-
-            ResourceTraits<Resource>::RenderData __impl_get_render_data(uint32_t frameIndex)
-            {
-                return resource().GetRenderData(frameIndex);
-            };
-
-            void __impl_release(){
-                resource().ReleaseData(replicated_content[0]);
-                resource().ReleaseData(replicated_content[1]);
-                resource().Release();
-            };
-
-            void __impl_commit(uint32_t frame_index, ResourceTraits<Resource>::CommandBufferWriter& writer){
-                resource().WriteTransfer(replicated_content[frame_index % 2], writer.self());
-            }
-
-    };
-
-    template<typename Resource>
-    class  ImmutableGPUResource : public GPUResource<ImmutableGPUResource, Resource>/// gpu data + metadata object
-    {   
-
-        friend class GPUResource<ImmutableGPUResource, Resource>;
-
-        protected :
-            ResourceTraits<Resource>::ContentType content; //<< clear up on release
-
-            ImmutableGPUResource() = default;
-            ImmutableGPUResource(const ResourceDescriptor &descriptor, std::shared_ptr<GPUResourceManager> manager) 
-                              : GPUResource<ImmutableGPUResource, Resource>(descriptor, manager){
-
-                content = resource().CreateGPUData();
-            }; //Constructor
-
-        public :
-            using GPUResource<ImmutableGPUResource, Resource>::get_content;
-            using GPUResource<ImmutableGPUResource, Resource>::self;
-            using GPUResource<ImmutableGPUResource, Resource>::commit;
-
-            Resource& resource(){return *static_cast<Resource *>(this); };
-
-            bool __impl_check_content_ready(uint32_t frame_index){
-                return true;
-            }
-
-            ResourceTraits<Resource>::ContentType& __impl_get_resource_content(uint32_t frame_index){
-                return content;
-            };
-
-            uint32_t __impl_get_data(void* dstPtr, uint32_t frame_index){
-                return 0;
-            };
-
-            ResourceTraits<Resource>::RenderData __impl_get_render_data(uint32_t frameIndex)
-            {
-                return resource().GetRenderData(frameIndex);
-            };
-
-
-            bool __impl_ready_for_use(uint32_t frame_index){
-                return self().check_dirt(frame_index) ;
-            };
-
-            void __impl_release(std::shared_ptr<GPUResourceManager> manager){
-                resource().ReleaseData(content);
-                resource().Release();
                 
-            };
 
-            void __impl_commit(uint32_t frame_index, ResourceTraits<Resource>::CommandBufferWriter& writer){
-                resource().WriteTransfer(content, writer.self());
-            }
     };
-
-
 
 }
 

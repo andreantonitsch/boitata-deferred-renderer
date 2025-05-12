@@ -111,6 +111,7 @@ namespace boitatah::vk
         void destroyRenderTargetCmdData(const RenderTargetSync &sync);
         void destroyBuffer(BufferVkData buffer) const;
         void destroyFence(VkFence fence);
+        void destroySemaphore(VkSemaphore semaphore);
         void destroyDescriptorPool(VkDescriptorPool pool);
         void destroyDescriptorSetLayout(VkDescriptorSetLayout &layout);
         void destroySampler(VkSampler& sampler);

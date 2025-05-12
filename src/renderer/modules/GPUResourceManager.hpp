@@ -21,19 +21,21 @@
 namespace boitatah
 {
 
-    template<template <typename > class DerivedResource, typename Resource>
+    template<typename Resource, int Copies>
     class GPUResource;
 
     class GPUResourceManager : public std::enable_shared_from_this<GPUResourceManager>
     {
         
-        template<template <typename > class T, typename Y> friend class GPUResource;
+        template<typename Resource, int Copies> friend class GPUResource;
         
         public:
             GPUResourceManager(std::shared_ptr<vk::Vulkan> vk_instance,
                                std::shared_ptr<buffer::BufferManager> bufferManager,
                                std::shared_ptr<ImageManager> imageManager,
                                uint32_t buffer_writer_count); //contructor
+
+            ~GPUResourceManager();
 
             vk::VkCommandBufferWriter& getCurrentBufferWriter(){
                 return *m_buffer_writers[m_current_writer];

@@ -13,7 +13,6 @@
 
 namespace boitatah{
 
-    class FixedTexture;
     class RenderTexture;
     class GPUResourceManager;
     class GPUBuffer;
@@ -44,12 +43,7 @@ namespace boitatah{
         using CommandBufferWriter = vk::VkCommandBufferWriter;
         using RenderData = TextureAccessData;
     };
-    template<>
-    struct ResourceTraits<FixedTexture>{
-        using ContentType = TextureGPUData;
-        using CommandBufferWriter = vk::VkCommandBufferWriter;
-        using RenderData = TextureAccessData;
-    };
+
     template<>
     struct ResourceTraits<RenderTexture>{
         using ContentType = TextureGPUData;
@@ -115,30 +109,8 @@ namespace boitatah{
             void transition(TextureMode mode);
     };
 
-    class FixedTexture : public Texture, public MutableGPUResource<FixedTexture>{
-            
-            public:
-                FixedTexture() = default;
-                ~FixedTexture() = default;
-                FixedTexture(const FixedTexture& other) = default;
 
-                FixedTexture(const TextureCreateDescription& description, std::shared_ptr<GPUResourceManager> manager);
-
-                TextureGPUData CreateGPUData() 
-                    {return Texture::CreateGPUData();};
-                bool ReadyForUse(TextureGPUData& content)
-                    {return Texture::ReadyForUse(content);};
-                void ReleaseData(TextureGPUData& content)
-                    {Texture::ReleaseData(content);};
-                void Release()
-                    {Texture::Release();};
-                void WriteTransfer(TextureGPUData& data, CommandBufferWriter<vk::VkCommandBufferWriter> &writer)
-                    {return Texture::WriteTransfer(data, writer);};
-
-    };
-
-
-    class RenderTexture : public Texture, public MutableGPUResource<RenderTexture>{
+    class RenderTexture : public Texture, public GPUResource<RenderTexture, 2>{
             //friend class MutableGPUResource<RenderTexture>;
             public:
                 RenderTexture() = default;
@@ -147,7 +119,7 @@ namespace boitatah{
 
                 RenderTexture(const TextureCreateDescription &description, std::shared_ptr<GPUResourceManager> manager)
                 :   Texture(description, manager),
-                    MutableGPUResource<RenderTexture>({ //Base Constructor
+                    GPUResource<RenderTexture, 2>({ //Base Constructor
                                                 .sharing = SHARING_MODE::EXCLUSIVE,
                                                 .type = RESOURCE_TYPE::TEXTURE,
                                                 .mutability = RESOURCE_MUTABILITY::MUTABLE,

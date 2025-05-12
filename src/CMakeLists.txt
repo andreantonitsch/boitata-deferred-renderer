@@ -20,6 +20,7 @@ set(LIB_DIR_SOURCES
             types/Texture.cpp
             types/Lights.cpp
             renderer/resources/GPUBuffer.cpp
+            renderer/resources/Geometry.cpp
             renderer/modules/Swapchain.cpp
             renderer/modules/Camera.cpp
             renderer/modules/BackBuffer.cpp

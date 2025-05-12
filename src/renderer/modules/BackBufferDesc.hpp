@@ -59,20 +59,6 @@ namespace boitatah{
 
     };
 
-
-    /// @brief attachments.size() == attachmentFormats.size()
-    struct BackBufferDesc{
-        std::vector<ATTACHMENT_TYPE> attachments = {ATTACHMENT_TYPE::COLOR,
-                                                    ATTACHMENT_TYPE::DEPTH_STENCIL};
-        std::vector<IMAGE_FORMAT> attachmentFormats = {
-            IMAGE_FORMAT::RGBA_8_SRGB,
-            IMAGE_FORMAT::R_32_SFLOAT
-            };
-        SAMPLES samples = SAMPLES::SAMPLES_1;
-        glm::u32vec2 dimensions = {0, 0};
-    };
-
-
     struct RenderStageDesc{
         StageType type = StageType::CAMERA;
         //depth_stencil attachments currently have to be the last in the list.
@@ -100,7 +86,7 @@ namespace boitatah{
     
     };
 
-    struct BackBufferDesc2{
+    struct BackBufferDesc{
         glm::u32vec2 dimensions = {0, 0};
         std::vector<RenderStageDesc> render_stages;
         PresentLink present_link;

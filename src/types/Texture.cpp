@@ -218,6 +218,6 @@ namespace boitatah{
 
     TextureAccessData RenderTexture::GetRenderData(uint32_t frame_index)
     {
-        return Texture::GetRenderData(resource().get_content(frame_index));        
+        return Texture::GetRenderData(self().get_content(frame_index));        
     }
 };

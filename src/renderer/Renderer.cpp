@@ -49,8 +49,8 @@ namespace boitatah
         m_buffer_writer->set_commandbuffer(allocateCommandBuffer({.count = 1,
                                                     .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                                                     .type = COMMAND_BUFFER_TYPE::TRANSFER}).buffer);
-        m_buffer_writer->setFence(m_vk->createFence(true));
-        m_buffer_writer->setSignal(m_vk->createSemaphore());
+        m_buffer_writer->set_fence(m_vk->createFence(true));
+        m_buffer_writer->set_signal(m_vk->createSemaphore());
         
 
         //Initialize the renderer Modules
@@ -72,7 +72,7 @@ namespace boitatah
                                                                   m_vk);
         
 
-        m_backBufferManager->setup2(m_options.backBufferDesc2);
+        m_backBufferManager->setup(m_options.backBufferDesc2);
         
 
         std::cout << "starting base material creation" << std::endl;
@@ -102,7 +102,7 @@ namespace boitatah
             static_cast<uint32_t>(newWindowSize.y),
         };
 
-        m_backBufferManager->setup2(m_options.backBufferDesc2);
+        m_backBufferManager->setup(m_options.backBufferDesc2);
     }
 
     void Renderer::createSwapchain()
@@ -316,13 +316,13 @@ namespace boitatah
 
         auto present_writer = VkCommandBufferWriter(m_vk);
         present_writer.set_commandbuffer(buffers.present_buffer.buffer);
-        present_writer.setFence(buffers.in_flight_fence);
+        present_writer.set_fence(buffers.in_flight_fence);
         //TODO fix this garbo
         m_vk->reset_fence(buffers.in_flight_fence);
 
         //sets semaphores
         present_writer.setWait(waits);
-        present_writer.setSignal(buffers.transfer_semaphore);
+        present_writer.set_signal(buffers.transfer_semaphore);
         
         
         present_writer.reset({});
@@ -408,7 +408,7 @@ namespace boitatah
 
         auto writer = VkCommandBufferWriter(m_vk);
         writer.set_commandbuffer(buffers.draw_buffer.buffer);
-        writer.setSignal(buffers.draw_semaphore);
+        writer.set_signal(buffers.draw_semaphore);
         writer.setWait({*resource_writer.get_signal()});
         writer.reset({});
         writer.begin({});
@@ -488,7 +488,7 @@ namespace boitatah
 
         m_resourceManager->submitCommitCommands();
 
-        //writer.setFence(buffers.in_flight_fence);
+        //writer.set_fence(buffers.in_flight_fence);
         writer.submit({ .submitType = COMMAND_BUFFER_TYPE::GRAPHICS,
                         .signal = true});
         
@@ -505,7 +505,7 @@ namespace boitatah
                                                      IMAGE_LAYOUT::COLOR_ATT);
         }
         buffer_writer.setWait({buffers.draw_semaphore});
-        //buffer_writer.setFence(buffers.in_flight_fence);
+        //buffer_writer.set_fence(buffers.in_flight_fence);
         m_resourceManager->submitCommitCommands();
 
         return *buffer_writer.get_signal();

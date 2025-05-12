@@ -47,13 +47,18 @@ namespace boitatah::command_buffers{
                 m_buffer = buffer;
             };
 
-            void setFence(FenceType fence) {
+            void set_fence(FenceType fence) {
                 m_fence = fence;
             };
+            CommandWriterTraits<T>::FenceType* get_fence(){return &(self().m_fence);}
 
-            void setSignal(SemaphoreType semaphore) {
+            void set_signal(SemaphoreType semaphore) {
                 m_signal = semaphore;
             };
+
+            CommandWriterTraits<T>::SemaphoreType* get_signal(){return &(self().m_signal);}
+
+
             void setWait(std::vector<SemaphoreType> semaphores) {
                 m_wait = semaphores;
             };
@@ -127,7 +132,6 @@ namespace boitatah::command_buffers{
             }
 
 
-            CommandWriterTraits<T>::SemaphoreType* get_signal(){return &(self().m_signal);}
 
     };
 

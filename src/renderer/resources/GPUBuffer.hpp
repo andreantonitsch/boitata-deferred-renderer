@@ -51,9 +51,9 @@ namespace boitatah
                    usage(createDescription.usage){};
     };
  
-    class GPUBuffer : public GPUBufferHelper, public MutableGPUResource<GPUBuffer>
+    class GPUBuffer : public GPUBufferHelper, public GPUResource<GPUBuffer, 2>
     {
-        friend class MutableGPUResource<GPUBuffer>;
+        friend class GPUResource<GPUBuffer, 2>;
         //~GPUBuffer(void){};
 
         public :
@@ -64,7 +64,7 @@ namespace boitatah
             // Constructor
             GPUBuffer(const GPUBufferCreateDescription &createDescription, std::shared_ptr<GPUResourceManager> manager) :   
                     GPUBufferHelper(createDescription),
-                    MutableGPUResource<GPUBuffer>({ //Base Constructor
+                    GPUResource<GPUBuffer, 2>({ //Base Constructor
                                                     .sharing = createDescription.sharing_mode,
                                                     .type = RESOURCE_TYPE::GPU_BUFFER,
                                                     .mutability = RESOURCE_MUTABILITY::MUTABLE,

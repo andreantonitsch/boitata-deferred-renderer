@@ -17,13 +17,13 @@ namespace boitatah{
     class BackBufferManager{
         public:
 
-        static BackBufferDesc2 BasicDeferredPipeline(uint32_t windowWidth, 
+        static BackBufferDesc BasicDeferredPipeline(uint32_t windowWidth, 
                                                     uint32_t windowHeight);
 
-        static BackBufferDesc2 BasicForwardPipeline(uint32_t windowWidth,
+        static BackBufferDesc BasicForwardPipeline(uint32_t windowWidth,
                                                     uint32_t windowHeight);
                                                     
-        static BackBufferDesc2 BasicMultiWriteForwardPipeline(uint32_t windowWidth,
+        static BackBufferDesc BasicMultiWriteForwardPipeline(uint32_t windowWidth,
                                                               uint32_t windowHeight,
                                                               uint32_t present_index);
     
@@ -36,7 +36,10 @@ namespace boitatah{
                            std::shared_ptr<Vulkan>              vulkan_instance);
         ~BackBufferManager(void);
 
-        void setup2(BackBufferDesc2 &desc);
+        //sets up the initial backbuffer
+        void setup(BackBufferDesc &desc);
+        //corrects a set up backbuffer with a new description without changing handles.
+        void regenerate_backbuffer(BackBufferDesc &desc);
 
         uint32_t                getCurrentIndex();
 
@@ -56,11 +59,14 @@ namespace boitatah{
         Handle<RenderStage>                 getCompatibleRenderStage(uint32_t stage_mask);
         Handle<RenderStage>                 getCompatibleRenderStages(uint32_t stage_mask);
 
+        
+
         private:
             //Creates a new RenderStage.
             //Based on `desc` and the BackBuffer dimensions.
-            RenderStage addRenderStageToGraph( RenderStageDesc& desc, glm::vec2 dimensions, 
+            RenderStage create_renderstage( RenderStageDesc& desc, glm::vec2 dimensions, 
                                                std::vector<Handle<RenderStage>>& graph);
+            void destroy_renderstage(Handle<RenderStage> &handle);
             void clearBackBuffer();
 
             std::unique_ptr<Pool<RenderStage>>      m_stagePool;
@@ -70,14 +76,12 @@ namespace boitatah{
             std::shared_ptr<GPUResourceManager>     m_resource_mngr;
             
             std::shared_ptr<Vulkan>                 m_vulkan;
-            //std::vector<VkFence> frame_fences;
 
             Handle<Sampler> sampler;
             
             std::array<std::vector<Handle<RenderStage>>, 3> m_graphs;
             std::vector<std::vector<Handle<RenderTexture>>> m_stage_textures;
             std::vector<Handle<MaterialBinding>>            m_stage_bindings;
-            std::vector<Handle<RenderTarget>>               m_buffers;
 
             PresentLink         present_link;
             Handle<RenderPass>  renderpass;

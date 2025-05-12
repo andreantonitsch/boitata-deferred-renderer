@@ -53,7 +53,7 @@ namespace boitatah
         bool debug = false;
         IMAGE_FORMAT swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB;
         BackBufferDesc backBufferDesc;
-        BackBufferDesc2 backBufferDesc2;
+        BackBufferDesc backBufferDesc2;
     };
 
     struct RenderObject{

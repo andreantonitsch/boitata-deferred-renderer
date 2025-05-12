@@ -20,12 +20,20 @@ namespace boitatah{
             buffer_writer->set_commandbuffer(m_vulkan->allocateCommandBuffer({.count = 1,
                                                         .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                                                         .type = COMMAND_BUFFER_TYPE::TRANSFER}).buffer);
-            buffer_writer->setFence(m_vulkan->createFence(true));
-            buffer_writer->setSignal(m_vulkan->createSemaphore());
+            buffer_writer->set_fence(m_vulkan->createFence(true));
+            buffer_writer->set_signal(m_vulkan->createSemaphore());
             m_buffer_writers.push_back(buffer_writer);
         }
     }
 
+    GPUResourceManager::~GPUResourceManager()
+    {
+        for(int i = 0; i < m_buffer_writers.size(); i++){
+            auto& buffer_writer = m_buffer_writers[i];
+            m_vulkan->destroyFence(*buffer_writer->get_fence());
+            m_vulkan->destroySemaphore(*buffer_writer->get_signal());
+        }
+    }
 
     void GPUResourceManager::beginCommitCommands()
     {

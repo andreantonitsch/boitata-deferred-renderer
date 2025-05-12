@@ -126,7 +126,7 @@ namespace boitatah{
     }
     void RenderTargetManager::destroyRenderTarget(Handle<RenderTarget> &handle) {
         if(!m_targetPool->contains(handle)){
-            std::cout << "failed deleting RenderTarget" << std::endl;
+            //std::cout << "failed deleting RenderTarget" << std::endl;
             return;
         }
 

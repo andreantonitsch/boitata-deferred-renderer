@@ -76,7 +76,7 @@ namespace boitatah
 
 
 
-    class Geometry : public ImmutableGPUResource<Geometry>
+    class Geometry : public GPUResource<Geometry, 1>
     {
         friend class GPUResourceManager;
         private:
@@ -98,7 +98,7 @@ namespace boitatah
         public:
             Geometry() = default;
             Geometry(std::shared_ptr<GPUResourceManager> manager):
-                ImmutableGPUResource<Geometry>({ //Base Constructor
+            GPUResource<Geometry, 1>({ //Base Constructor
                                                     .sharing = SHARING_MODE::EXCLUSIVE,
                                                     .type = RESOURCE_TYPE::GEOMETRY,
                                                     .mutability = RESOURCE_MUTABILITY::MUTABLE,

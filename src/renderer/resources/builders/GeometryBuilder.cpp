@@ -173,6 +173,13 @@ namespace boitatah{
         return geo;
     }
 
+    Handle<Geometry> GeometryBuilder::Sphere(GPUResourceManager &manager, float radius, uint32_t detail)
+    {
+        auto builder = createGeometry(manager);
+        Handle<Geometry> geo = builder.geometryFromGeometryData(uv_sphere(radius, detail, detail));
+        return geo;
+    }
+
     // Handle<Geometry> GeometryBuilder::Plane(Renderer    &renderer, 
     //                                         float       width, 
     //                                         float       height, 

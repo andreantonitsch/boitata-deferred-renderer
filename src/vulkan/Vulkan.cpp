@@ -1211,6 +1211,11 @@ void boitatah::vk::Vulkan::destroyFence(VkFence fence)
     vkDestroyFence(device, fence, nullptr);
 }
 
+void boitatah::vk::Vulkan::destroySemaphore(VkSemaphore semaphore)
+{
+    vkDestroySemaphore(device, semaphore, nullptr);
+}
+
 void boitatah::vk::Vulkan::destroyDescriptorPool(VkDescriptorPool pool)
 {
     vkDestroyDescriptorPool(device, pool, nullptr);

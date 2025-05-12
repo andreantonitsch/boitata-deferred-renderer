@@ -14,8 +14,6 @@ add_subdirectory(${SPIRV_Headers_SOURCE_DIR})
 
 add_subdirectory(src/)
 
-add_executable(partitionlist src/examples/test_partitionlist.cpp)
-add_executable(buffer_allocator src/examples/test_buffer_allocator.cpp)
 add_executable(multi_write_attachment src/examples/test_multi_write_attachment.cpp)
 add_executable(deferred_renderer src/examples/test_deferred_renderer.cpp)
 add_executable(lit_deferred_renderer src/examples/test_lit_deferred_renderer.cpp)
@@ -34,8 +32,6 @@ set(LIBS Vulkan::Vulkan
          glm
          boitatah)
 
-target_link_libraries(partitionlist ${LIBS})
-target_link_libraries(buffer_allocator ${LIBS})
 target_link_libraries(multi_write_attachment ${LIBS})
 target_link_libraries(deferred_renderer ${LIBS})
 target_link_libraries(lit_deferred_renderer ${LIBS})

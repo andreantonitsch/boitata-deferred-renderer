@@ -111,10 +111,6 @@ namespace boitatah{
                                              const Handle<RenderTexture>                &texture,
                                              const uint32_t                             set, 
                                              const uint32_t                             binding);
-            bool setTextureBindingAttribute (const Handle<Material> material,
-                                             const Handle<FixedTexture>                 &texture,
-                                             const uint32_t                             set, 
-                                             const uint32_t                             binding);
             bool setBufferBindingAttribute  (const Handle<Material> material,
                                              const Handle<GPUBuffer>                    &gpu_buffer,
                                              const uint32_t                             set, 
