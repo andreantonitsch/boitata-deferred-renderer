@@ -35,7 +35,7 @@ namespace boitatah::vk::descriptor_sets{
     class DescriptorSetTree{
         friend class DescriptorSetTreeNode;
         private:
-            std::shared_ptr<Vulkan> m_vk;
+            std::shared_ptr<VulkanInstance> m_vk;
             std::unique_ptr<Pool<DescriptorSetLayout>> m_layoutPool;
             std::unique_ptr<DescriptorSetTreeNode> m_nodes;
             /// @brief special case empty set.
@@ -46,7 +46,7 @@ namespace boitatah::vk::descriptor_sets{
             Handle<DescriptorSetLayout> getSetLayout(const DescriptorSetLayoutDesc& description,
                                                      std::vector<BindingDesc>& binds);
         public:
-            DescriptorSetTree(std::shared_ptr<Vulkan> vulkan);
+            DescriptorSetTree(std::shared_ptr<VulkanInstance> vulkan);
             Handle<DescriptorSetLayout> getSetLayout(const DescriptorSetLayoutDesc& description);
             DescriptorSetLayout& getSetLayoutData(const Handle<DescriptorSetLayout>& handle);
 

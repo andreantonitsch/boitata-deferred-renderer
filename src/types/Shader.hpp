@@ -89,7 +89,7 @@ namespace boitatah
         ShaderStage vert;
         ShaderStage frag;
         
-        Handle<RenderPass> renderPass;
+        Handle<Renderpass> renderPass;
         
         Handle<ShaderLayout> layout;
 

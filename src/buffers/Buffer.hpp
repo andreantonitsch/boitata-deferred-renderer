@@ -39,7 +39,7 @@ namespace boitatah::buffer
 
         friend class BufferManager;
         public:
-            Buffer(const BufferDesc &desc, const vk::Vulkan *vulkan);
+            Buffer(const BufferDesc &desc, const vk::VulkanInstance *vulkan);
             ~Buffer(void);
 
             VkBuffer getBuffer() const;
@@ -47,7 +47,7 @@ namespace boitatah::buffer
             uint32_t getID() const;
             
         private:
-            const vk::Vulkan *vulkan;
+            const vk::VulkanInstance *vulkan;
 
             BufferDesc description;
             BUFFER_USAGE usage;

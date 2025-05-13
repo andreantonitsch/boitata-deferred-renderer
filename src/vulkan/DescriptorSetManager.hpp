@@ -28,7 +28,7 @@ namespace boitatah::vk
 
         public:
 
-            DescriptorSetPool(const uint32_t maxSets, const std::vector<DescriptorSetRatio> ratios, std::shared_ptr<Vulkan> vk){
+            DescriptorSetPool(const uint32_t maxSets, const std::vector<DescriptorSetRatio> ratios, std::shared_ptr<VulkanInstance> vk){
                 // TODO move to vulkan class
                 std::vector<VkDescriptorPoolSize> sizes;
                 sizes.resize(ratios.size());
@@ -57,7 +57,7 @@ namespace boitatah::vk
                 for (size_t i = 0; i  < FRAMES; i++)
                 {
                     
-                    auto result = vkCreateDescriptorPool(vk->getDevice(), &poolInfo, nullptr, &(pools[i]));
+                    auto result = vkCreateDescriptorPool(vk->get_device(), &poolInfo, nullptr, &(pools[i]));
                     if (result != VK_SUCCESS)
                     {
                         throw std::runtime_error("failed to create descriptor pool" + std::to_string(static_cast<int>(result)));
@@ -78,7 +78,7 @@ namespace boitatah::vk
                 return fit;
             };
 
-            VkDescriptorSet allocate(const DescriptorSetLayout &request, const uint32_t poolIndex,std::shared_ptr<Vulkan> vk)
+            VkDescriptorSet allocate(const DescriptorSetLayout &request, const uint32_t poolIndex,std::shared_ptr<VulkanInstance> vk)
             {
                 VkDescriptorSet set;
 
@@ -94,23 +94,23 @@ namespace boitatah::vk
                 {
                     used_descriptors[poolIndex % FRAMES][static_cast<uint32_t>(ratio.type)] +=  ratio.quantity;
                 }
-                auto result = vkAllocateDescriptorSets(vk->getDevice(), &info, &set);
+                auto result = vkAllocateDescriptorSets(vk->get_device(), &info, &set);
                 if( result != VK_SUCCESS)
                     throw std::runtime_error("failed to allocate descriptor set for Pool " + std::to_string(static_cast<int>(result)));
                 
                 return set;
             };
 
-            void reset(const size_t poolIndex, std::shared_ptr<Vulkan> vk)
+            void reset(const size_t poolIndex, std::shared_ptr<VulkanInstance> vk)
             {
-                vkResetDescriptorPool(vk->getDevice(), pools[poolIndex % FRAMES], 0);
+                vkResetDescriptorPool(vk->get_device(), pools[poolIndex % FRAMES], 0);
                 used_descriptors[poolIndex % FRAMES].fill(0);
             };
 
-            void release(std::shared_ptr<Vulkan> vk)
+            void release(std::shared_ptr<VulkanInstance> vk)
             {                
                 for(uint32_t i; i < FRAMES; i++)
-                    vk->destroyDescriptorPool(pools[i]);
+                    vk->destroy_descriptorpool(pools[i]);
             };
 
     };
@@ -119,7 +119,7 @@ namespace boitatah::vk
     {
 
     public:
-        DescriptorSetManager(std::shared_ptr<Vulkan> vulkan, uint32_t maximumSets);
+        DescriptorSetManager(std::shared_ptr<VulkanInstance> vulkan, uint32_t maximumSets);
         ~DescriptorSetManager();
         Handle<DescriptorSetLayout> getLayout(const DescriptorSetLayoutDesc& description);
         DescriptorSetLayout& getLayoutContent(const Handle<DescriptorSetLayout>& handle);
@@ -135,7 +135,7 @@ namespace boitatah::vk
 
     private:
         // Members
-        std::shared_ptr<Vulkan> m_vk;
+        std::shared_ptr<VulkanInstance> m_vk;
         uint32_t maxSets = 4096;
         std::vector<DescriptorSetPool<3>> m_pools;
         std::unique_ptr<descriptor_sets::DescriptorSetTree> m_descriptorTree;

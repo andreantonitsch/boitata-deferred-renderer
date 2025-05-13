@@ -148,13 +148,13 @@ namespace boitatah
             void add(SceneNode<T>* node){
                 children.push_back(std::shared_ptr<SceneNode<T>>(node));
                 node->dirty();
-                node->parentNode = std::shared_ptr<SceneNode<T>>(this->shared_from_this());
+                node->parentNode = this->shared_from_this();
             }
 
             void add(std::shared_ptr<SceneNode<T>> node){
                 children.push_back(std::shared_ptr<SceneNode<T>>(node));
                 node->dirty();
-                node->parentNode = std::shared_ptr<SceneNode<T>>(this->shared_from_this());
+                node->parentNode = this->shared_from_this();
             }
     };
 }

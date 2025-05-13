@@ -4,7 +4,7 @@
 #include "../../types/BttEnums.hpp"
 
 namespace boitatah{
-    GPUResourceManager::GPUResourceManager( std::shared_ptr<vk::Vulkan>  vk_instance,
+    GPUResourceManager::GPUResourceManager( std::shared_ptr<vk::VulkanInstance>  vk_instance,
                                             std::shared_ptr<buffer::BufferManager> bufferManager,
                                             std::shared_ptr<ImageManager> imageManager,
                                             uint32_t buffer_writer_count = 10)
@@ -17,11 +17,11 @@ namespace boitatah{
         for(int i = 0; i < buffer_writer_count; i++)
         {
             auto buffer_writer = std::make_shared<VkCommandBufferWriter>(m_vulkan);
-            buffer_writer->set_commandbuffer(m_vulkan->allocateCommandBuffer({.count = 1,
+            buffer_writer->set_commandbuffer(m_vulkan->allocate_commandbuffer({.count = 1,
                                                         .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                                                         .type = COMMAND_BUFFER_TYPE::TRANSFER}).buffer);
-            buffer_writer->set_fence(m_vulkan->createFence(true));
-            buffer_writer->set_signal(m_vulkan->createSemaphore());
+            buffer_writer->set_fence(m_vulkan->create_fence(true));
+            buffer_writer->set_signal(m_vulkan->create_semaphore());
             m_buffer_writers.push_back(buffer_writer);
         }
     }
@@ -30,8 +30,8 @@ namespace boitatah{
     {
         for(int i = 0; i < m_buffer_writers.size(); i++){
             auto& buffer_writer = m_buffer_writers[i];
-            m_vulkan->destroyFence(*buffer_writer->get_fence());
-            m_vulkan->destroySemaphore(*buffer_writer->get_signal());
+            m_vulkan->destroy_fence(*buffer_writer->get_fence());
+            m_vulkan->destroy_semaphore(*buffer_writer->get_signal());
         }
     }
 

@@ -17,14 +17,14 @@ namespace boitatah
     Swapchain::~Swapchain(void)
     {
         clearSwapchainViews();
-        vkDestroySwapchainKHR(vulkan->getDevice(), swapchain, nullptr);
+        vkDestroySwapchainKHR(vulkan->get_device(), swapchain, nullptr);
     }
 
     SwapchainImage Swapchain::getNext(VkSemaphore &semaphore)
     {
         uint32_t index = UINT32_MAX;
 
-        VkResult result = vkAcquireNextImageKHR(vulkan->getDevice(),
+        VkResult result = vkAcquireNextImageKHR(vulkan->get_device(),
                                                 swapchain, UINT64_MAX,
                                                 semaphore, VK_NULL_HANDLE,
                                                 &index);
@@ -50,7 +50,7 @@ namespace boitatah
                 .sc = swapchain};
     }
 
-    void Swapchain::attach(std::shared_ptr<Vulkan> vulkan, std::shared_ptr<WindowManager> window)
+    void Swapchain::attach(std::shared_ptr<VulkanInstance> vulkan, std::shared_ptr<WindowManager> window)
     {
         this->vulkan = vulkan;
         this->window = window;
@@ -60,14 +60,14 @@ namespace boitatah
     {
         clearSwapchainViews();
         swapchainImageCache.clear();
-        vkDestroySwapchainKHR(vulkan->getDevice(), swapchain, nullptr);
+        vkDestroySwapchainKHR(vulkan->get_device(), swapchain, nullptr);
         createVkSwapchain();
         createViews();
     }
 
     void Swapchain::createVkSwapchain()
     {
-        SwapchainSupport support = getSwapchainSupport(vulkan->getPhysicalDevice());
+        SwapchainSupport support = getSwapchainSupport(vulkan->get_physical_device());
 
         VkSurfaceFormatKHR format = chooseSwapSurfaceFormat(support.formats,
                                                             IMAGE_FORMAT::BGRA_8_SRGB,
@@ -98,7 +98,7 @@ namespace boitatah
             .oldSwapchain = VK_NULL_HANDLE
             };
 
-        QueueFamilyIndices indices = vulkan->findQueueFamilies(vulkan->getPhysicalDevice());
+        QueueFamilyIndices indices = vulkan->find_queuefamilies(vulkan->get_physical_device());
         uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
         // if queues are going to share burrers or not
@@ -132,7 +132,7 @@ namespace boitatah
         // for replacing the swap chain when resizing windows.
         //createInfo.oldSwapchain = swapchain;
 
-        if (vkCreateSwapchainKHR(vulkan->getDevice(), &createInfo, nullptr, &swapchain) != VK_SUCCESS)
+        if (vkCreateSwapchainKHR(vulkan->get_device(), &createInfo, nullptr, &swapchain) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to Build a Swapchain");
         }
@@ -140,9 +140,9 @@ namespace boitatah
         swapchainFormat = format.format;
         swapchainExtent = extent;
 
-        vkGetSwapchainImagesKHR(vulkan->getDevice(), swapchain, &imageCount, nullptr);
+        vkGetSwapchainImagesKHR(vulkan->get_device(), swapchain, &imageCount, nullptr);
         swapchainImages.resize(imageCount);
-        vkGetSwapchainImagesKHR(vulkan->getDevice(), swapchain, &imageCount, swapchainImages.data());
+        vkGetSwapchainImagesKHR(vulkan->get_device(), swapchain, &imageCount, swapchainImages.data());
     }
 
     void Swapchain::createViews()
@@ -164,7 +164,7 @@ namespace boitatah
                 .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .baseMipLevel = 0, .levelCount = 1, .baseArrayLayer = 0, .layerCount = 1},
             };
 
-            if (vkCreateImageView(vulkan->getDevice(), &createInfo, nullptr, &swapchainViews[i]) != VK_SUCCESS)
+            if (vkCreateImageView(vulkan->get_device(), &createInfo, nullptr, &swapchainViews[i]) != VK_SUCCESS)
             {
                 throw std::runtime_error("Failed to create Swapchain image view");
             }
@@ -194,7 +194,7 @@ namespace boitatah
     void Swapchain::clearSwapchainViews()
     {
         for (auto view : swapchainViews)
-            vkDestroyImageView(vulkan->getDevice(), view, nullptr);
+            vkDestroyImageView(vulkan->get_device(), view, nullptr);
 
         swapchainViews.clear();
     }
@@ -203,26 +203,26 @@ namespace boitatah
     {
         SwapchainSupport support;
 
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vulkan->getPhysicalDevice(), window->getSurface(), &support.capabilities);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vulkan->get_physical_device(), window->getSurface(), &support.capabilities);
 
         uint32_t formatCount;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(vulkan->getPhysicalDevice(), window->getSurface(), &formatCount, nullptr);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(vulkan->get_physical_device(), window->getSurface(), &formatCount, nullptr);
 
         if (formatCount != 0)
         {
             support.formats.resize(formatCount);
-            vkGetPhysicalDeviceSurfaceFormatsKHR(vulkan->getPhysicalDevice(),
+            vkGetPhysicalDeviceSurfaceFormatsKHR(vulkan->get_physical_device(),
                                                  window->getSurface(),
                                                  &formatCount,
                                                  support.formats.data());
         }
 
         uint32_t presentModeCount;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(vulkan->getPhysicalDevice(), window->getSurface(), &presentModeCount, nullptr);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(vulkan->get_physical_device(), window->getSurface(), &presentModeCount, nullptr);
         if (presentModeCount != 0)
         {
             support.presentModes.resize(presentModeCount);
-            vkGetPhysicalDeviceSurfacePresentModesKHR(vulkan->getPhysicalDevice(),
+            vkGetPhysicalDeviceSurfacePresentModesKHR(vulkan->get_physical_device(),
                                                       window->getSurface(),
                                                       &presentModeCount,
                                                       support.presentModes.data());

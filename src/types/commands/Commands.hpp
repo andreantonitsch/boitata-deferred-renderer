@@ -74,7 +74,7 @@ namespace boitatah
     struct BeginRenderpassCommand
     {
         CommandBuffer commandBuffer;
-        RenderPass pass;
+        Renderpass pass;
         RenderTarget target;
 
         glm::ivec2 scissorDims;

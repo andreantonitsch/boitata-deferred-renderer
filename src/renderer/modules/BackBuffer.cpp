@@ -133,7 +133,7 @@ namespace boitatah
                                          std::shared_ptr<ImageManager> image_manager,
                                          std::shared_ptr<MaterialManager> material_manager,
                                          std::shared_ptr<GPUResourceManager>  resource_manager,
-                                         std::shared_ptr<Vulkan> vulkan_instance)
+                                         std::shared_ptr<VulkanInstance> vulkan_instance)
         : m_renderTargetManager(target_manager), m_imageManager(image_manager), 
           m_material_manager(material_manager), m_resource_mngr(resource_manager),
           m_vulkan(vulkan_instance) {}
@@ -181,7 +181,7 @@ namespace boitatah
         auto& present_fence = m_renderTargetManager
                                     ->get_sync_data(present_handle)
                                     .in_flight_fence;
-        m_vulkan->waitForFence(present_fence);
+        m_vulkan->wait_for_fence(present_fence);
         m_vulkan->reset_fence(present_fence);
         return m_graphs[current];
     }

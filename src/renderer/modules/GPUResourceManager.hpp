@@ -30,7 +30,7 @@ namespace boitatah
         template<typename Resource, int Copies> friend class GPUResource;
         
         public:
-            GPUResourceManager(std::shared_ptr<vk::Vulkan> vk_instance,
+            GPUResourceManager(std::shared_ptr<vk::VulkanInstance> vk_instance,
                                std::shared_ptr<buffer::BufferManager> bufferManager,
                                std::shared_ptr<ImageManager> imageManager,
                                uint32_t buffer_writer_count); //contructor
@@ -133,7 +133,7 @@ namespace boitatah
             }
 
         private:
-            std::shared_ptr<vk::Vulkan>             m_vulkan;
+            std::shared_ptr<vk::VulkanInstance>             m_vulkan;
             
             std::shared_ptr<buffer::BufferManager>  m_bufferManager;
             std::shared_ptr<ImageManager>           m_imageManager;

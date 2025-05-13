@@ -37,7 +37,7 @@ namespace boitatah{
 
     class ShaderManager{
         private:
-            std::shared_ptr<Vulkan> m_vk;
+            std::shared_ptr<VulkanInstance> m_vk;
 
 
             std::vector<Handle<Shader>> m_currentShaders;
@@ -49,14 +49,14 @@ namespace boitatah{
 
             ShaderModule compileShaderModule(const std::vector<char>& bytecode, 
                                              std::string entryPoint);
-            void updateShadersForRenderPass(Handle<RenderPass> renderPass);
-            void updateShadersForRenderTarget(Handle<RenderPass> renderPass);
+            void updateShadersForRenderPass(Handle<Renderpass> renderPass);
+            void updateShadersForRenderTarget(Handle<Renderpass> renderPass);
             void updateShadersForRenderTarget(std::vector<Handle<Shader>>& shaders,
-                                              Handle<RenderPass> renderPass);
+                                              Handle<Renderpass> renderPass);
             void reflectShader();
 
         public:
-            ShaderManager(std::shared_ptr<Vulkan> vulkan, 
+            ShaderManager(std::shared_ptr<VulkanInstance> vulkan, 
                          std::shared_ptr<RenderTargetManager> targetManager,
                          std::shared_ptr<DescriptorSetManager> descriptorManager);
 
@@ -72,7 +72,7 @@ namespace boitatah{
 
     class MaterialManager{
         public:
-            MaterialManager(std::shared_ptr<Vulkan> vulkan, 
+            MaterialManager(std::shared_ptr<VulkanInstance> vulkan, 
                             std::shared_ptr<RenderTargetManager> targetManager,
                             std::shared_ptr<DescriptorSetManager> setManager,
                             std::shared_ptr<GPUResourceManager> resourceManager);
@@ -263,7 +263,7 @@ namespace boitatah{
             void clearBaseMaterials();
 
         private:
-            std::shared_ptr<Vulkan> m_vk;        
+            std::shared_ptr<VulkanInstance> m_vk;        
             std::shared_ptr<RenderTargetManager> m_targetManager;
             std::shared_ptr<DescriptorSetManager> m_descriptorManager;
             std::shared_ptr<GPUResourceManager> m_resourceManager;

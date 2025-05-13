@@ -41,7 +41,7 @@ namespace boitatah{
 
 
 
-    struct RenderPass{
+    struct Renderpass{
         VkRenderPass renderPass;
         std::vector<glm::vec4> clearColors;
         RenderPassDesc description;
@@ -56,7 +56,7 @@ namespace boitatah{
     struct RenderTargetDesc{
         //Either RenderPassDesc or pass need to be non null.
         RenderPassDesc renderpassDesc;
-        Handle<RenderPass> renderpass;
+        Handle<Renderpass> renderpass;
 
         std::vector<AttachmentDesc> attachments;
         //If attachmentImages.size = 0 imageDesc is mandatory.
@@ -69,7 +69,7 @@ namespace boitatah{
     struct RenderTarget{
         VkFramebuffer buffer;
         std::vector<Handle<Image>> attachments;
-        Handle<RenderPass> renderpass;
+        Handle<Renderpass> renderpass;
         Handle<RenderTargetSync> sync;
     };
 

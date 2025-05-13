@@ -23,10 +23,10 @@ namespace boitatah::vk
         glfwDestroyWindow(window);
         glfwTerminate();
     }
-    void WindowManager::initSurface(std::shared_ptr<boitatah::vk::Vulkan> vk)
+    void WindowManager::initSurface(std::shared_ptr<boitatah::vk::VulkanInstance> vk)
     {   
         m_vk = vk;
-        if (glfwCreateWindowSurface(m_vk->getInstance(), window, nullptr, &surface) != VK_SUCCESS)
+        if (glfwCreateWindowSurface(m_vk->get_instance(), window, nullptr, &surface) != VK_SUCCESS)
             throw std::runtime_error("Failed to create Window Surface");
     
     }

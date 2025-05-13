@@ -7,13 +7,13 @@ namespace boitatah::buffer
 {
 
     
-    Buffer::Buffer(const BufferDesc &desc, const vk::Vulkan *vulkan) : vulkan(vulkan)
+    Buffer::Buffer(const BufferDesc &desc, const vk::VulkanInstance *vulkan) : vulkan(vulkan)
     {
         description = desc;
 
         // get the vulkan buffer
         // allocate the device memory
-        auto reqs = this->vulkan->getBufferAlignmentMemoryType({
+        auto reqs = this->vulkan->get_buffer_alignment_memorytype({
             .size = desc.estimatedElementSize,
             .usage = desc.usage,
             .sharing = desc.sharing,
@@ -37,9 +37,9 @@ namespace boitatah::buffer
     Buffer::~Buffer(void)
     {
         if(sharing == SHARING_MODE::CONCURRENT)
-            vulkan->unmapMemory({bufferData.memory});
+            vulkan->unmap_memory({bufferData.memory});
 
-        vulkan->destroyBuffer(bufferData);
+        vulkan->destroy_buffer(bufferData);
         buffer_quantity -= 1;
     }
 
@@ -100,7 +100,7 @@ namespace boitatah::buffer
                      " size " << reservation.size << std::endl;
 
         if(sharing == SHARING_MODE::CONCURRENT){
-            vulkan->copyToMappedMemory({
+            vulkan->copy_to_mapped_memory({
                 .offset = reservation.offset,
                 .elementSize = reservation.size,
                 .elementCount = static_cast<uint32_t>(1),
@@ -250,7 +250,7 @@ namespace boitatah::buffer
 
 
         if(sharing == SHARING_MODE::CONCURRENT){
-            vulkan->copyToMappedMemory({
+            vulkan->copy_to_mapped_memory({
                 .offset = 0, //reservation.offset,
                 .elementSize = std::min(reservation.size, size),
                 .elementCount = static_cast<uint32_t>(1),
@@ -276,7 +276,7 @@ namespace boitatah::buffer
                                         .height = static_cast<uint32_t>(std::bit_width(partitions)) - 1u,
                                         }));
 
-        bufferData = this->vulkan->createBuffer({
+        bufferData = this->vulkan->create_buffer({
             .size = mainAllocator->getSize(),
             .usage = usage,
             .sharing = sharing,
@@ -287,7 +287,7 @@ namespace boitatah::buffer
 
         if(sharing == SHARING_MODE::CONCURRENT){
             //std::cout << "mapping memory" << std::endl;
-            mappedMemory = vulkan->mapMemory({.memory = bufferData.memory, .offset = 0, .size= bufferData.actualSize});
+            mappedMemory = vulkan->map_memory({.memory = bufferData.memory, .offset = 0, .size= bufferData.actualSize});
             if(mappedMemory == nullptr) throw std::runtime_error("Failed to map memory");
         }
 

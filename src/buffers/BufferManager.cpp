@@ -7,16 +7,16 @@
 
 namespace boitatah::buffer
 {
-    using Vulkan = boitatah::vk::Vulkan;
+    using Vulkan = boitatah::vk::VulkanInstance;
     using VkCommandBufferWriter = boitatah::vk::VkCommandBufferWriter;
     
-    BufferManager::BufferManager(std::shared_ptr<vk::Vulkan> vk_instance)
+    BufferManager::BufferManager(std::shared_ptr<vk::VulkanInstance> vk_instance)
     {
         m_vk = vk_instance;
-        m_transferFence = m_vk->createFence(true);
+        m_transferFence = m_vk->create_fence(true);
 
 
-        m_transferBuffer = m_vk->allocateCommandBuffer({.count = 1, 
+        m_transferBuffer = m_vk->allocate_commandbuffer({.count = 1, 
                         .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                         .type = COMMAND_BUFFER_TYPE::TRANSFER });
     }
@@ -24,11 +24,11 @@ namespace boitatah::buffer
     BufferManager::~BufferManager(void)
     {
 
-        if(m_vk->checkFenceStatus(m_transferFence))
-            m_vk->destroyFence(m_transferFence);
+        if(m_vk->check_fence_status(m_transferFence))
+            m_vk->destroy_fence(m_transferFence);
         else{
-            m_vk->waitForFence(m_transferFence);
-            m_vk->destroyFence(m_transferFence);
+            m_vk->wait_for_fence(m_transferFence);
+            m_vk->destroy_fence(m_transferFence);
         }
 
         std::cout << "Cleared buffer manager fence" << std::endl;
@@ -224,11 +224,11 @@ namespace boitatah::buffer
 
     bool BufferManager::areTransfersFinished() const
     {
-        return m_vk->checkFenceStatus(m_transferFence);
+        return m_vk->check_fence_status(m_transferFence);
     }
     void BufferManager::waitForTransferToFinish() const
     {
-        return m_vk->waitForFence(m_transferFence);
+        return m_vk->wait_for_fence(m_transferFence);
     }
 
     CommandBuffer BufferManager::getTransferBuffer()

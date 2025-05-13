@@ -23,10 +23,10 @@ namespace boitatah
         m_window = std::make_shared<WindowManager>(desc);
 
         // Initialize Vulkan
-        createVulkan();
+        create_vulkan_instance();
         m_window->initSurface(m_vk);
-        m_vk->attachWindow(m_window);
-        m_vk->completeInit();
+        m_vk->attach_window(m_window);
+        m_vk->finish_initialization();
 
         // Initialize Image and FrameBuffer Managers
         m_imageManager = std::make_shared<ImageManager>(m_vk);
@@ -46,11 +46,11 @@ namespace boitatah
 
         //Initializethe command buffer writer
         m_buffer_writer = std::make_shared<VkCommandBufferWriter>(m_vk);
-        m_buffer_writer->set_commandbuffer(allocateCommandBuffer({.count = 1,
-                                                    .level = COMMAND_BUFFER_LEVEL::PRIMARY,
-                                                    .type = COMMAND_BUFFER_TYPE::TRANSFER}).buffer);
-        m_buffer_writer->set_fence(m_vk->createFence(true));
-        m_buffer_writer->set_signal(m_vk->createSemaphore());
+        // m_buffer_writer->set_commandbuffer(m_vk->allocate_commandbuffer({.count = 1,
+        //                                             .level = COMMAND_BUFFER_LEVEL::PRIMARY,
+        //                                             .type = COMMAND_BUFFER_TYPE::TRANSFER}).buffer);
+        m_buffer_writer->set_fence(m_vk->create_fence(true));
+        m_buffer_writer->set_signal(m_vk->create_semaphore());
         
 
         //Initialize the renderer Modules
@@ -91,7 +91,7 @@ namespace boitatah
 
     void Renderer::handleWindowResize()
     {
-        m_vk->waitIdle();
+        m_vk->wait_idle();
 
         m_swapchain->createSwapchain();
 
@@ -138,11 +138,11 @@ namespace boitatah
         return boitatah::utils::flatten(bins);
     }
 
-    void Renderer::createVulkan()
+    void Renderer::create_vulkan_instance()
     {
         uint32_t extensionCount = 0;
 
-        m_vk = Vulkan::create(VulkanOptions{
+        m_vk = VulkanInstance::create(VulkanOptions{
             .appName = (char *)m_options.appName,
             .extensions = m_window->requiredWindowExtensions(),
             .useValidationLayers = m_options.debug,
@@ -156,7 +156,7 @@ namespace boitatah
 #pragma region CleanUp/Destructor
     void Renderer::cleanup()
     {
-        m_vk->waitIdle();
+        m_vk->wait_idle();
     }
 
     Renderer::~Renderer(void)
@@ -236,7 +236,7 @@ namespace boitatah
 #pragma region Rendering
     void Renderer::waitIdle()
     {
-        m_vk->waitIdle();
+        m_vk->wait_idle();
     }
 
     template<typename T>
@@ -251,7 +251,7 @@ namespace boitatah
 
         if (!m_renderTargetManager->isActive(target.renderpass))
             throw std::runtime_error("Failed to write command buffer \n\tRender Pass");
-        RenderPass& pass = m_renderTargetManager->get(target.renderpass);
+        Renderpass& pass = m_renderTargetManager->get(target.renderpass);
 
         if (!m_renderTargetManager->isActive(target.sync)){
             throw std::runtime_error("Failed to Render to Target");}
@@ -338,7 +338,7 @@ namespace boitatah
         present_writer.submit({.submitType = COMMAND_BUFFER_TYPE::TRANSFER, .signal= true});
 
         //present image
-        bool successfullyPresent = m_vk->presentFrame(swapchainImage.image,
+        bool successfullyPresent = m_vk->present(swapchainImage.image,
                                                       swapchainImage.sc,
                                                       swapchainImage.index,
                                                       {
@@ -388,7 +388,7 @@ namespace boitatah
         //std::cout << "drawing stage " << stage.stage_index <<std::endl;
         RenderTarget& target = m_renderTargetManager->get(stage.target);
         RenderTargetSync& buffers = m_renderTargetManager->get(target.sync);
-        RenderPass& pass = m_renderTargetManager->get(target.renderpass);
+        Renderpass& pass = m_renderTargetManager->get(target.renderpass);
         
         //get image for dimension setting purposes.
         Image& image = m_imageManager->getImage(target.attachments[0]);
@@ -457,7 +457,7 @@ namespace boitatah
             
             Handle<Shader>& shader = material.shader;
             // TODO separate to avoid rebinding when drawing a lot of the same object
-            bindVertexBuffers(
+            bind_vertexbuffers(
                 m_backBufferManager->getCurrentIndex(),
                 node->content.geometry,
                 true,
@@ -517,12 +517,7 @@ namespace boitatah
 
 #pragma region Command Buffers
 
-    CommandBuffer Renderer::allocateCommandBuffer(const CommandBufferDesc &desc)
-    {
-        return m_vk->allocateCommandBuffer(desc);
-    }
-
-    void Renderer::bindVertexBuffers(uint32_t           frame_index, 
+    void Renderer::bind_vertexbuffers(uint32_t           frame_index, 
                                     Handle<Geometry>    geometry, 
                                     bool                indexed, 
                                     std::vector<VERTEX_BUFFER_TYPE> vertex_buffers, 

@@ -77,7 +77,7 @@ namespace boitatah{
         return m_currentOrder;
     };
 
-    MaterialManager::MaterialManager(std::shared_ptr<Vulkan> vulkan,
+    MaterialManager::MaterialManager(std::shared_ptr<VulkanInstance> vulkan,
                                      std::shared_ptr<RenderTargetManager> targetManager,
                                      std::shared_ptr<DescriptorSetManager> setManager,
                                      std::shared_ptr<GPUResourceManager> resourceManager) 
@@ -325,14 +325,14 @@ namespace boitatah{
 
     ShaderModule ShaderManager::compileShaderModule(const std::vector<char> &bytecode, std::string entryPoint)
     {
-        return {.shaderModule = m_vk->createShaderModule(bytecode), .entryFunction = entryPoint};
+        return {.shaderModule = m_vk->create_shadermodule(bytecode), .entryFunction = entryPoint};
     }
     Shader &ShaderManager::get(const Handle<Shader> &handle)
     {
         return m_shaderPool->get(handle);
     }
 
-    ShaderManager::ShaderManager(std::shared_ptr<Vulkan> vulkan, std::shared_ptr<RenderTargetManager> targetManager, std::shared_ptr<DescriptorSetManager> descriptorManager)
+    ShaderManager::ShaderManager(std::shared_ptr<VulkanInstance> vulkan, std::shared_ptr<RenderTargetManager> targetManager, std::shared_ptr<DescriptorSetManager> descriptorManager)
     :   m_vk(vulkan), 
         m_targetManager(targetManager),
         m_descriptorManager(descriptorManager)
@@ -367,7 +367,7 @@ namespace boitatah{
         }
         
         ShaderLayout layout{ 
-                                .pipeline = m_vk->createShaderLayout(
+                                .pipeline = m_vk->create_shaderlayout(
                                     {
                                         .materialLayouts = vkLayouts,
                                         .pushConstants ={
@@ -424,7 +424,7 @@ namespace boitatah{
             }
         }
         auto& pass = m_targetManager->get(data.renderPass);
-        m_vk->buildShader({
+        m_vk->build_shader({
             .name = data.name,
             .renderpass = pass.renderPass,
             .layout = shader.layout.pipeline,
@@ -441,7 +441,7 @@ namespace boitatah{
         Shader shader;
         if (m_shaderPool->clear(handle, shader))
         {
-            m_vk->destroyShader(shader);
+            m_vk->destroy_shader(shader);
             m_currentShaders.erase(
                 std::find(
                     m_currentShaders.begin(),
@@ -455,7 +455,7 @@ namespace boitatah{
         ShaderLayout layout;
         if (m_layoutPool->clear(handle, layout))
         {
-            m_vk->destroyPipelineLayout(layout);
+            m_vk->destroy_pipelinelayout(layout);
         }
     }
 };

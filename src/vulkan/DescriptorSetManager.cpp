@@ -2,7 +2,7 @@
 
 namespace boitatah::vk {
 
-    DescriptorSetManager::DescriptorSetManager(std::shared_ptr<Vulkan> vulkan, uint32_t maximumSets)
+    DescriptorSetManager::DescriptorSetManager(std::shared_ptr<VulkanInstance> vulkan, uint32_t maximumSets)
     : m_vk(vulkan), maxSets(maximumSets), m_descriptorTree(std::make_unique<descriptor_sets::DescriptorSetTree>(vulkan)){};
 
     DescriptorSetManager::~DescriptorSetManager(){
@@ -98,7 +98,7 @@ namespace boitatah::vk {
         }
 
 
-        vkUpdateDescriptorSets(m_vk->getDevice(), writes.size(), writes.data(), 0, nullptr);
+        vkUpdateDescriptorSets(m_vk->get_device(), writes.size(), writes.data(), 0, nullptr);
     }
 
     void DescriptorSetManager::bindSet(const CommandBuffer drawBuffer,

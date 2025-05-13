@@ -33,7 +33,7 @@ namespace boitatah{
                            std::shared_ptr<ImageManager>        image_manager,
                            std::shared_ptr<MaterialManager>     material_manager,
                            std::shared_ptr<GPUResourceManager>  resource_manager,
-                           std::shared_ptr<Vulkan>              vulkan_instance);
+                           std::shared_ptr<VulkanInstance>              vulkan_instance);
         ~BackBufferManager(void);
 
         //sets up the initial backbuffer
@@ -75,7 +75,7 @@ namespace boitatah{
             std::shared_ptr<MaterialManager>        m_material_manager;
             std::shared_ptr<GPUResourceManager>     m_resource_mngr;
             
-            std::shared_ptr<Vulkan>                 m_vulkan;
+            std::shared_ptr<VulkanInstance>                 m_vulkan;
 
             Handle<Sampler> sampler;
             

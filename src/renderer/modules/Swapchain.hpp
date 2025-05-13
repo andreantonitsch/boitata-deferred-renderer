@@ -40,14 +40,14 @@ namespace boitatah
         ~Swapchain(void);
         SwapchainImage getNext(VkSemaphore &semaphore);
         SwapchainImage getCurrent();
-        void attach(std::shared_ptr<Vulkan> vulkan, std::shared_ptr<WindowManager> window);
+        void attach(std::shared_ptr<VulkanInstance> vulkan, std::shared_ptr<WindowManager> window);
         void createSwapchain();//Vector2<uint32_t> dimensions, bool vsync, bool fullscreen);
         // void populateBuffers();
 
     private:
         SwapchainOptions options;
         //VkSurfaceKHR surface;
-        std::shared_ptr<vk::Vulkan> vulkan;
+        std::shared_ptr<vk::VulkanInstance> vulkan;
         std::shared_ptr<WindowManager> window;
         uint32_t currentIndex;
 

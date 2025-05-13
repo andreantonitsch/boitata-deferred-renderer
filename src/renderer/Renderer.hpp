@@ -81,7 +81,7 @@ namespace boitatah
         
         BufferedCamera createCamera(const CameraDesc& desc);
 
-        // TODO temp light stuff
+        // TODO temp light functions
         void                setLightArray(const Handle<LightArray>& array);
         Handle<LightArray>  createLightArray(uint32_t size);
         LightArray&         getLightArray(Handle<LightArray> handle);
@@ -112,7 +112,7 @@ namespace boitatah
         //void schedulePresentRenderTarget(Handle<RenderTarget> &rendertarget, uint32_t attachment_index = 0);
     
 
-        void bindVertexBuffers( uint32_t            frame_index, 
+        void bind_vertexbuffers( uint32_t            frame_index, 
                                 Handle<Geometry>    geometry, 
                                 bool                indexed, 
                                 std::vector<VERTEX_BUFFER_TYPE> vertex_buffers,
@@ -135,7 +135,7 @@ namespace boitatah
         std::shared_ptr<BackBufferManager> m_backBufferManager;
         std::shared_ptr<GPUResourceManager> m_resourceManager;
         std::shared_ptr<DescriptorSetManager> m_descriptorManager;
-        std::shared_ptr<Vulkan> m_vk;
+        std::shared_ptr<VulkanInstance> m_vk;
         std::shared_ptr<WindowManager> m_window;
         std::shared_ptr<MaterialManager> m_materialMngr;
         std::shared_ptr<ImageManager> m_imageManager;
@@ -150,15 +150,12 @@ namespace boitatah
         void handleWindowResize();
         void createSwapchain();
 
-        // Command Buffers
-        CommandBuffer allocateCommandBuffer(const CommandBufferDesc &desc);
-
         std::vector<std::shared_ptr<RenderScene>> 
         orderSceneNodes(const std::vector<std::shared_ptr<RenderScene>> &nodes) const;
 
 
         // Vulkan Instance
-        void createVulkan();
+        void create_vulkan_instance();
 
         // Cleanup Functions
         void cleanup();

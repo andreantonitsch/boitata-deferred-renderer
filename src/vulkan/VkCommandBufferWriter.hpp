@@ -31,7 +31,7 @@ namespace boitatah::vk{
             // using  CommandBufferWriter<VkCommandBufferWriter>::copyBufferToImage;
             // using  CommandBufferWriter<VkCommandBufferWriter>::waitForTransfers;
 
-            VkCommandBufferWriter(std::shared_ptr<Vulkan> vk_instance)
+            VkCommandBufferWriter(std::shared_ptr<VulkanInstance> vk_instance)
                 :   vk_instance(vk_instance),
                     CommandBufferWriter<VkCommandBufferWriter>(){
                         m_signal = VK_NULL_HANDLE;
@@ -40,7 +40,7 @@ namespace boitatah::vk{
                     };
 
         private:
-            std::weak_ptr<Vulkan> vk_instance;
+            std::weak_ptr<VulkanInstance> vk_instance;
             // CommandWriterTraits<VkCommandBufferWriter>::CommandBufferType& unwrapCommandBuffer(){
             //     return bufferWrapper.unwrap();
             // };
@@ -80,7 +80,7 @@ namespace boitatah::vk{
             void __imp_submit(const VulkanWriterSubmit& command,
                                     VkCommandBuffer buffer) {
                 
-                auto vk = std::shared_ptr<Vulkan>(vk_instance);
+                auto vk = std::shared_ptr<VulkanInstance>(vk_instance);
                 vkEndCommandBuffer(buffer);
                 
                 // if(m_fence != VK_NULL_HANDLE)
@@ -97,7 +97,7 @@ namespace boitatah::vk{
                 VkQueue queue;
                 if (command.submitType == COMMAND_BUFFER_TYPE::TRANSFER)
                 {
-                    queue = vk->getTransferQueue();
+                    queue = vk->get_transfer_queue();
                     
                     stages.push_back(VK_PIPELINE_STAGE_TRANSFER_BIT);
                     for(int i = 0; i < m_wait.size(); i++)
@@ -107,7 +107,7 @@ namespace boitatah::vk{
                 
                 if (command.submitType == COMMAND_BUFFER_TYPE::GRAPHICS)
                 {
-                    queue = vk->getGraphicsQueue();
+                    queue = vk->get_graphics_queue();
                     
                     for(int i = 0; i < m_wait.size(); i++)
                         stages.push_back(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
@@ -129,22 +129,22 @@ namespace boitatah::vk{
             };
 
             bool __imp_check_transfers(){
-                auto vk = std::shared_ptr<Vulkan>(vk_instance);
-                return vk->checkFenceStatus(m_fence);
+                auto vk = std::shared_ptr<VulkanInstance>(vk_instance);
+                return vk->check_fence_status(m_fence);
             };
 
             void __imp_wait_for_transfers(){
                 if(m_fence == VK_NULL_HANDLE) return;
 
-                auto vk = std::shared_ptr<Vulkan>(vk_instance);
-                vk->waitForFence(m_fence);
+                auto vk = std::shared_ptr<VulkanInstance>(vk_instance);
+                vk->wait_for_fence(m_fence);
                 vk->reset_fence(m_fence);
             };
             
             void __imp_transition_image(const VulkanWriterTransitionLayout &command,
                                               VkCommandBuffer buffer ) {
 
-                auto vk = std::shared_ptr<Vulkan>(vk_instance);
+                auto vk = std::shared_ptr<VulkanInstance>(vk_instance);
 
                 //Set access for the chpsen stages.
                 VkAccessFlags srcAccess;
@@ -207,7 +207,7 @@ namespace boitatah::vk{
             void __imp_copy_image(const VulkanWriterCopyImage &command,
                                         VkCommandBuffer buffer) {
 
-                auto vk = std::shared_ptr<Vulkan>(vk_instance);
+                auto vk = std::shared_ptr<VulkanInstance>(vk_instance);
 
                 //copy data
                 VkImageCopy copy{

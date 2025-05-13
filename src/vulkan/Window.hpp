@@ -25,7 +25,7 @@ namespace boitatah::vk{
         public:
             WindowManager(WindowDesc& desc);
             ~WindowManager(void);
-            void initSurface(std::shared_ptr<boitatah::vk::Vulkan> vk);
+            void initSurface(std::shared_ptr<boitatah::vk::VulkanInstance> vk);
             void destroySurface(VkInstance instance);
             VkSurfaceKHR getSurface();
             bool isWindowClosed();
@@ -35,7 +35,7 @@ namespace boitatah::vk{
             GLFWwindow *window;
 
         private:
-            std::shared_ptr<boitatah::vk::Vulkan> m_vk;
+            std::shared_ptr<boitatah::vk::VulkanInstance> m_vk;
             VkSurfaceKHR surface;
             glm::ivec2 windowDimensions;
             static void framebufferResizeCallback(GLFWwindow* window, int width, int heigth);

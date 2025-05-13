@@ -1,7 +1,7 @@
 #include "DescriptorSetTree.hpp"
 #include <algorithm>
 namespace boitatah::vk::descriptor_sets{
-    DescriptorSetTree::DescriptorSetTree(std::shared_ptr<Vulkan> vulkan)
+    DescriptorSetTree::DescriptorSetTree(std::shared_ptr<VulkanInstance> vulkan)
     {
         m_vk =  vulkan;
         m_layoutPool = std::unique_ptr<Pool<DescriptorSetLayout>>(
@@ -20,7 +20,7 @@ namespace boitatah::vk::descriptor_sets{
         DescriptorSetLayout layout;
         //std::vector<DescriptorSetRatio> ratios;
         std::vector<BindingDesc> bindingDesc;
-        layout.layout = m_vk->createDescriptorLayout(description);
+        layout.layout = m_vk->create_descriptorlayout(description);
 
         for(auto& bindDesc : description.bindingDescriptors){
             for (std::size_t i = 0; i <= layout.ratios.size(); i++)

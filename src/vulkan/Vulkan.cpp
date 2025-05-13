@@ -10,9 +10,6 @@
 #include <limits>
 #include <memory>
 
-#include "../types/BttEnums.hpp"
-#include "../types/Shader.hpp"
-#include "../types/Image.hpp"
 #include "Window.hpp"
 #include <utils/utils.hpp>
 
@@ -81,89 +78,89 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 /// End Validation Support Jank
 
 #pragma region Initialization
-bvk::Vulkan::Vulkan(VulkanOptions opts)
+bvk::VulkanInstance::VulkanInstance(VulkanOptions opts)
 {
-    options = opts;
+    m_options = opts;
 
-    if (options.useValidationLayers)
+    if (m_options.useValidationLayers)
     {
-        validationLayers.emplace_back("VK_LAYER_KHRONOS_validation");
-        instanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        m_validation_layers.emplace_back("VK_LAYER_KHRONOS_validation");
+        m_instance_extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
-    for (const auto &ext : options.extensions)
+    for (const auto &ext : m_options.extensions)
     {
-        instanceExtensions.emplace_back(ext);
+        m_instance_extensions.emplace_back(ext);
     }
 
-    deviceExtensions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    m_device_extensions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
-    initInstance();
+    init_instance();
 
 }
 
-std::shared_ptr<bvk::Vulkan> boitatah::vk::Vulkan::create(VulkanOptions opts)
+std::shared_ptr<bvk::VulkanInstance> boitatah::vk::VulkanInstance::create(VulkanOptions opts)
 {
-    std::shared_ptr<Vulkan> new_vulkan = std::make_shared<Vulkan>(opts);
+    std::shared_ptr<VulkanInstance> new_vulkan = std::shared_ptr<VulkanInstance>(new VulkanInstance(opts));
     return new_vulkan;
 }
 
-bvk::Vulkan::~Vulkan(void)
+bvk::VulkanInstance::~VulkanInstance(void)
 {
 
-    vkDestroyCommandPool(device, commandPools.graphicsPool, nullptr);
-    vkDestroyCommandPool(device, commandPools.transferPool, nullptr);
-    vkDestroyCommandPool(device, commandPools.presentPool, nullptr);
+    vkDestroyCommandPool(m_device, m_command_pools.graphicsPool, nullptr);
+    vkDestroyCommandPool(m_device, m_command_pools.transferPool, nullptr);
+    vkDestroyCommandPool(m_device, m_command_pools.presentPool, nullptr);
 
-    vkDestroyDevice(device, nullptr);
+    vkDestroyDevice(m_device, nullptr);
 
-    if (options.useValidationLayers)
-        destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+    if (m_options.useValidationLayers)
+        destroyDebugUtilsMessengerEXT(instance, m_debug_messenger, nullptr);
 
     // vkDestroySurfaceKHR(instance, surface, nullptr); //done
     vkDestroyInstance(instance, nullptr);
 }
 
-VkInstance boitatah::vk::Vulkan::getInstance() const
+VkInstance boitatah::vk::VulkanInstance::get_instance() const
 {
     return instance;
 }
 
-VkDevice boitatah::vk::Vulkan::getDevice() const
+VkDevice boitatah::vk::VulkanInstance::get_device() const
 {
-    return device;
+    return m_device;
 }
 
-VkPhysicalDevice boitatah::vk::Vulkan::getPhysicalDevice()
+VkPhysicalDevice boitatah::vk::VulkanInstance::get_physical_device() const
 {
-    return physicalDevice;
+    return m_physical_device;
 }
 
-VkQueue boitatah::vk::Vulkan::getTransferQueue()
+VkQueue boitatah::vk::VulkanInstance::get_transfer_queue() const
 {
-    return queues.transferQueue;
+    return m_queues.transferQueue;
 }
 
-VkQueue boitatah::vk::Vulkan::getGraphicsQueue()
+VkQueue boitatah::vk::VulkanInstance::get_graphics_queue() const
 {
-    return queues.graphicsQueue;
+    return m_queues.graphicsQueue;
 }
 
-VkQueue boitatah::vk::Vulkan::getPresentQueue()
+VkQueue boitatah::vk::VulkanInstance::get_present_queue() const
 {
-    return queues.presentQueue;
+    return m_queues.presentQueue;
 }
 
-void boitatah::vk::Vulkan::attachWindow(std::shared_ptr<WindowManager> window)
+void boitatah::vk::VulkanInstance::attach_window(std::shared_ptr<WindowManager> window)
 {
     this->window = window;
 }
 
-void boitatah::vk::Vulkan::initInstance()
+void boitatah::vk::VulkanInstance::init_instance()
 {
     // App Info
     VkApplicationInfo appInfo{
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        .pApplicationName = options.appName,
+        .pApplicationName = m_options.appName,
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
         .pEngineName = "No Engine",
         .engineVersion = VK_MAKE_VERSION(1, 0, 0),
@@ -171,21 +168,21 @@ void boitatah::vk::Vulkan::initInstance()
 
     // Extension Availability check
     // TODO For some MacOS sdks we need to add VK_KHR_PORTABILITY_subset.
-    std::vector<VkExtensionProperties> availableExtensions = retrieveInstanceAvailableExtensions();
+    std::vector<VkExtensionProperties> availableExtensions = retrieve_available_extensions();
 
     for (const auto &ext : availableExtensions)
     {
         std::cout << ext.extensionName << std::endl;
     }
 
-    if (options.useValidationLayers)
-        for (const auto &ext : instanceExtensions)
+    if (m_options.useValidationLayers)
+        for (const auto &ext : m_instance_extensions)
         {
             std::cout << "required :: " << ext << std::endl;
         }
 
-    bool hasAllExtensions = checkRequiredExtensions(availableExtensions,
-                                                    instanceExtensions);
+    bool hasAllExtensions = check_required_extensions(availableExtensions,
+                                                    m_instance_extensions);
 
     if (!hasAllExtensions)
         throw std::runtime_error("Vulkan does not have all required extensions available.");
@@ -195,20 +192,20 @@ void boitatah::vk::Vulkan::initInstance()
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         .pApplicationInfo = &appInfo,
         .enabledLayerCount = 0,
-        .enabledExtensionCount = (uint32_t)(instanceExtensions.size()),
-        .ppEnabledExtensionNames = instanceExtensions.data(),
+        .enabledExtensionCount = (uint32_t)(m_instance_extensions.size()),
+        .ppEnabledExtensionNames = m_instance_extensions.data(),
     };
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 
-    if (options.useValidationLayers)
+    if (m_options.useValidationLayers)
     {
-        if (checkValidationLayerSupport(validationLayers))
+        if (check_validation_support(m_validation_layers))
         {
 
-            populateMessenger(debugCreateInfo);
-            createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-            createInfo.ppEnabledLayerNames = validationLayers.data();
+            populate_messenger(debugCreateInfo);
+            createInfo.enabledLayerCount = static_cast<uint32_t>(m_validation_layers.size());
+            createInfo.ppEnabledLayerNames = m_validation_layers.data();
             createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
         }
     }
@@ -218,53 +215,51 @@ void boitatah::vk::Vulkan::initInstance()
         throw std::runtime_error("Failed to create Vulkan Instance.");
 }
 
-void boitatah::vk::Vulkan::completeInit()
+void boitatah::vk::VulkanInstance::finish_initialization()
 {
-    initializeDebugMessenger();
-
-    initPhysicalDevice();
-    initLogicalDeviceNQueues();
-    setQueues();
-    createCommandPools();
-
-    familyIndices = findQueueFamilies(physicalDevice);
+    init_debug_messenger();
+    init_physical_device();
+    init_logical_device_queues();
+    set_queues();
+    create_commandpools();
+    m_queue_family_indices = find_queuefamilies(m_physical_device);
 }
 
 #pragma endregion Initialization
 
 #pragma region Synchronization
-void boitatah::vk::Vulkan::waitForFrame(RenderTargetSync &bufferData)
+void boitatah::vk::VulkanInstance::wait_for_frame(RenderTargetSync &bufferData)
 {
-    VkResult result = vkWaitForFences(device, 1, &bufferData.in_flight_fence, VK_TRUE, UINT64_MAX);
+    VkResult result = vkWaitForFences(m_device, 1, &bufferData.in_flight_fence, VK_TRUE, UINT64_MAX);
     if (result != VK_SUCCESS)
         std::cout << "wait for fence failed " << result << std::endl;
-    vkResetFences(device, 1, &bufferData.in_flight_fence);
+    vkResetFences(m_device, 1, &bufferData.in_flight_fence);
 }
 
-void boitatah::vk::Vulkan::waitIdle()
+void boitatah::vk::VulkanInstance::wait_idle()
 {
-    vkDeviceWaitIdle(device);
+    vkDeviceWaitIdle(m_device);
 }
 
-void boitatah::vk::Vulkan::reset_fence(const VkFence &fence) const
+void boitatah::vk::VulkanInstance::reset_fence(const VkFence &fence) const
 {
-    vkResetFences(device, 1, &fence);
+    vkResetFences(m_device, 1, &fence);
 }
 
 
-void boitatah::vk::Vulkan::waitForFence(const VkFence &fence) const
+void boitatah::vk::VulkanInstance::wait_for_fence(const VkFence &fence) const
 {
     //std::cout << " waiting for fence " << std::endl;
-    VkResult result = vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
+    VkResult result = vkWaitForFences(m_device, 1, &fence, VK_TRUE, UINT64_MAX);
     if (result != VK_SUCCESS)
         std::cout << "wait for fence failed " << result << std::endl;
     //std::cout << " waited for fence " << std::endl;
     //vkResetFences(device, 1, &fence);
 }
 
-bool boitatah::vk::Vulkan::checkFenceStatus(VkFence fence)
+bool boitatah::vk::VulkanInstance::check_fence_status(VkFence fence)
 {
-    VkResult result = vkGetFenceStatus(device, fence);
+    VkResult result = vkGetFenceStatus(m_device, fence);
     return result == VK_SUCCESS; //fence is signaled
 }
 
@@ -272,7 +267,7 @@ bool boitatah::vk::Vulkan::checkFenceStatus(VkFence fence)
 
 #pragma region PSO Building
 
-VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
+VkRenderPass boitatah::vk::VulkanInstance::create_renderpass(const RenderPassDesc &desc) const
 {
     std::vector<VkAttachmentDescription> attachments;
     std::vector<VkAttachmentReference> colorAttachmentRefs;    
@@ -281,7 +276,7 @@ VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
     
     for (const auto &attDesc : desc.color_attachments)
     {
-        attachments.push_back(createAttachmentDescription(attDesc));
+        attachments.push_back(create_attachmentdescription(attDesc));
 
         colorAttachmentRefs.push_back({
             .attachment = static_cast<uint32_t>(attDesc.index),
@@ -308,7 +303,7 @@ VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
     };
 
     if(desc.use_depthStencil){
-            attachments.push_back(createAttachmentDescription(desc.depth_attachment));
+            attachments.push_back(create_attachmentdescription(desc.depth_attachment));
             depthStencilAttachmentRef = {.attachment = static_cast<uint32_t>(desc.depth_attachment.index),
                                          .layout = castEnum<VkImageLayout>(desc.depth_attachment.layout)};
             subpass.pDepthStencilAttachment = &depthStencilAttachmentRef;
@@ -325,7 +320,7 @@ VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
         .pDependencies = &dependency};
 
     VkRenderPass pass;
-    if (vkCreateRenderPass(device, &renderPassCreate, nullptr, &pass) != VK_SUCCESS)
+    if (vkCreateRenderPass(m_device, &renderPassCreate, nullptr, &pass) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create Render Pass");
     }
@@ -333,7 +328,7 @@ VkRenderPass boitatah::vk::Vulkan::createRenderPass(const RenderPassDesc &desc)
     return pass;
 }
 
-Image boitatah::vk::Vulkan::createImage(const ImageDesc &desc)
+Image boitatah::vk::VulkanInstance::create_image(const ImageDesc &desc) const
 {
 
     Image image;
@@ -360,7 +355,7 @@ Image boitatah::vk::Vulkan::createImage(const ImageDesc &desc)
 
     VkImage vkImage;
 
-    if (vkCreateImage(device, &createInfo, nullptr, &vkImage) != VK_SUCCESS)
+    if (vkCreateImage(m_device, &createInfo, nullptr, &vkImage) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to Create Image");
     }
@@ -369,20 +364,20 @@ Image boitatah::vk::Vulkan::createImage(const ImageDesc &desc)
     image.image = vkImage;
 
     VkMemoryRequirements reqs;
-    vkGetImageMemoryRequirements(device, vkImage, &reqs);
+    vkGetImageMemoryRequirements(m_device, vkImage, &reqs);
 
-    image.memory = allocateMemory({
+    image.memory = allocate_memory({
         .size = reqs.size,
         .type = MEMORY_PROPERTY::DEVICE_LOCAL,
         .typeBits = reqs.memoryTypeBits,
     });
 
-    bindImageMemory(image.memory, image.image);
+    bind_image_memory(image.memory, image.image);
 
     return image;
 }
 
-VkImageView boitatah::vk::Vulkan::createImageView(VkImage image, const ImageDesc &desc)
+VkImageView boitatah::vk::VulkanInstance::create_imageview(VkImage image, const ImageDesc &desc) const
 {
 
     VkImageView view;
@@ -407,7 +402,7 @@ VkImageView boitatah::vk::Vulkan::createImageView(VkImage image, const ImageDesc
                              .baseMipLevel = 0, .levelCount = 1, 
                              .baseArrayLayer = 0, .layerCount = 1};}
 
-    if (vkCreateImageView(device, &createInfo, nullptr, &view) != VK_SUCCESS)
+    if (vkCreateImageView(m_device, &createInfo, nullptr, &view) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create Swapchain image view");
     }
@@ -415,10 +410,10 @@ VkImageView boitatah::vk::Vulkan::createImageView(VkImage image, const ImageDesc
     return view;
 }
 
-uint32_t boitatah::vk::Vulkan::findMemoryIndex(const MemoryDesc &props) const
+uint32_t boitatah::vk::VulkanInstance::find_memory_index(const MemoryDesc &props) const
 {
     VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+    vkGetPhysicalDeviceMemoryProperties(m_physical_device, &memProperties);
 
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
     {
@@ -435,14 +430,14 @@ uint32_t boitatah::vk::Vulkan::findMemoryIndex(const MemoryDesc &props) const
     return 0;
 }
 
-uint32_t boitatah::vk::Vulkan::getAlignmentForBuffer(const VkBuffer buffer) const
+uint32_t boitatah::vk::VulkanInstance::get_buffer_alignment(const VkBuffer buffer) const
 {
     VkMemoryRequirements memReqs;
-    vkGetBufferMemoryRequirements(device, buffer, &memReqs);
+    vkGetBufferMemoryRequirements(m_device, buffer, &memReqs);
     return memReqs.alignment;
 }
 
-boitatah::CommandBuffer boitatah::vk::Vulkan::allocateCommandBuffer(const CommandBufferDesc &desc)
+boitatah::CommandBuffer boitatah::vk::VulkanInstance::allocate_commandbuffer(const CommandBufferDesc &desc)
 {
     VkCommandBufferAllocateInfo allocateInfo{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -452,18 +447,18 @@ boitatah::CommandBuffer boitatah::vk::Vulkan::allocateCommandBuffer(const Comman
     switch (desc.type)
     {
     case COMMAND_BUFFER_TYPE::GRAPHICS:
-        allocateInfo.commandPool = commandPools.graphicsPool;
+        allocateInfo.commandPool = m_command_pools.graphicsPool;
         break;
     case COMMAND_BUFFER_TYPE::TRANSFER:
-        allocateInfo.commandPool = commandPools.transferPool;
+        allocateInfo.commandPool = m_command_pools.transferPool;
         break;
     case COMMAND_BUFFER_TYPE::PRESENT:
-        allocateInfo.commandPool = commandPools.presentPool;
+        allocateInfo.commandPool = m_command_pools.presentPool;
         break;
     }
 
     VkCommandBuffer buffer;
-    if (vkAllocateCommandBuffers(device, &allocateInfo, &buffer) != VK_SUCCESS)
+    if (vkAllocateCommandBuffers(m_device, &allocateInfo, &buffer) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allocate Command Buffer");
     }
@@ -472,12 +467,8 @@ boitatah::CommandBuffer boitatah::vk::Vulkan::allocateCommandBuffer(const Comman
 }
 
 
-void boitatah::vk::Vulkan::resetCmdBuffer(const VkCommandBuffer buffer)
-{
-    vkResetCommandBuffer(buffer, 0);
-}
 
-bool boitatah::vk::Vulkan::presentFrame(Image &swapchainImage,
+bool boitatah::vk::VulkanInstance::present(Image &swapchainImage,
                                         VkSwapchainKHR &swapchain,
                                         uint32_t &scIndex,
                                         const PresentCommandVk &command)
@@ -492,7 +483,7 @@ bool boitatah::vk::Vulkan::presentFrame(Image &swapchainImage,
         .pImageIndices = &scIndex,
         .pResults = nullptr};
 
-    VkResult result = vkQueuePresentKHR(queues.presentQueue, &presentInfo);
+    VkResult result = vkQueuePresentKHR(m_queues.presentQueue, &presentInfo);
 
     // swapchain is too small or too large
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
@@ -506,159 +497,18 @@ bool boitatah::vk::Vulkan::presentFrame(Image &swapchainImage,
     return true;
 }
 
-void boitatah::vk::Vulkan::CmdCopyImage(const CopyImageCommandVk &command)
-{
 
-    VkImageCopy copy{
-        .srcSubresource = {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-        .srcOffset = {0, 0, 0},
-        .dstSubresource = {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-        .dstOffset = {0, 0, 0},
-        .extent = {command.extent.x, command.extent.y, 1},
-    };
-
-    // transition source image to
-    // transfer source layout.
-    CmdTransitionLayout({
-        .buffer = command.buffer,
-        .src = command.srcImgLayout,
-        .dst = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        .image = command.srcImage,
-        .srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        .dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT,
-        .srcAccess = 0,
-        .dstAccess = VK_ACCESS_TRANSFER_READ_BIT,
-    });
-
-    // transition destination image to
-    // transfer destination layout
-    CmdTransitionLayout({
-        .buffer = command.buffer,
-        .src = VK_IMAGE_LAYOUT_UNDEFINED,
-        .dst = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        .image = command.dstImage,
-        .srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        .dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT,
-        .srcAccess = 0,
-        .dstAccess = VK_ACCESS_TRANSFER_WRITE_BIT,
-    });
-
-    vkCmdCopyImage(command.buffer,
-                   command.srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                   command.dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                   1, &copy);
-
-    // transition destination image back
-    // to its original layout
-    CmdTransitionLayout({
-        .buffer = command.buffer,
-        .src = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        .dst = command.dstImgLayout,
-        .image = command.dstImage,
-
-        .srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT,
-        .dstStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-        .srcAccess = VK_ACCESS_TRANSFER_WRITE_BIT,
-        .dstAccess = 0,
-    });
-
-    // transition source image back
-    //  to its original layout
-    CmdTransitionLayout({
-        .buffer = command.buffer,
-        .src = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        .dst = command.srcImgLayout,
-        .image = command.srcImage,
-
-        .srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT,
-        .dstStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-        .srcAccess = VK_ACCESS_TRANSFER_WRITE_BIT,
-        .dstAccess = 0,
-    });
-}
-
-// void boitatah::vk::Vulkan::CmdCopyBuffer(const CopyBufferCommandVk &command) const
-// {
-//     VkBufferCopy copy{
-//         .srcOffset = command.srcOffset,
-//         .dstOffset = command.dstOffset,
-//         .size = command.size};
-//     vkCmdCopyBuffer(command.commandBuffer,
-//                     command.srcBuffer,
-//                     command.dstBuffer,
-//                     1,
-//                     &copy);
-// }
-
-
-void boitatah::vk::Vulkan::beginCommands(const VkCommandBuffer &buffer)
-{
-    resetCmdBuffer(buffer);
-
-    VkCommandBufferBeginInfo beginInfo{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-    };
-    vkBeginCommandBuffer(buffer, &beginInfo);
-}
-
-void boitatah::vk::Vulkan::endTransferCommands(const VkCommandBuffer &buffer,
-                                       const VkQueue &queue,
-                                       const std::vector<VkSemaphore> &wait,
-                                       const VkSemaphore &signal,
-                                       const VkFence &fence)
-{
-    vkEndCommandBuffer(buffer);
-
-    VkSubmitInfo submit{
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .commandBufferCount = 1,
-        .pCommandBuffers = &buffer,
-    };
-
-    if (signal != VK_NULL_HANDLE)
-    {
-        submit.signalSemaphoreCount = 1;
-        submit.pSignalSemaphores = &signal;
-    }
-    submit.waitSemaphoreCount = 0;
-    submit.pWaitSemaphores = nullptr;
-
-    std::vector<VkPipelineStageFlags> stages{};
-    if (wait.size() > 0)
-    {
-        submit.waitSemaphoreCount = static_cast<uint32_t>(wait.size());
-        submit.pWaitSemaphores = wait.data();
-        for(int i = 0; i< wait.size(); i++)
-            stages.push_back(VK_PIPELINE_STAGE_TRANSFER_BIT);
-        submit.pWaitDstStageMask = stages.data();
-    }
-
-    waitForFence(fence);
-    vkQueueSubmit(queue, 1, &submit, fence);
-}
-
-VkDeviceMemory boitatah::vk::Vulkan::allocateMemory(const MemoryDesc &desc)
+VkDeviceMemory boitatah::vk::VulkanInstance::allocate_memory(const MemoryDesc &desc) const
 {
     VkMemoryAllocateInfo allocateInfo{
         .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .allocationSize = desc.size,
-        .memoryTypeIndex = findMemoryIndex(desc),
+        .memoryTypeIndex = find_memory_index(desc),
     };
 
     VkDeviceMemory memory;
 
-    if (vkAllocateMemory(device, &allocateInfo, nullptr, &memory) != VK_SUCCESS)
+    if (vkAllocateMemory(m_device, &allocateInfo, nullptr, &memory) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allocate Memory");
     }
@@ -666,13 +516,13 @@ VkDeviceMemory boitatah::vk::Vulkan::allocateMemory(const MemoryDesc &desc)
     return memory;
 }
 
-void *boitatah::vk::Vulkan::mapMemory(const MapMemoryVk &desc) const
+void *boitatah::vk::VulkanInstance::map_memory(const MapMemoryVk &desc) const
 {
     // auto memoryUnmapper = [&, this](){
-    //     unmapMemory({.memory = desc.memory});
+    //     unmap_memory({.memory = desc.memory});
     // };
     void *mappedTarget;
-    if(vkMapMemory(device, desc.memory, desc.offset, desc.size, 0, &mappedTarget) != VK_SUCCESS){
+    if(vkMapMemory(m_device, desc.memory, desc.offset, desc.size, 0, &mappedTarget) != VK_SUCCESS){
         return nullptr;
     }
     std::cout<< "Vulkan mapped memory" << std::endl;
@@ -680,30 +530,30 @@ void *boitatah::vk::Vulkan::mapMemory(const MapMemoryVk &desc) const
     return mappedTarget;
 }
 
-void boitatah::vk::Vulkan::unmapMemory(const UnmapMemoryVk &desc) const
+void boitatah::vk::VulkanInstance::unmap_memory(const UnmapMemoryVk &desc) const
 {
-    vkUnmapMemory(device, desc.memory);
+    vkUnmapMemory(m_device, desc.memory);
 }
 
-void boitatah::vk::Vulkan::bindImageMemory(VkDeviceMemory memory, VkImage image)
+void boitatah::vk::VulkanInstance::bind_image_memory(VkDeviceMemory memory, VkImage image) const
 {
     // binds from start.
     // currently using one buffer per image.
-    vkBindImageMemory(device, image, memory, 0);
+    vkBindImageMemory(m_device, image, memory, 0);
 }
 
-void boitatah::vk::Vulkan::mapDataAndCopyToBuffer(CopyToBufferVk op)
+void boitatah::vk::VulkanInstance::data_copy_to_buffer(CopyToBufferVk op) const
 {
     //maps a pointer to mapped memory, offset from its start.
     // size is the memory range to be mapped.   
-    void * mapMem = mapMemory({.memory = op.memory, .offset = op.offset, .size = op.size});
+    void * mapMem = map_memory({.memory = op.memory, .offset = op.offset, .size = op.size});
 
     std::byte* byte_source = static_cast<std::byte*>(op.data);
     std::copy(byte_source, byte_source + op.size, static_cast<std::byte*>(mapMem));
-    unmapMemory({.memory = op.memory});
+    unmap_memory({.memory = op.memory});
 }
 
-void boitatah::vk::Vulkan::copyToMappedMemory(const CopyMappedMemoryVk &op) const
+void boitatah::vk::VulkanInstance::copy_to_mapped_memory(const CopyMappedMemoryVk &op) const
 {
     std::byte* start = static_cast<std::byte*>(op.data) + op.offset;
     std::byte* end = start + op.elementSize * op.elementCount;
@@ -716,7 +566,7 @@ void boitatah::vk::Vulkan::copyToMappedMemory(const CopyMappedMemoryVk &op) cons
         static_cast<std::byte*>(op.map));
 }
 
-VkPipelineLayout boitatah::vk::Vulkan::createShaderLayout(const ShaderLayoutDescVk &desc)
+VkPipelineLayout boitatah::vk::VulkanInstance::create_shaderlayout(const ShaderLayoutDescVk &desc) const
 {
     VkPipelineLayout layout;
     
@@ -744,7 +594,7 @@ VkPipelineLayout boitatah::vk::Vulkan::createShaderLayout(const ShaderLayoutDesc
         .pPushConstantRanges = ranges.data(),
     };
  
-    if (vkCreatePipelineLayout(device, &layoutCreate, nullptr, &layout) != VK_SUCCESS)
+    if (vkCreatePipelineLayout(m_device, &layoutCreate, nullptr, &layout) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create Pipeline Layout");
     }
@@ -752,7 +602,7 @@ VkPipelineLayout boitatah::vk::Vulkan::createShaderLayout(const ShaderLayoutDesc
     return layout;
 }
 
-VkDescriptorSetLayout boitatah::vk::Vulkan::createDescriptorLayout(const DescriptorSetLayoutDesc &desc)
+VkDescriptorSetLayout boitatah::vk::VulkanInstance::create_descriptorlayout(const DescriptorSetLayoutDesc &desc) const
 {
     VkDescriptorSetLayout layout;
 
@@ -776,14 +626,14 @@ VkDescriptorSetLayout boitatah::vk::Vulkan::createDescriptorLayout(const Descrip
         .pBindings = bindings.size() == 0 ? 0 : bindings.data(),
     };
 
-    if(vkCreateDescriptorSetLayout(device, &info, nullptr, &layout) != VK_SUCCESS){
+    if(vkCreateDescriptorSetLayout(m_device, &info, nullptr, &layout) != VK_SUCCESS){
         throw std::runtime_error("Failed to create Descriptor Set Layout");
     }
 
     return layout;
 }
 
-VkFence boitatah::vk::Vulkan::createFence(bool signaled)
+VkFence boitatah::vk::VulkanInstance::create_fence(bool signaled) const
 {
     VkFenceCreateInfo fenceInfo{
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
@@ -793,13 +643,13 @@ VkFence boitatah::vk::Vulkan::createFence(bool signaled)
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     VkFence fence;
-    if (vkCreateFence(device, &fenceInfo, nullptr, &fence) != VK_SUCCESS)
+    if (vkCreateFence(m_device, &fenceInfo, nullptr, &fence) != VK_SUCCESS)
         throw std::runtime_error("Failed to create Fence");
     std::cout << "created fence" << std::endl;
     return fence;
 }
 
-VkSemaphore boitatah::vk::Vulkan::createSemaphore() const
+VkSemaphore boitatah::vk::VulkanInstance::create_semaphore() const
 {
     VkSemaphoreCreateInfo semaphoreInfo{
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
@@ -807,17 +657,17 @@ VkSemaphore boitatah::vk::Vulkan::createSemaphore() const
 
     VkSemaphore semaphore;
 
-    if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore))
+    if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &semaphore))
         throw std::runtime_error("Failed to create Semaphore");
 
     return semaphore;
 }
 
-boitatah::vk::BufferVkData boitatah::vk::Vulkan::createBuffer(const BufferDescVk &desc) const
+boitatah::vk::BufferVkData boitatah::vk::VulkanInstance::create_buffer(const BufferDescVk &desc) const
 {
 
-    const std::vector<uint32_t> indexes = {familyIndices.graphicsFamily.value(),
-                                           familyIndices.transferFamily.value()};
+    const std::vector<uint32_t> indexes = {m_queue_family_indices.graphicsFamily.value(),
+                                           m_queue_family_indices.transferFamily.value()};
 
     VkBufferCreateInfo bufferInfo{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -833,36 +683,36 @@ boitatah::vk::BufferVkData boitatah::vk::Vulkan::createBuffer(const BufferDescVk
     }
 
     VkBuffer buffer;
-    if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+    if (vkCreateBuffer(m_device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create a buffer");
         ;
     }
 
     VkMemoryRequirements memReqs;
-    vkGetBufferMemoryRequirements(device, buffer, &memReqs);
+    vkGetBufferMemoryRequirements(m_device, buffer, &memReqs);
 
     VkDeviceMemory memory;
     VkMemoryAllocateInfo memInfo{
         .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .allocationSize = memReqs.size,
-        .memoryTypeIndex = findMemoryIndex({
+        .memoryTypeIndex = find_memory_index({
             .size = memReqs.size,
             .type = MEMORY_PROPERTY::HOST_VISIBLE_COHERENT,
             .typeBits = memReqs.memoryTypeBits,
         })};
 
-    if (vkAllocateMemory(device, &memInfo, nullptr, &memory) != VK_SUCCESS)
+    if (vkAllocateMemory(m_device, &memInfo, nullptr, &memory) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to  allocate buffer memory");
     }
 
-    vkBindBufferMemory(device, buffer, memory, 0);
+    vkBindBufferMemory(m_device, buffer, memory, 0);
 
     return {.buffer = buffer, .memory = memory, .alignment = memReqs.alignment, .actualSize =memReqs.size };
 }
 
-VkSampler boitatah::vk::Vulkan::createSampler(const SamplerData &data)
+VkSampler boitatah::vk::VulkanInstance::create_sampler(const SamplerData &data) const
 {
     VkSamplerCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -873,7 +723,7 @@ VkSampler boitatah::vk::Vulkan::createSampler(const SamplerData &data)
     info.addressModeV = castEnum<VkSamplerAddressMode>(data.v_tiling);
     info.addressModeW = castEnum<VkSamplerAddressMode>(SAMPLER_TILE_MODE::REPEAT);
     info.anisotropyEnable = data.anisotropy;
-    info.maxAnisotropy = std::min(deviceProperties.limits.maxSamplerAnisotropy, 
+    info.maxAnisotropy = std::min(m_device_properties.limits.maxSamplerAnisotropy, 
                                   data.maxAnisotropy);
     info.unnormalizedCoordinates = data.normalized ? VK_FALSE : VK_TRUE;
     info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
@@ -890,7 +740,7 @@ VkSampler boitatah::vk::Vulkan::createSampler(const SamplerData &data)
     info.maxLod = 0.0f;
 
     VkSampler sampler;
-    VkResult result = vkCreateSampler(device, &info, nullptr, &sampler);
+    VkResult result = vkCreateSampler(m_device, &info, nullptr, &sampler);
 
     if(result != VK_SUCCESS)
         std::runtime_error("Failed to create sampler");
@@ -898,10 +748,10 @@ VkSampler boitatah::vk::Vulkan::createSampler(const SamplerData &data)
     return sampler;
 }
 
-boitatah::vk::BufferVkData boitatah::vk::Vulkan::getBufferAlignmentMemoryType(const BufferDescVk &desc) const
+boitatah::vk::BufferVkData boitatah::vk::VulkanInstance::get_buffer_alignment_memorytype(const BufferDescVk &desc) const
 {
-    const std::vector<uint32_t> indexes = {familyIndices.graphicsFamily.value(),
-                                           familyIndices.transferFamily.value()};
+    const std::vector<uint32_t> indexes = {m_queue_family_indices.graphicsFamily.value(),
+                                           m_queue_family_indices.transferFamily.value()};
 
     VkBufferCreateInfo dummyCreate{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -917,40 +767,40 @@ boitatah::vk::BufferVkData boitatah::vk::Vulkan::getBufferAlignmentMemoryType(co
     }
 
     VkBuffer dummyBuffer;
-    if (vkCreateBuffer(device, &dummyCreate, nullptr, &dummyBuffer) != VK_SUCCESS)
+    if (vkCreateBuffer(m_device, &dummyCreate, nullptr, &dummyBuffer) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create a buffer");
         ;
     }
 
     VkMemoryRequirements memReqs;
-    vkGetBufferMemoryRequirements(device, dummyBuffer, &memReqs);
+    vkGetBufferMemoryRequirements(m_device, dummyBuffer, &memReqs);
 
-    vkDestroyBuffer(device, dummyBuffer, nullptr);
+    vkDestroyBuffer(m_device, dummyBuffer, nullptr);
 
     return BufferVkData{
         .alignment = memReqs.alignment,
         .memoryTypeBits = memReqs.memoryTypeBits};
 }
 
-boitatah::RenderTargetSync boitatah::vk::Vulkan::allocateBufferSync()
+boitatah::RenderTargetSync boitatah::vk::VulkanInstance::allocate_render_sync_structures()
 {
     RenderTargetSync sync{
-            .draw_buffer = allocateCommandBuffer({.count = 1,
+            .draw_buffer = allocate_commandbuffer({.count = 1,
                                                  .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                                                  .type = COMMAND_BUFFER_TYPE::GRAPHICS}),
-            .present_buffer = allocateCommandBuffer({.count = 1,
+            .present_buffer = allocate_commandbuffer({.count = 1,
                                                      .level = COMMAND_BUFFER_LEVEL::PRIMARY,
                                                      .type = COMMAND_BUFFER_TYPE::TRANSFER}),
-            .draw_semaphore = createSemaphore(),
-            .sc_aquired_semaphore = createSemaphore(),
-            .transfer_semaphore = createSemaphore(),
-            .in_flight_fence = createFence(true),
+            .draw_semaphore = create_semaphore(),
+            .sc_aquired_semaphore = create_semaphore(),
+            .transfer_semaphore = create_semaphore(),
+            .in_flight_fence = create_fence(true),
         };
     return sync;
 }
 
-void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
+void boitatah::vk::VulkanInstance::build_shader(const ShaderDescVk &desc, Shader &shader)
 {
     std::vector<VkDynamicState> dynamicStates = {
         VK_DYNAMIC_STATE_VIEWPORT,
@@ -1078,7 +928,7 @@ void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
     };
     if(desc.use_depth)
         pipelineInfo.pDepthStencilState = &depthStencil;
-    if (vkCreateGraphicsPipelines(device,
+    if (vkCreateGraphicsPipelines(m_device,
                                   VK_NULL_HANDLE,
                                   1,
                                   &pipelineInfo,
@@ -1089,7 +939,7 @@ void boitatah::vk::Vulkan::buildShader(const ShaderDescVk &desc, Shader &shader)
     }
 }
 
-VkShaderModule boitatah::vk::Vulkan::createShaderModule(const std::vector<char> &bytecode)
+VkShaderModule boitatah::vk::VulkanInstance::create_shadermodule(const std::vector<char> &bytecode) const
 {
     VkShaderModuleCreateInfo shaderCreate{
         .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -1098,14 +948,14 @@ VkShaderModule boitatah::vk::Vulkan::createShaderModule(const std::vector<char> 
     };
 
     VkShaderModule module;
-    if (vkCreateShaderModule(device, &shaderCreate, nullptr, &module) != VK_SUCCESS)
+    if (vkCreateShaderModule(m_device, &shaderCreate, nullptr, &module) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create Shader Module");
     }
     return module;
 }
 
-VkFramebuffer boitatah::vk::Vulkan::createFramebuffer(const FramebufferDescVk &desc)
+VkFramebuffer boitatah::vk::VulkanInstance::create_framebuffer(const FramebufferDescVk &desc) const
 {
     VkFramebuffer buffer;
     VkFramebufferCreateInfo createInfo{
@@ -1117,7 +967,7 @@ VkFramebuffer boitatah::vk::Vulkan::createFramebuffer(const FramebufferDescVk &d
         .height = desc.dimensions.y,
         .layers = 1};
 
-    VkResult r = vkCreateFramebuffer(device, &createInfo, nullptr, &buffer);
+    VkResult r = vkCreateFramebuffer(m_device, &createInfo, nullptr, &buffer);
     if (r != VK_SUCCESS)
     {
         std::cout << "\n#### " << r << "\n " << std::endl;
@@ -1127,7 +977,7 @@ VkFramebuffer boitatah::vk::Vulkan::createFramebuffer(const FramebufferDescVk &d
     return buffer;
 }
 
-VkAttachmentDescription boitatah::vk::Vulkan::createAttachmentDescription(const AttachmentDesc &attDesc)
+VkAttachmentDescription boitatah::vk::VulkanInstance::create_attachmentdescription(const AttachmentDesc &attDesc) const
 {   
     VkAttachmentLoadOp load_op;
     if(attDesc.clear)
@@ -1147,88 +997,88 @@ VkAttachmentDescription boitatah::vk::Vulkan::createAttachmentDescription(const 
 
 #pragma region Object Destructions
 
-void boitatah::vk::Vulkan::destroyShader(Shader &shader)
+void boitatah::vk::VulkanInstance::destroy_shader(Shader &shader)
 {
-    vkDestroyShaderModule(device, shader.vert.shaderModule, nullptr);
-    vkDestroyShaderModule(device, shader.frag.shaderModule, nullptr);
-    vkDestroyPipeline(device, shader.pipeline, nullptr);
+    vkDestroyShaderModule(m_device, shader.vert.shaderModule, nullptr);
+    vkDestroyShaderModule(m_device, shader.frag.shaderModule, nullptr);
+    vkDestroyPipeline(m_device, shader.pipeline, nullptr);
 }
 
-void boitatah::vk::Vulkan::destroyRenderpass(RenderPass &pass)
+void boitatah::vk::VulkanInstance::destroy_renderpass(Renderpass &pass)
 {
-    vkDestroyRenderPass(device, pass.renderPass, nullptr);
+    vkDestroyRenderPass(m_device, pass.renderPass, nullptr);
 }
 
-void boitatah::vk::Vulkan::destroyFramebuffer(RenderTarget &framebuffer)
+void boitatah::vk::VulkanInstance::destroy_framebuffer(RenderTarget &framebuffer)
 {
     
-    vkDestroyFramebuffer(device, framebuffer.buffer, nullptr);
+    vkDestroyFramebuffer(m_device, framebuffer.buffer, nullptr);
 }
 
-void boitatah::vk::Vulkan::destroyImage(Image image)
+void boitatah::vk::VulkanInstance::destroy_image(Image image)
 {
-    vkDestroyImageView(device, image.view, nullptr);
+    vkDestroyImageView(m_device, image.view, nullptr);
     if (!image.swapchain)
     {
-        vkDestroyImage(device, image.image, nullptr);
-        vkFreeMemory(device, image.memory, nullptr);
+        vkDestroyImage(m_device, image.image, nullptr);
+        vkFreeMemory(m_device, image.memory, nullptr);
     }
 }
 
-void boitatah::vk::Vulkan::destroyPipelineLayout(ShaderLayout &layout)
+void boitatah::vk::VulkanInstance::destroy_pipelinelayout(ShaderLayout &layout)
 {
-    vkDestroyPipelineLayout(device, layout.pipeline, nullptr);
+    vkDestroyPipelineLayout(m_device, layout.pipeline, nullptr);
 }
 
-void boitatah::vk::Vulkan::destroyRenderTargetCmdData(const RenderTargetSync &sync)
+void boitatah::vk::VulkanInstance::destroy_rendertarget_sync(const RenderTargetSync &sync)
 {
-    vkFreeCommandBuffers(device, commandPools.graphicsPool, 1, &(sync.draw_buffer.buffer));
-    vkFreeCommandBuffers(device, commandPools.transferPool, 1, &(sync.present_buffer.buffer));
+    vkFreeCommandBuffers(m_device, m_command_pools.graphicsPool, 1, &(sync.draw_buffer.buffer));
+    vkFreeCommandBuffers(m_device, m_command_pools.transferPool, 1, &(sync.present_buffer.buffer));
 
-    vkDestroyFence(device, sync.in_flight_fence, nullptr);
-    vkDestroySemaphore(device, sync.sc_aquired_semaphore, nullptr);
-    vkDestroySemaphore(device, sync.draw_semaphore, nullptr);
-    vkDestroySemaphore(device, sync.transfer_semaphore, nullptr);
+    vkDestroyFence(m_device, sync.in_flight_fence, nullptr);
+    vkDestroySemaphore(m_device, sync.sc_aquired_semaphore, nullptr);
+    vkDestroySemaphore(m_device, sync.draw_semaphore, nullptr);
+    vkDestroySemaphore(m_device, sync.transfer_semaphore, nullptr);
 }
 
-void boitatah::vk::Vulkan::destroyBuffer(BufferVkData buffer) const
+void boitatah::vk::VulkanInstance::destroy_buffer(BufferVkData buffer) const
 {
-    vkDestroyBuffer(device, buffer.buffer, nullptr);
-    vkFreeMemory(device, buffer.memory, nullptr);
+    vkDestroyBuffer(m_device, buffer.buffer, nullptr);
+    vkFreeMemory(m_device, buffer.memory, nullptr);
 }
 
-void boitatah::vk::Vulkan::destroyFence(VkFence fence)
+void boitatah::vk::VulkanInstance::destroy_fence(VkFence fence)
 {
-    vkDestroyFence(device, fence, nullptr);
+    vkDestroyFence(m_device, fence, nullptr);
 }
 
-void boitatah::vk::Vulkan::destroySemaphore(VkSemaphore semaphore)
+void boitatah::vk::VulkanInstance::destroy_semaphore(VkSemaphore semaphore)
 {
-    vkDestroySemaphore(device, semaphore, nullptr);
+    vkDestroySemaphore(m_device, semaphore, nullptr);
 }
 
-void boitatah::vk::Vulkan::destroyDescriptorPool(VkDescriptorPool pool)
+void boitatah::vk::VulkanInstance::destroy_descriptorpool(VkDescriptorPool pool)
 {
-    vkDestroyDescriptorPool(device, pool, nullptr);
+    vkDestroyDescriptorPool(m_device, pool, nullptr);
 }
 
-void boitatah::vk::Vulkan::destroyDescriptorSetLayout(VkDescriptorSetLayout &layout)
+void boitatah::vk::VulkanInstance::destroy_descriptorset_layout(VkDescriptorSetLayout &layout)
 {
-    vkDestroyDescriptorSetLayout(device, layout, nullptr);
+    vkDestroyDescriptorSetLayout(m_device, layout, nullptr);
 }
 
-void boitatah::vk::Vulkan::destroySampler(VkSampler &sampler)
+void boitatah::vk::VulkanInstance::destroy_sampler(VkSampler &sampler)
 {  
-    vkDestroySampler(device, sampler, nullptr);
+    vkDestroySampler(m_device, sampler, nullptr);
 }
 
 #pragma endregion Object Destructions
 
 #pragma region QUEUE_SETUP
 
-void boitatah::vk::Vulkan::initLogicalDeviceNQueues()
+void boitatah::vk::VulkanInstance::init_logical_device_queues()
 {
-    QueueFamilyIndices familyIndices = findQueueFamilies(physicalDevice);
+    QueueFamilyIndices familyIndices = find_queuefamilies(m_physical_device);
 
     float queuePriority = 1.0;
     VkDeviceQueueCreateInfo graphicsQueueCreateInfo{
@@ -1252,87 +1102,53 @@ void boitatah::vk::Vulkan::initLogicalDeviceNQueues()
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         .queueCreateInfoCount = 2,
         .pQueueCreateInfos = queueCreation.data(),
-        .enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size()),
-        .ppEnabledExtensionNames = deviceExtensions.data(),
+        .enabledExtensionCount = static_cast<uint32_t>(m_device_extensions.size()),
+        .ppEnabledExtensionNames = m_device_extensions.data(),
         .pEnabledFeatures = &deviceFeatures,
     };
 
-    if (options.useValidationLayers)
+    if (m_options.useValidationLayers)
     {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-        createInfo.ppEnabledLayerNames = validationLayers.data();
+        createInfo.enabledLayerCount = static_cast<uint32_t>(m_validation_layers.size());
+        createInfo.ppEnabledLayerNames = m_validation_layers.data();
     }
 
-    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS)
+    if (vkCreateDevice(m_physical_device, &createInfo, nullptr, &m_device) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to initialize a Logical Device");
     }
 }
 
-void boitatah::vk::Vulkan::setQueues()
+void boitatah::vk::VulkanInstance::set_queues()
 {
-    QueueFamilyIndices familyIndices = findQueueFamilies(physicalDevice);
-    vkGetDeviceQueue(device, familyIndices.graphicsFamily.value(), 0, &queues.graphicsQueue);
-    vkGetDeviceQueue(device, familyIndices.presentFamily.value(), 0, &queues.presentQueue);
-    vkGetDeviceQueue(device, familyIndices.transferFamily.value(), 0, &queues.transferQueue);
+    QueueFamilyIndices familyIndices = find_queuefamilies(m_physical_device);
+    vkGetDeviceQueue(m_device, familyIndices.graphicsFamily.value(), 0, &m_queues.graphicsQueue);
+    vkGetDeviceQueue(m_device, familyIndices.presentFamily.value(), 0, &m_queues.presentQueue);
+    vkGetDeviceQueue(m_device, familyIndices.transferFamily.value(), 0, &m_queues.transferQueue);
 }
 
-void boitatah::vk::Vulkan::CmdTransitionLayout(const TransitionLayoutCmdVk &command)
-{
-
-    VkImageMemoryBarrier barrier{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .srcAccessMask = command.srcAccess,
-        .dstAccessMask = command.dstAccess,
-        .oldLayout = command.src,
-        .newLayout = command.dst,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = command.image,
-        .subresourceRange = {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .baseMipLevel = 0,
-            .levelCount = 1,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-    };
-
-    if(command.src == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-
-    vkCmdPipelineBarrier(
-        command.buffer,
-        command.srcStage, 
-        command.dstStage, 
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &barrier);
-}
-
-void boitatah::vk::Vulkan::createCommandPools()
+void boitatah::vk::VulkanInstance::create_commandpools()
 {
     VkCommandPoolCreateInfo info{
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         // two types of pools. The other is VK_COMMNAD_POOL_CREATE_TRANSIENT_BIT
         .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-        .queueFamilyIndex = findQueueFamilies(physicalDevice).graphicsFamily.value(),
+        .queueFamilyIndex = find_queuefamilies(m_physical_device).graphicsFamily.value(),
     };
 
-    if (vkCreateCommandPool(device, &info, nullptr, &commandPools.graphicsPool) != VK_SUCCESS)
+    if (vkCreateCommandPool(m_device, &info, nullptr, &m_command_pools.graphicsPool) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create Graphics Command Pool");
     }
 
-    info.queueFamilyIndex = findQueueFamilies(physicalDevice).transferFamily.value();
-    if (vkCreateCommandPool(device, &info, nullptr, &commandPools.transferPool) != VK_SUCCESS)
+    info.queueFamilyIndex = find_queuefamilies(m_physical_device).transferFamily.value();
+    if (vkCreateCommandPool(m_device, &info, nullptr, &m_command_pools.transferPool) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create Transfer Command Pool");
     }
 
-    info.queueFamilyIndex = findQueueFamilies(physicalDevice).presentFamily.value();
-    if (vkCreateCommandPool(device, &info, nullptr, &commandPools.presentPool) != VK_SUCCESS)
+    info.queueFamilyIndex = find_queuefamilies(m_physical_device).presentFamily.value();
+    if (vkCreateCommandPool(m_device, &info, nullptr, &m_command_pools.presentPool) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create Present Command Pool");
     }
@@ -1342,7 +1158,7 @@ void boitatah::vk::Vulkan::createCommandPools()
 
 #pragma region DEVICE_SETUP
 
-void boitatah::vk::Vulkan::initPhysicalDevice()
+void boitatah::vk::VulkanInstance::init_physical_device()
 {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -1359,19 +1175,19 @@ void boitatah::vk::Vulkan::initPhysicalDevice()
 
     for (const auto &device : devices)
     {
-        int value = evaluatePhysicalDevice(device);
+        int value = eval_physical_device(device);
         candidates.insert(std::make_pair(value, device));
     }
 
     if (candidates.rbegin()->first > 0)
     {
-        physicalDevice = candidates.rbegin()->second;
+        m_physical_device = candidates.rbegin()->second;
 
         // DEBUG MESSAGE
-        if (options.debugMessages)
+        if (m_options.debugMessages)
         {
             VkPhysicalDeviceProperties deviceProps;
-            vkGetPhysicalDeviceProperties(physicalDevice, &deviceProps);
+            vkGetPhysicalDeviceProperties(m_physical_device, &deviceProps);
             std::cout << "###DEBUG Physical Device### \n"
                       << "Picked physcal device " << deviceProps.deviceName << "\n"
                       << "Device type " << deviceProps.deviceType << "\n"
@@ -1379,16 +1195,21 @@ void boitatah::vk::Vulkan::initPhysicalDevice()
                       << "###DEBUG Physical Device END###" << std::endl;
         }
     }
-    if (physicalDevice == VK_NULL_HANDLE)
+    if (m_physical_device == VK_NULL_HANDLE)
         std::runtime_error("No available GPUs with Vulkan Support");
 
 
     //set the Vulkan member properties.
-    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+    vkGetPhysicalDeviceProperties(m_physical_device, &m_device_properties);
 
 }
 
-boitatah::vk::QueueFamilyIndices boitatah::vk::Vulkan::findQueueFamilies(VkPhysicalDevice device)
+const boitatah::vk::QueueFamilyIndices boitatah::vk::VulkanInstance::get_queuefamily_indices() const
+{
+    return m_queue_family_indices;
+}
+
+boitatah::vk::QueueFamilyIndices boitatah::vk::VulkanInstance::find_queuefamilies(VkPhysicalDevice device) const
 {
     QueueFamilyIndices queueFamilies;
     uint32_t queueFamilyCount = 0;
@@ -1427,7 +1248,7 @@ boitatah::vk::QueueFamilyIndices boitatah::vk::Vulkan::findQueueFamilies(VkPhysi
 #pragma region EXTENSIONS
 // TODO this can be better
 //  Compares required extensions and available extensions
-std::vector<VkExtensionProperties> bvk::Vulkan::retrieveInstanceAvailableExtensions()
+std::vector<VkExtensionProperties> bvk::VulkanInstance::retrieve_available_extensions()
 {
 
     uint32_t extensionCount = 0;
@@ -1441,7 +1262,7 @@ std::vector<VkExtensionProperties> bvk::Vulkan::retrieveInstanceAvailableExtensi
     return extensions;
 }
 
-boitatah::vk::SwapchainSupport boitatah::vk::Vulkan::getSwapchainSupport(VkPhysicalDevice physicalDevice)
+boitatah::vk::SwapchainSupport boitatah::vk::VulkanInstance::get_swapchain_support(VkPhysicalDevice physicalDevice)
 {
     SwapchainSupport support;
 
@@ -1450,7 +1271,7 @@ boitatah::vk::SwapchainSupport boitatah::vk::Vulkan::getSwapchainSupport(VkPhysi
     uint32_t formatCount;
     vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, window->getSurface(), &formatCount, nullptr);
 
-    if (options.useValidationLayers)
+    if (m_options.useValidationLayers)
         std::cout << " AVAILABLE SURFACE FORMATS " << std::endl;
 
     if (formatCount != 0)
@@ -1481,7 +1302,7 @@ boitatah::vk::SwapchainSupport boitatah::vk::Vulkan::getSwapchainSupport(VkPhysi
     return support;
 }
 
-bool bvk::Vulkan::checkRequiredExtensions(const std::vector<VkExtensionProperties> &available,
+bool bvk::VulkanInstance::check_required_extensions(const std::vector<VkExtensionProperties> &available,
                                           const std::vector<const char *> &required)
 {
     for (const auto &ext : required)
@@ -1504,22 +1325,22 @@ bool bvk::Vulkan::checkRequiredExtensions(const std::vector<VkExtensionPropertie
 
 #pragma region VALIDATION
 
-void boitatah::vk::Vulkan::initializeDebugMessenger()
+void boitatah::vk::VulkanInstance::init_debug_messenger()
 {
-    if (!options.useValidationLayers)
+    if (!m_options.useValidationLayers)
         return;
 
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
-    populateMessenger(createInfo);
+    populate_messenger(createInfo);
     if (createDebugUtilsMessengerEXT(instance,
                                      &createInfo,
                                      nullptr,
-                                     &debugMessenger) != VK_SUCCESS)
+                                     &m_debug_messenger) != VK_SUCCESS)
     {
     }
 }
 
-bool boitatah::vk::Vulkan::checkValidationLayerSupport(const std::vector<const char *> &required)
+bool boitatah::vk::VulkanInstance::check_validation_support(const std::vector<const char *> &required)
 {
     uint32_t layerCount = 0;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -1547,7 +1368,7 @@ bool boitatah::vk::Vulkan::checkValidationLayerSupport(const std::vector<const c
     return true;
 }
 
-void boitatah::vk::Vulkan::populateMessenger(VkDebugUtilsMessengerCreateInfoEXT &createInfo)
+void boitatah::vk::VulkanInstance::populate_messenger(VkDebugUtilsMessengerCreateInfoEXT &createInfo)
 {
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
@@ -1561,7 +1382,7 @@ void boitatah::vk::Vulkan::populateMessenger(VkDebugUtilsMessengerCreateInfoEXT 
     createInfo.pNext = nullptr;
 }
 
-int boitatah::vk::Vulkan::evaluatePhysicalDevice(VkPhysicalDevice device)
+int boitatah::vk::VulkanInstance::eval_physical_device(VkPhysicalDevice device)
 {
 \
 
@@ -1572,20 +1393,20 @@ int boitatah::vk::Vulkan::evaluatePhysicalDevice(VkPhysicalDevice device)
     vkGetPhysicalDeviceFeatures(device, &deviceFeats);
 
     bool swapChainSupported = true;
-    if (checkDeviceExtensionSupport(device))
+    if (check_device_ext_support(device))
     {
-        SwapchainSupport support = getSwapchainSupport(device);
+        SwapchainSupport support = get_swapchain_support(device);
         swapChainSupported = !support.formats.empty() && !support.presentModes.empty();
     }
 
     return ((deviceProps.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) * 1000 +
             deviceProps.limits.maxImageDimension2D) *
            (deviceFeats.geometryShader != 0);                     // *
-    (findQueueFamilies(device).graphicsFamily.has_value() != 0) * // has graphics family queues
+    (find_queuefamilies(device).graphicsFamily.has_value() != 0) * // has graphics family queues
         (swapChainSupported);
 }
 
-bool boitatah::vk::Vulkan::checkDeviceExtensionSupport(VkPhysicalDevice device)
+bool boitatah::vk::VulkanInstance::check_device_ext_support(VkPhysicalDevice device)
 {
 
     uint32_t extensionCount;
@@ -1594,7 +1415,7 @@ bool boitatah::vk::Vulkan::checkDeviceExtensionSupport(VkPhysicalDevice device)
     std::vector<VkExtensionProperties> extensions(extensionCount);
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, extensions.data());
 
-    std::set<std::string> required(deviceExtensions.begin(), deviceExtensions.end());
+    std::set<std::string> required(m_device_extensions.begin(), m_device_extensions.end());
 
     for (const auto &extension : extensions)
     {

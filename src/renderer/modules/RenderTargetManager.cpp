@@ -2,10 +2,10 @@
 
 
 namespace boitatah{
-    RenderTargetManager::RenderTargetManager(std::shared_ptr<vk::Vulkan> vulkan,
+    RenderTargetManager::RenderTargetManager(std::shared_ptr<vk::VulkanInstance> vulkan,
                                              std::shared_ptr<ImageManager> imageManager)
     : m_vk(vulkan), m_imageManager(imageManager){
-        m_passPool = std::make_unique<Pool<RenderPass>>(PoolOptions{
+        m_passPool = std::make_unique<Pool<Renderpass>>(PoolOptions{
             .size = 4096,
             .dynamic = true,
             .name = "RenderTargetManager Pass Pool"
@@ -22,7 +22,7 @@ namespace boitatah{
         });
     }
 
-    Handle<RenderPass> RenderTargetManager::createMatchingRenderPass(RenderTargetDesc &desc)
+    Handle<Renderpass> RenderTargetManager::createMatchingRenderPass(RenderTargetDesc &desc)
     {
         RenderPassDesc pass_desc;
         auto color_attachments = desc.attachments;
@@ -36,7 +36,7 @@ namespace boitatah{
         pass_desc.color_attachments = color_attachments;
         //pass_desc.attTransitions[];
     
-        return createRenderPass(pass_desc);
+        return create_renderpass(pass_desc);
     }
 
     Handle<RenderTarget> RenderTargetManager::createRenderTarget(const RenderTargetDesc &description)
@@ -52,11 +52,11 @@ namespace boitatah{
             }
         }
 
-        Handle<RenderPass> passhandle = description.renderpass;
-        RenderPass pass;
+        Handle<Renderpass> passhandle = description.renderpass;
+        Renderpass pass;
         if (passhandle.isNull())
         {
-            passhandle = createRenderPass(description.renderpassDesc);
+            passhandle = create_renderpass(description.renderpassDesc);
             if (!m_passPool->tryGet(passhandle, pass))
             {
                 throw std::runtime_error("Failed to create renderpass.");
@@ -85,7 +85,7 @@ namespace boitatah{
         };
 
         RenderTarget framebuffer{
-            .buffer = m_vk->createFramebuffer(vkDesc),
+            .buffer = m_vk->create_framebuffer(vkDesc),
             .attachments = images,
             .renderpass = passhandle,
             .sync = createRenderTargetSyncData()};
@@ -93,10 +93,10 @@ namespace boitatah{
         return m_targetPool->set(framebuffer);
     }
 
-    Handle<RenderPass> RenderTargetManager::createRenderPass(const RenderPassDesc &description)
+    Handle<Renderpass> RenderTargetManager::create_renderpass(const RenderPassDesc &description)
     {
-        RenderPass pass{
-            .renderPass = m_vk->createRenderPass(description),
+        Renderpass pass{
+            .renderPass = m_vk->create_renderpass(description),
             .description = description
         };
         for(auto& desc : description.color_attachments)
@@ -110,18 +110,18 @@ namespace boitatah{
 
     Handle<RenderTargetSync> RenderTargetManager::createRenderTargetSyncData()
     {
-        RenderTargetSync sync = m_vk->allocateBufferSync(); 
+        RenderTargetSync sync = m_vk->allocate_render_sync_structures(); 
         return m_buffersPool->set(sync);
     }
 
-    void RenderTargetManager::destroyRenderPass(Handle<RenderPass> &handle)
+    void RenderTargetManager::destroyRenderPass(Handle<Renderpass> &handle)
     {
         if(!m_passPool->contains(handle))
             return;
 
-        RenderPass& pass = m_passPool->get(handle);
+        Renderpass& pass = m_passPool->get(handle);
         pass.description = {};
-        m_vk->destroyRenderpass(pass);
+        m_vk->destroy_renderpass(pass);
         m_passPool->clear(handle);
     }
     void RenderTargetManager::destroyRenderTarget(Handle<RenderTarget> &handle) {
@@ -142,16 +142,16 @@ namespace boitatah{
         //destroyRenderPass(target.renderpass); 
         RenderTargetSync data;
         if (m_buffersPool->clear(target.sync, data))
-            m_vk->destroyRenderTargetCmdData(data);
+            m_vk->destroy_rendertarget_sync(data);
 
-        m_vk->destroyFramebuffer(target);
+        m_vk->destroy_framebuffer(target);
         m_targetPool->clear(handle);
     }
     bool RenderTargetManager::isActive(const Handle<RenderTarget> &handle)
     {
         return m_targetPool->contains(handle);
     };
-    bool RenderTargetManager::isActive(const Handle<RenderPass> &handle)
+    bool RenderTargetManager::isActive(const Handle<Renderpass> &handle)
     {
         return m_passPool->contains(handle);
     };
@@ -162,7 +162,7 @@ namespace boitatah{
     RenderTarget &RenderTargetManager::get(const Handle<RenderTarget> &handle) {
         return m_targetPool->get(handle);
     };
-    RenderPass &RenderTargetManager::get(const Handle<RenderPass> &handle) {
+    Renderpass &RenderTargetManager::get(const Handle<Renderpass> &handle) {
         return m_passPool->get(handle);
     };
     RenderTargetSync &RenderTargetManager::get(const Handle<RenderTargetSync> &handle) {
