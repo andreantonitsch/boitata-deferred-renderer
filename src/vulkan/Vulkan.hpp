@@ -27,7 +27,10 @@ namespace boitatah::vk
 {
     class WindowManager;
     
-
+    ///Vulkan Instance.
+    /// Manages the Vulkan base structures, and logical device.
+    /// Manages, creates and destroys vulkan structures.
+    /// finish_initialization requires a WindowManager object attached.
     class VulkanInstance : public std::enable_shared_from_this<VulkanInstance>
     {
         protected:

@@ -41,6 +41,8 @@ namespace boitatah::command_buffers{
             using TransitionLayoutCommand =     typename CommandWriterTraits<T>::TransitionLayoutCommand;
             using CopyBufferToImageCommand =    typename CommandWriterTraits<T>::CopyBufferToImageCommand;
 
+            using PushConstantsCommand =        typename CommandWriterTraits<T>::PushConstantsCommand;
+
             T& self(){return *static_cast<T*>(this);};
 
             void set_commandbuffer(CommandBufferType buffer) {
@@ -131,6 +133,9 @@ namespace boitatah::command_buffers{
                 self().__imp_copy_buffer_to_image(command, m_buffer);
             }
 
+            void push_constants(const PushConstantsCommand& command){
+                self().__imp_push_constants(command, m_buffer);
+            }
 
 
     };

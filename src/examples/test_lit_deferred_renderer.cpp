@@ -22,7 +22,7 @@ int main()
                 .appName = "Test Frame Buffer",
                 .debug = false,
                 .swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB,
-                .backBufferDesc2 = BackBufferManager::BasicDeferredPipeline(windowWidth,
+                .backBufferDesc = BackBufferManager::BasicDeferredPipeline(windowWidth,
                                                                             windowHeight)
                 });
 
@@ -76,7 +76,7 @@ int main()
     auto composer_material = r.getMaterials().createLambertDeferredComposeMaterial(1, 150u);
     
     Handle<LightArray> light_handle = r.createLightArray(9998);
-    r.setLightArray(light_handle);
+    r.set_light_array(light_handle);
     auto& lights = r.getLightArray(light_handle);
 
     auto light_count = 100;
@@ -101,7 +101,7 @@ int main()
     });
     scene->add(composerNode);
 
-    BufferedCamera camera = r.createCamera({
+    BufferedCamera camera = r.create_camera({
                    .position = glm::float3(0,-50, -5),
                    .aspect = static_cast<float>(windowWidth) / windowHeight,
                    });
@@ -128,7 +128,7 @@ int main()
         camera.setPosition(glm::float3(0,-25 * abs((sin(t/20))) -10, -5));
         camera.lookAt(glm::vec3(0));
 
-        r.render_graph(scene, camera);
+        r.render_tree(scene, camera);
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
     }
     r.waitIdle();

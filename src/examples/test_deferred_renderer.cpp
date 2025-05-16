@@ -20,7 +20,7 @@ int main()
                 .appName = "Test Frame Buffer",
                 .debug = true,
                 .swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB,
-                .backBufferDesc2 = BackBufferManager::BasicDeferredPipeline(windowWidth,
+                .backBufferDesc = BackBufferManager::BasicDeferredPipeline(windowWidth,
                                                                             windowHeight)
                 });
 
@@ -83,7 +83,7 @@ int main()
     });
     scene->add(composerNode);
 
-    BufferedCamera camera = r.createCamera({
+    BufferedCamera camera = r.create_camera({
                    .position = glm::float3(0,-2,-5),
                    .aspect = static_cast<float>(windowWidth) / windowHeight,
                    });
@@ -101,7 +101,7 @@ int main()
         count++;
         camera.setPosition(glm::vec3(glm::cos(t) * dist, -2, -glm::sin(t) * dist));
         camera.lookAt(glm::vec3(0));
-        r.render_graph(scene, camera);
+        r.render_tree(scene, camera);
         std::cout << "\rFrametime :: " << timewatch.Lap() << "     " << std::flush;
     }
     r.waitIdle();

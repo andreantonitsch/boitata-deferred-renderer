@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 #include "../command_buffers/CommandBufferWriterStructs.hpp"
 #include "../types/BttEnums.hpp"
+#include <vector>
 
 namespace boitatah::vk{
 
@@ -108,6 +109,18 @@ namespace boitatah::vk{
         uint32_t         set_index;
     };
 
+    struct VulkanPushConstant{
+        void* ptr;
+        uint32_t offset;
+        uint32_t size;
+        VkShaderStageFlags stages;
+    };
+    
+    struct VulkanPushConstants{
+        VkPipelineLayout layout;
+        std::vector<VulkanPushConstant> push_constants;
+    };
+
 };
 
 // CommandBuffer Writer Type trait Definitions
@@ -135,6 +148,8 @@ namespace boitatah::command_buffers{
             using CopyBufferCommand = boitatah::vk::VulkanWriterCopyBuffer;
             using TransitionLayoutCommand = boitatah::vk::VulkanWriterTransitionLayout;
             using CopyBufferToImageCommand = boitatah::vk::VulkanWriterCopyBufferToImage;
+
+            using PushConstantsCommand = boitatah::vk::VulkanPushConstants;
 
             using CommandBufferType = VkCommandBuffer;
             using SemaphoreType = VkSemaphore;

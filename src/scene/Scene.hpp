@@ -19,14 +19,14 @@ namespace boitatah
 {
 
     template<typename T>
-    struct SceneNode;
+    struct SceneTree;
 
     template<typename T>  
     struct SceneNodeDesc
     {
         std::string name = "node";
-        std::vector<std::shared_ptr<SceneNode<T>>> children;
-        std::shared_ptr<SceneNode<T>> parentNode;
+        std::vector<std::shared_ptr<SceneTree<T>>> children;
+        std::shared_ptr<SceneTree<T>> parentNode;
         T content;
         glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -34,12 +34,12 @@ namespace boitatah
     };
 
     template<typename T>
-    struct SceneNode : std::enable_shared_from_this<SceneNode<T>>
+    struct SceneTree : std::enable_shared_from_this<SceneTree<T>>
     {
         private:
         bool m_dirtyMatrix = true;
         protected:
-            SceneNode(const SceneNodeDesc<T> &desc) : content(desc.content),
+            SceneTree(const SceneNodeDesc<T> &desc) : content(desc.content),
                                                    name(desc.name),
                                                    parentNode(desc.parentNode),
                                                    children(desc.children)
@@ -52,8 +52,8 @@ namespace boitatah
 
         public:
             std::string name = "node";
-            std::vector<std::shared_ptr<SceneNode<T>>> children;
-            std::shared_ptr<SceneNode<T>> parentNode;
+            std::vector<std::shared_ptr<SceneTree<T>>> children;
+            std::shared_ptr<SceneTree<T>> parentNode;
 
             // Transform
             glm::mat4 m_localTransform;
@@ -62,17 +62,17 @@ namespace boitatah
             T content;
 
             // Constructor
-            static std::shared_ptr<SceneNode<T>> create_node(const SceneNodeDesc<T> &desc){
-                return std::shared_ptr<SceneNode<T>>(new SceneNode<T>(desc));
+            static std::shared_ptr<SceneTree<T>> create_node(const SceneNodeDesc<T> &desc){
+                return std::shared_ptr<SceneTree<T>>(new SceneTree<T>(desc));
             }
 
-            void sceneAsList(std::vector<std::weak_ptr<SceneNode<T>>> &sceneList) const
+            void sceneAsList(std::vector<std::weak_ptr<SceneTree<T>>> &sceneList) const
             {
                 sceneList.insert(sceneList.end(), children.begin(), children.end());
 
                 for (const auto &child : children)
                 {
-                    auto child_ptr = std::shared_ptr<SceneNode<T>>(child);
+                    auto child_ptr = std::shared_ptr<SceneTree<T>>(child);
                     child_ptr->sceneAsList(sceneList);
                 }
             }
@@ -145,14 +145,14 @@ namespace boitatah
                 }
             }
 
-            void add(SceneNode<T>* node){
-                children.push_back(std::shared_ptr<SceneNode<T>>(node));
+            void add(SceneTree<T>* node){
+                children.push_back(std::shared_ptr<SceneTree<T>>(node));
                 node->dirty();
                 node->parentNode = this->shared_from_this();
             }
 
-            void add(std::shared_ptr<SceneNode<T>> node){
-                children.push_back(std::shared_ptr<SceneNode<T>>(node));
+            void add(std::shared_ptr<SceneTree<T>> node){
+                children.push_back(std::shared_ptr<SceneTree<T>>(node));
                 node->dirty();
                 node->parentNode = this->shared_from_this();
             }

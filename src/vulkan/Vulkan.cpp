@@ -249,12 +249,9 @@ void boitatah::vk::VulkanInstance::reset_fence(const VkFence &fence) const
 
 void boitatah::vk::VulkanInstance::wait_for_fence(const VkFence &fence) const
 {
-    //std::cout << " waiting for fence " << std::endl;
     VkResult result = vkWaitForFences(m_device, 1, &fence, VK_TRUE, UINT64_MAX);
     if (result != VK_SUCCESS)
         std::cout << "wait for fence failed " << result << std::endl;
-    //std::cout << " waited for fence " << std::endl;
-    //vkResetFences(device, 1, &fence);
 }
 
 bool boitatah::vk::VulkanInstance::check_fence_status(VkFence fence)
@@ -349,7 +346,7 @@ Image boitatah::vk::VulkanInstance::create_image(const ImageDesc &desc) const
         .samples = castEnum<VkSampleCountFlagBits>(desc.samples),
         .tiling = VK_IMAGE_TILING_OPTIMAL,
         .usage = castEnum<VkImageUsageFlagBits>(desc.usage),
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE, // TODO SHARING MODE change later.
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .initialLayout = castEnum<VkImageLayout>(desc.initialLayout),
     };
 
@@ -487,10 +484,8 @@ bool boitatah::vk::VulkanInstance::present(Image &swapchainImage,
 
     // swapchain is too small or too large
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
-    {
         return false;
-    }
-
+    
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
         throw std::runtime_error("Failed to present image to swapchain");
 
@@ -509,24 +504,18 @@ VkDeviceMemory boitatah::vk::VulkanInstance::allocate_memory(const MemoryDesc &d
     VkDeviceMemory memory;
 
     if (vkAllocateMemory(m_device, &allocateInfo, nullptr, &memory) != VK_SUCCESS)
-    {
         throw std::runtime_error("Failed to allocate Memory");
-    }
+    
 
     return memory;
 }
 
 void *boitatah::vk::VulkanInstance::map_memory(const MapMemoryVk &desc) const
 {
-    // auto memoryUnmapper = [&, this](){
-    //     unmap_memory({.memory = desc.memory});
-    // };
     void *mappedTarget;
-    if(vkMapMemory(m_device, desc.memory, desc.offset, desc.size, 0, &mappedTarget) != VK_SUCCESS){
+    if(vkMapMemory(m_device, desc.memory, desc.offset, desc.size, 0, &mappedTarget) != VK_SUCCESS)
         return nullptr;
-    }
-    std::cout<< "Vulkan mapped memory" << std::endl;
-    //std::unique_ptr<void> mapped_pointer = std::make_unique<void>(mappedTarget);
+
     return mappedTarget;
 }
 
@@ -539,6 +528,7 @@ void boitatah::vk::VulkanInstance::bind_image_memory(VkDeviceMemory memory, VkIm
 {
     // binds from start.
     // currently using one buffer per image.
+    //TODO create a large memory region for images
     vkBindImageMemory(m_device, image, memory, 0);
 }
 
@@ -558,8 +548,6 @@ void boitatah::vk::VulkanInstance::copy_to_mapped_memory(const CopyMappedMemoryV
     std::byte* start = static_cast<std::byte*>(op.data) + op.offset;
     std::byte* end = start + op.elementSize * op.elementCount;
     
-    //std::cout << "Vulkan copy data " << start << " " << end << " "<< op.map << std::endl;
-
     std::copy(
         start,
         end,

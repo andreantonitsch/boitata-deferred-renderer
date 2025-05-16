@@ -72,7 +72,7 @@ namespace boitatah
                                                                   m_vk);
         
 
-        m_backBufferManager->setup(m_options.backBufferDesc2);
+        m_backBufferManager->setup(m_options.backBufferDesc);
         
 
         std::cout << "starting base material creation" << std::endl;
@@ -102,7 +102,7 @@ namespace boitatah
             static_cast<uint32_t>(newWindowSize.y),
         };
 
-        m_backBufferManager->setup(m_options.backBufferDesc2);
+        m_backBufferManager->setup(m_options.backBufferDesc);
     }
 
     void Renderer::createSwapchain()
@@ -200,12 +200,12 @@ namespace boitatah
         return *m_baseMaterials;
     }
 
-    BufferedCamera Renderer::createCamera(const CameraDesc &desc)
+    BufferedCamera Renderer::create_camera(const CameraDesc &desc)
     {
         return BufferedCamera(desc, m_resourceManager);
     }
 
-    void Renderer::setLightArray(const Handle<LightArray> &array)
+    void Renderer::set_light_array(const Handle<LightArray> &array)
     {
         lights = array;
     }
@@ -272,7 +272,7 @@ namespace boitatah
     }
 
 
-    void Renderer::presentRenderTargetNow(Handle<RenderTarget> &rendertarget,
+    void Renderer::present_rendertarget(Handle<RenderTarget> &rendertarget,
                                           VkSemaphore stage_wait,
                                           uint32_t attachment_index = 0)
     {
@@ -353,7 +353,7 @@ namespace boitatah
         }
     }
 
-    void Renderer::render_graph(std::shared_ptr<RenderScene> scene, BufferedCamera &camera)
+    void Renderer::render_tree(std::shared_ptr<RenderScene> scene, BufferedCamera &camera)
     {
         auto& backbuffer = m_backBufferManager->getNext_Graph();
         m_descriptorManager->resetPools(m_backBufferManager->getCurrentIndex());
@@ -366,7 +366,7 @@ namespace boitatah
 
         auto present_target = m_backBufferManager->getPresentTarget();
         auto present_target_index = m_backBufferManager->getPresentTargetIndex();
-        presentRenderTargetNow(present_target, last_stage_wait, present_target_index);
+        present_rendertarget(present_target, last_stage_wait, present_target_index);
     }
 
     VkSemaphore Renderer::render_graph_stage(std::shared_ptr<RenderScene> scene, 
@@ -466,17 +466,16 @@ namespace boitatah
 
             glm::mat4 model_mat = node->getGlobalMatrix();
 
-            pushPushConstants({
-                .drawBuffer = buffers.draw_buffer,
+            writer.push_constants({
                 .layout = shader_mngr.get(shader).layout.pipeline,
                 .push_constants = {
-                PushConstant{ //camera constant
-                    .ptr = &model_mat,
-                    .offset = 0,
-                    .size = sizeof(glm::mat4),
-                    .stages = SHADER_STAGE::ALL_GRAPHICS
-                }}}
-            );
+                    { //camera constant
+                        .ptr = &model_mat,
+                        .offset = 0,
+                        .size = sizeof(glm::mat4),
+                        .stages = castEnum<VkShaderStageFlags>(SHADER_STAGE::ALL_GRAPHICS)
+                    }
+            }});
             // //draw one node to target.
             write_draw_command(writer,
                                *node, 
@@ -559,20 +558,6 @@ namespace boitatah
         }
     
     };
-
-    void Renderer::pushPushConstants(const PushConstantsCommand &command)
-    {
-        for(auto& push_constant : command.push_constants){
-        vkCmdPushConstants(
-            command.drawBuffer.buffer,
-            command.layout.pipeline,
-            castEnum<VkShaderStageFlags>(push_constant.stages),
-            push_constant.offset,
-            push_constant.size,
-            push_constant.ptr
-        );
-    }
-    }
 
 #pragma endregion Command Buffers
 

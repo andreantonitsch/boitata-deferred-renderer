@@ -419,6 +419,21 @@ namespace boitatah::vk{
                         command.firstVertex, command.firstInstance);
             }
         }; 
+
+        void __imp_push_constants(const VulkanPushConstants &command,
+                                       VkCommandBuffer &command_buffer){
+            for(auto& push_constant : command.push_constants){
+                vkCmdPushConstants(
+                    command_buffer,
+                    command.layout,
+                    push_constant.stages,
+                    push_constant.offset,
+                    push_constant.size,
+                    push_constant.ptr
+                );
+            }
+
+        }
     };
 };
 

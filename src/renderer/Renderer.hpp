@@ -46,6 +46,13 @@ namespace boitatah
     class BackBufferManager;
     class Swapchain;
 
+    ///Renderer Options
+    ///Members
+    ///     windowDimensions -> u32vec2:    initial window size.
+    ///     appName -> const char *:        window title
+    ///     debug -> bool:                  turns vulkan validation layers on/off
+    ///     swapchainFormat -> IMAGE_FORMAT:the present image format.
+    ///     backBufferDesc:                 render graph description. See BackBuffer.hpp   
     struct RendererOptions
     {
         glm::u32vec2 windowDimensions = {800, 600};
@@ -53,76 +60,136 @@ namespace boitatah
         bool debug = false;
         IMAGE_FORMAT swapchainFormat = IMAGE_FORMAT::BGRA_8_SRGB;
         BackBufferDesc backBufferDesc;
-        BackBufferDesc backBufferDesc2;
     };
 
+    ///Base Draw command target
+    /// Holds the minimum data to render a SceneNode.
     struct RenderObject{
         Handle<Geometry> geometry;
         Handle<Material> material;
     };
 
-    typedef SceneNode<RenderObject>  RenderScene;
+    ///Base drawable
+    typedef SceneTree<RenderObject>  RenderScene;
 
-    //transform into a template for backendcompatibility with CRTP
+    //////////////////////////////////////////
+    ///Renderer Class
+    ///Provides render object management, GPU buffer management, Camera and Lights
+    ///Provides a customizable rendergraph back buffer.
+    ///Provides a RenderScene rendering function ( render_graph ),
+    ///Exposes methods to compose a custom renderloop.
+    ///@param   windowDimensions    initial window size.
+    ///@param   appName window title
+    ///@param   debug   turns vulkan validation layers on/off
+    ///@param   swapchainFormat the present image format.
+    ///@param   backBufferDesc  backbuffer render graph description. See BackBuffer.hpp
+    //////////////////////////////////////////  
     class Renderer
     {
     public:
-        // Constructors / Destructors
+        //Constructor
         Renderer(RendererOptions options);
 
+        //Destructor
         ~Renderer(void);
 
-        // Manangers
+#pragma region Managers
         BufferManager&          getBufferManager();
         GPUResourceManager&     getResourceManager();
         MaterialManager&        getMaterialManager();
         DescriptorSetManager&   getDescriptorManager();
         Materials&              getMaterials();
-        
-        BufferedCamera createCamera(const CameraDesc& desc);
+#pragma endregion Managers
 
-        // TODO temp light functions
-        void                setLightArray(const Handle<LightArray>& array);
+        ///Creates an orthographic camera. with a dedicated GPUBuffer.
+        ///@param   lookAtTarget   the camera focal point.
+        ///@param   position       camera initial position
+        ///@param   far     distance of the far-plane
+        ///@param   near    distance of the near-plane
+        ///@param   aspect  camera aspect ration.
+        ///@param   fov     camera field-of-view
+        ///@returns a new Camera
+        BufferedCamera create_camera(const CameraDesc& desc);
+
+        /// TODO Temporary Light Function
+        /// Attaches a LightArray to be used for in the render calls.
+        /// Assigns the LightArray to be used as lighting in rendering.
+        /// @param array the Handle for the light array to be used.
+        void    set_light_array(const Handle<LightArray>& array);
+
+        ///Creates a light array. See Lights.hpp
+        ///@param size max light count.
+        ///@returns a new LightArray Handle
         Handle<LightArray>  createLightArray(uint32_t size);
+
+        ///Gets the reference to the referenced LightArray
+        ///@param handle the LightArray Handle.
         LightArray&         getLightArray(Handle<LightArray> handle);
         
-        // Window methods
+        ///Checks if the render window is closed.
         bool isWindowClosed();
 
-        // Sync Methods
+        ///Waits for idle GPU.
         void waitIdle();
 
-        // Render Methods
+        ///Writes a DrawCommand to the CommandBufferWriter.
+        ///@param writer    a command buffer writer that: has a Buffer attached and is writing.
+        ///@param scene     a RenderScene to draw. This invokes only one draw call for 
+        ///                 the Geometry and Material of the scene
+        ///@param rendertarget  the destination Rendertarget.\
+        ///@param frameIndex    the current frame index.
         template<typename T>
         void write_draw_command(CommandBufferWriter<T>      &writer,
                                 RenderScene                 &scene,
                                 const Handle<RenderTarget>  &rendertarget,
                                 uint32_t                    frameIndex);
-        void render_graph(std::shared_ptr<RenderScene>      scene,
+
+        ///Renders one SceneTree tree. See Scene.hpp
+        ///Renders the tree according to the defined BackBuffer stages
+        ///Sequentially calls render_graph_stage for each stage of the Backbuffer.
+        ///Presents the results written to the present stage of the Backbuffer.
+        /// TODO maybe template it to accept other types of SceneTree along a specific
+        ///     SceneTree renderfunction.
+        ///@param scene the SceneTree to be rendered.
+        ///@param camera the camera to use for the render
+        void render_tree(std::shared_ptr<RenderScene>      scene,
                                           BufferedCamera    &camera);
+
+        ///Renders one RenderScene to one Stage of the BackBuffer.
+        ///This function can be used to write renderloops.
+        ///TODO maybe the render_tree function should be templatized 
+        ///    or have a function parameter to 
+        ///    customize the render_tree function instead of having to rewrite it.
+        ///@param scene     the SceneTree to be rendered at this stage.
+        ///@param camera    the camera
+        ///@param stage     the renderstage to render to.
+        ///@param wait_for_last_stage a synchronization semaphore to be waited for.
+        ///@returns a synchronization semaphore, to be inputed for the next stage.
         VkSemaphore render_graph_stage(std::shared_ptr<RenderScene>     scene, 
                                                     BufferedCamera      &camera, 
                                                     Handle<RenderStage> stage,
                                                     VkSemaphore         wait_for_last_stage);
-        void present_graph(std::shared_ptr<RenderScene> scene,
-                           Camera       &camera);
-        void presentRenderTargetNow(Handle<RenderTarget>    &rendertarget,
+
+        ///Presents the RenderTarget to the swapchain/window.
+        ///@param rendertarget  the rendertarget to present
+        ///@param stage_wait    the seamphore to wait for.
+        ///@param attachment_index  the attachment to display.
+        void present_rendertarget(Handle<RenderTarget>    &rendertarget,
                                     VkSemaphore             stage_wait,
                                     uint32_t                attachment_index);
-        //void schedulePresentRenderTarget(Handle<RenderTarget> &rendertarget, uint32_t attachment_index = 0);
-    
-
+        
+        ///Binds the vertex buffers of a Geometry to the command buffer writer.
+        /// to be used when custom writing a renderloop.
+        ///@param frame_index   the current frame number.
+        ///@param geometry  the geometry handle to bind.
+        ///@param indexed   whether to use vertex indexing.
+        ///@param vertex_buffers    a list of which VERTEX_BUFFER_TYPEs to bind.
+        ///@param writer    the buffer to write to, attached to a CommandBufferWriter. 
         void bind_vertexbuffers( uint32_t            frame_index, 
                                 Handle<Geometry>    geometry, 
                                 bool                indexed, 
                                 std::vector<VERTEX_BUFFER_TYPE> vertex_buffers,
                                 VkCommandBufferWriter           &writer);
-
-        //void bindVertexBuffers(  CommandBufferWriter<BackEndType>& writer);
-        
-        void pushPushConstants(const PushConstantsCommand& command);
-
-        //Handle<RenderTargetSync> createRenderTargetCmdData();
 
     private:
         // Options Members
