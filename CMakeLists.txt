@@ -14,10 +14,10 @@ add_subdirectory(${SPIRV_Headers_SOURCE_DIR})
 
 add_subdirectory(src/)
 
-add_executable(multi_write_attachment src/examples/test_multi_write_attachment.cpp)
-add_executable(deferred_renderer src/examples/test_deferred_renderer.cpp)
-add_executable(lit_deferred_renderer src/examples/test_lit_deferred_renderer.cpp)
-add_executable(lit_deferred_renderer2 src/examples/test_lit_deferred_renderer2.cpp)
+add_executable(multi_write_attachment src/examples/multi_write_attachment.cpp)
+add_executable(deferred_renderer src/examples/deferred_renderer.cpp)
+add_executable(lit_deferred_renderer src/examples/lit_deferred_renderer.cpp)
+add_executable(lit_deferred_renderer2 src/examples/lit_deferred_renderer2.cpp)
 
 
 #-lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
