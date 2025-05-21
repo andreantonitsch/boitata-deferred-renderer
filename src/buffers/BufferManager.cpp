@@ -1,9 +1,9 @@
-#include "BufferManager.hpp"
-#include "Buffer.hpp"
-#include "BufferStructs.hpp"
+#include <boitatah/buffers/BufferManager.hpp>
+#include <boitatah/buffers/Buffer.hpp>
+#include <boitatah/buffers/BufferStructs.hpp>
 #include <algorithm>
-#include <vulkan/Vulkan.hpp>
-#include <vulkan/VkCommandBufferWriter.hpp>
+#include <boitatah/backend/vulkan/Vulkan.hpp>
+#include <boitatah/backend/vulkan/VkCommandBufferWriter.hpp>
 
 namespace boitatah::buffer
 {

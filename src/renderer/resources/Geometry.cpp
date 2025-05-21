@@ -1,5 +1,5 @@
-#include "Geometry.hpp"
-#include <renderer/modules/GPUResourceManager.hpp>
+#include <boitatah/resources/Geometry.hpp>
+#include <boitatah/modules/GPUResourceManager.hpp>
 
 namespace boitatah{
 

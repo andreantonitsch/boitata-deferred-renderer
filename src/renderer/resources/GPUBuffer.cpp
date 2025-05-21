@@ -1,6 +1,6 @@
-#include "GPUBuffer.hpp"
-#include "../modules/GPUResourceManager.hpp"
-#include  "../../buffers/BufferManager.hpp"
+#include <boitatah/resources/GPUBuffer.hpp>
+#include <boitatah/modules/GPUResourceManager.hpp>
+#include  <boitatah/buffers/BufferManager.hpp>
 
 namespace boitatah{
 

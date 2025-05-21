@@ -1,6 +1,7 @@
-#include "MaterialManager.hpp"
+#include <boitatah/modules/MaterialManager.hpp>
 #include <algorithm>
-#include <utils/utils.hpp>
+#include <boitatah/utils/utils.hpp>
+
 namespace boitatah{
     
     

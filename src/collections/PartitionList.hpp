@@ -1,9 +1,11 @@
 #pragma once
 
+/// PRIVATE BOITATAH HEADER
+
 #include <cstdint>
 #include <vector>
 #include <string>
-#include "Pool.hpp"
+#include <boitatah/collections.hpp>
 /// List for free space in a buffer.
 
 

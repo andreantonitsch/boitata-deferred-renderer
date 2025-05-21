@@ -1,4 +1,4 @@
-#include "Renderer.hpp"
+#include <boitatah/Renderer.hpp>
 
 #include <iostream>
 #include <stdexcept>
@@ -7,7 +7,7 @@
 #include <vulkan/vulkan.h>
 
 #include <stdexcept>
-#include <utils/utils.hpp>
+#include <boitatah/utils/utils.hpp>
 
 
 namespace boitatah
@@ -482,7 +482,7 @@ namespace boitatah
                                stage.target, 
                                m_backBufferManager->getCurrentIndex());
         }
- 
+
         writer.end_renderpass({});
 
         m_resourceManager->submitCommitCommands();

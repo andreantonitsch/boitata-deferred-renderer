@@ -1,15 +1,15 @@
-#include "../renderer/Renderer.hpp"
 #include <iostream>
-// #include <unistd.h>
-#include <types/BttEnums.hpp>
-#include <types/Shader.hpp>
-#include <utils/utils.hpp>
-#include <collections/Pool.hpp>
-
-#include <renderer/resources/builders/GeometryBuilder.hpp>
-#include <utils/ImageLoader.hpp>
 #include <memory>
 #include <ctime>
+
+#include <boitatah/Renderer.hpp>
+#include <boitatah/BoitatahEnums.hpp>
+#include <boitatah/types/Shader.hpp>
+#include <boitatah/utils/utils.hpp>
+#include <boitatah/collections/Pool.hpp>
+
+#include <boitatah/resources/builders/GeometryBuilder.hpp>
+#include <boitatah/utils/ImageLoader.hpp>
 
 using namespace boitatah;
 

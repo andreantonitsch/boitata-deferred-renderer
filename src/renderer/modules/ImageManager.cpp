@@ -1,5 +1,5 @@
-#include <renderer/modules/ImageManager.hpp>
-#include "ImageManager.hpp"
+#include <boitatah/modules/ImageManager.hpp>
+
 
 
 namespace boitatah{

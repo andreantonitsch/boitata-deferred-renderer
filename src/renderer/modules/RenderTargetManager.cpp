@@ -1,4 +1,4 @@
-#include "RenderTargetManager.hpp"
+#include <boitatah/modules/RenderTargetManager.hpp>
 
 
 namespace boitatah{

@@ -1,6 +1,5 @@
-#include "GeometryBuilder.hpp"
+#include <boitatah/resources/builders/GeometryBuilder.hpp>
 
-#include <utils/utils.hpp>
 namespace boitatah{
 
 

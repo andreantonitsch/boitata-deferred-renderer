@@ -4,21 +4,25 @@ set(CMAKE_CXX_STANDARD 23)
 
 
 set(OUTPUT_FOLDER ${CMAKE_BINARY_DIR}/bin)
+set(SRC_FOLDER ${PROJECT_SOURCE_DIR}/src)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_FOLDER}/examples)
 
 set (THIRD_PARTY_INCLUDE_PATH ${PROJECT_SOURCE_DIR}/third_party/)
 
+set (BOITATAH_INCLUDE_PATH ${PROJECT_SOURCE_DIR}/include/)
+
+
 set (SPIRV_Headers_SOURCE_DIR ${THIRD_PARTY_INCLUDE_PATH}/SPIRV-Headers)
 add_subdirectory(${SPIRV_Headers_SOURCE_DIR})
 
-add_subdirectory(src/)
+add_subdirectory(${SRC_FOLDER})
+add_subdirectory(${BOITATAH_INCLUDE_PATH})
 
 add_executable(multi_write_attachment src/examples/multi_write_attachment.cpp)
 add_executable(deferred_renderer src/examples/deferred_renderer.cpp)
 add_executable(lit_deferred_renderer src/examples/lit_deferred_renderer.cpp)
 add_executable(lit_deferred_renderer2 src/examples/lit_deferred_renderer2.cpp)
-
 
 #-lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
 #include(FindVulkan)
@@ -37,3 +41,4 @@ target_link_libraries(deferred_renderer ${LIBS})
 target_link_libraries(lit_deferred_renderer ${LIBS})
 target_link_libraries(lit_deferred_renderer2 ${LIBS})
 
+#${CMAKE_COMMAND} -E copy_if_different <file>... destination>

@@ -1,6 +1,8 @@
-#include "BackBuffer.hpp"
+#include <boitatah/modules/BackBuffer.hpp>
+
 #include <algorithm>
-#include <utils/utils.hpp>
+#include <boitatah/utils/utils.hpp>
+
 namespace boitatah
 {
 

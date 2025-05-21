@@ -1,4 +1,5 @@
-#include "Camera.hpp"
+#include <boitatah/modules/Camera.hpp>
+
 #include <iostream>
 namespace boitatah
 {

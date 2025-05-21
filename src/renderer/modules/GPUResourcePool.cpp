@@ -1,4 +1,4 @@
-#include "GPUResourcePool.hpp"
+#include <boitatah/modules/GPUResourcePool.hpp>
 
 
 

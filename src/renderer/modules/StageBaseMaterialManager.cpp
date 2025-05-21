@@ -1,6 +1,6 @@
-#include <renderer/modules/StageBaseMaterialManager.hpp>
-#include <utils/utils.hpp>
-#include "StageBaseMaterialManager.hpp"
+#include <boitatah/modules/StageBaseMaterialManager.hpp>
+#include <boitatah/utils/utils.hpp>
+
 namespace boitatah{
 
     Handle<Material> Materials::getStageBaseMaterial(uint32_t stage_index){

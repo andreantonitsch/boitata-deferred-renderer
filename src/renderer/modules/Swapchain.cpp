@@ -1,4 +1,5 @@
-#include "Swapchain.hpp"
+#include <boitatah/modules/Swapchain.hpp>
+
 #include <stdexcept>
 #include <vector>
 #include <iostream>
