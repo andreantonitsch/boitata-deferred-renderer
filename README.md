@@ -2,38 +2,38 @@
 
 
 Boitatah is a Vulkan based C++ Rendering Library.
-It was started as a deferred renderer, and so named after the Brazilian folklore snake-like creature made of fire who illuminates the pampas. 
-But evolved into being more flexible than that.
+It started as a deferred renderer, named after the Brazilian folklore snake-like creature made of fire who illuminates the pampas.
 
-Currently still a work in progress.
+## Requirements
 
+External Dependencies:
+Vulkan 1.3
+C++ 23
+GLM
+GLFW3
+CMAKE 3.9.1
+GLSLC
 
 ## Instalation
 
-Currently Boitata comes with example programs.
-You can compile them running the compile.sh shell script.
+    cmake CMakeLists.txt
+    make all
 
-This will also generate the library file.
+    The make file will also compile the default shader files for the renderer.
+    Move the boitatah_shaders folder to the same path as the executable.
+    Move libboitatah.a to your lib folder.
+
+## Use Examples
+
+## Image Examples
+
+A many lights exanple scene:
+![alt text](https://github.com/andreantonitsch/boitata-deferred-renderer/raw/main/example_images/many_lights.png "Example 1")
+
+
+A many objects exanple scene:
+![alt text](https://github.com/andreantonitsch/boitata-deferred-renderer/raw/main/example_images/1_light.png "Example 2")
 
 ## Roadmap
 
-(currently)
-
-[x] Basic Vulkan Interface
-
-[x] Vulkan Buffer System
-
-[x] Basic Renderer Interface (Backbuffer, Swapchain)
-
-[x] GPU Resource System (GPUBuffers, Geometries, Textures, etc.)
-
-[x] Camera System
-
-[x] Material System
-
-[ ] RenderGraph and flexible render loop.
-
-[ ] Light System
-
-[ ] The Deferred Renderer as mentioned above.
-
+[ ] Add a default shader custom-path to the Renderer Init.

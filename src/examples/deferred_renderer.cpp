@@ -9,6 +9,7 @@
 
 #include <boitatah/resources/builders/GeometryBuilder.hpp>
 #include <boitatah/utils/ImageLoader.hpp>
+
 using namespace boitatah;
 
 int main(){

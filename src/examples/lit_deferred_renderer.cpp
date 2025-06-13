@@ -66,18 +66,22 @@ int main(){
         .name = "obj",
         .content = {.geometry = geo,
         .material = material},
-        .position = glm::vec3(0, 0, 0)});
+        .position = glm::vec3(0, -2, 0)});
 
     /// Add copies of obj spread around the scene.
     std::srand(std::time({}));
     nodes.reserve(125);
-    for(int k = 0; k < 5; k++)
+    for(int k = 1; k < 5; k++)
         for(int i = 0; i < k; i++)
             for(int j = 0; j < k; j++){
-                nodes.push_back(obj);
-                nodes.back()->translate(glm::vec3(std::sin(std::rand()) * 25, 
-                                                 -k,
-                                                 std::sin(std::rand()) * 25));
+                nodes.push_back(RenderScene::create_node({
+                    .name = "obj",
+                    .content = {.geometry = geo,
+                    .material = material},
+                    .position = glm::vec3(  glm::sin((std::rand())) * 25.0, 
+                                            -2, 
+                                            glm::sin((std::rand())) * 25.0)}));
+
                 scene->add(nodes.back());}
     
     /// The deferred Renderer Material.
@@ -91,13 +95,17 @@ int main(){
     auto& lights = r.getLightArray(light_handle);
 
     /// Add lights to then update the array.
-    auto light_count = 100;
+    auto light_count = 300;
     auto light_count_over_two = light_count/2.0;
     for(int i = 0; i < light_count; i++)
         lights.addLight({
-                        .position = glm::vec4(0, -(std::sin(std::rand())+2.0), 0, 0),
+                        .position = glm::vec4(
+                                            glm::sin((std::rand())) * 25.0 ,
+                                            -2.0,
+                                            glm::sin((std::rand())) * 25.0,
+                                            0),
                         .color = glm::vec4(1.0, 1.0, 1.0, 0),
-                        .intensity = 1,
+                        .intensity = 0.5,
                         });
     lights.update();
     
@@ -126,7 +134,7 @@ int main(){
 
     uint32_t count = 0;
     float frame_TimeScale = 0.01;
-    float dist = 20;
+    float dist = 2;
     auto phi = glm::golden_ratio<float>();
 
     /// While the render window is open.
@@ -136,12 +144,19 @@ int main(){
         count++;
 
         // Moves the lights and update the array
-        for(int i = -light_count_over_two; i < light_count-light_count_over_two; i++)
-            lights[i+light_count_over_two].position = glm::vec4(
-                                            dist * ((sin((t * i)/25+0.001) * i / 20)),
-                                            lights[i+light_count_over_two].position.y ,
-                                             dist * ((cos((t * i)/25+0.001) * i / 20)),
-                                            0);
+        // for(int i = -light_count_over_two; i < light_count-light_count_over_two; i++)
+        //     lights[i+light_count_over_two].position = glm::vec4(
+        //                                     dist * ((sin((t * i)/25+0.001) * i / 20)),
+        //                                     lights[i+light_count_over_two].position.y ,
+        //                                      dist * ((cos((t * i)/25+0.001) * i / 20)),
+        //                                     0);
+        //Moves the lights and update the array
+        for(int i = 0; i < light_count; i++)
+            lights[i].position = glm::vec4(
+                lights[i].position.x + dist * glm::sin(t + i) * frame_TimeScale,
+                lights[i].position.y ,
+                lights[i].position.z + dist * glm::cos(t + i)* frame_TimeScale,
+                0);
         lights.update();
 
         /// Moves the camera and repoints it.
